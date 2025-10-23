@@ -401,7 +401,7 @@ export default function NewTripPage() {
                       value={hotel.review}
                       onChange={(e) => updateHotel(hotel.id, 'review', e.target.value)}
                       rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       placeholder="What did you think about this hotel?"
                     />
                   </div>
@@ -507,7 +507,7 @@ export default function NewTripPage() {
                       value={restaurant.review}
                       onChange={(e) => updateRestaurant(restaurant.id, 'review', e.target.value)}
                       rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       placeholder="What did you think about this restaurant?"
                     />
                   </div>
@@ -613,7 +613,7 @@ export default function NewTripPage() {
                       value={activity.review}
                       onChange={(e) => updateActivity(activity.id, 'review', e.target.value)}
                       rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       placeholder="What did you think about this activity?"
                     />
                   </div>

@@ -13,6 +13,7 @@ interface Hotel {
   rating: number;
   review: string;
   liked: boolean | null;
+  city: string;
 }
 
 interface Restaurant {
@@ -22,6 +23,7 @@ interface Restaurant {
   rating: number;
   review: string;
   liked: boolean | null;
+  city: string;
 }
 
 interface Activity {
@@ -31,6 +33,7 @@ interface Activity {
   rating: number;
   review: string;
   liked: boolean | null;
+  city: string;
 }
 
 function NewTripContent() {
@@ -80,14 +83,15 @@ function NewTripContent() {
     }));
   };
 
-  const addHotel = () => {
+  const addHotel = (city: string) => {
     setHotels(prev => [...prev, {
       id: Date.now().toString(),
       name: '',
       location: '',
       rating: 0,
       review: '',
-      liked: null
+      liked: null,
+      city: city
     }]);
   };
 
@@ -101,14 +105,15 @@ function NewTripContent() {
     setHotels(prev => prev.filter(hotel => hotel.id !== id));
   };
 
-  const addRestaurant = () => {
+  const addRestaurant = (city: string) => {
     setRestaurants(prev => [...prev, {
       id: Date.now().toString(),
       name: '',
       location: '',
       rating: 0,
       review: '',
-      liked: null
+      liked: null,
+      city: city
     }]);
   };
 
@@ -122,14 +127,15 @@ function NewTripContent() {
     setRestaurants(prev => prev.filter(restaurant => restaurant.id !== id));
   };
 
-  const addActivity = () => {
+  const addActivity = (city: string) => {
     setActivities(prev => [...prev, {
       id: Date.now().toString(),
       name: '',
       location: '',
       rating: 0,
       review: '',
-      liked: null
+      liked: null,
+      city: city
     }]);
   };
 
@@ -238,6 +244,8 @@ function NewTripContent() {
                     value={formData.startDate}
                     onChange={handleInputChange}
                     required
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
+                    max={new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                   />
                 </div>
@@ -252,6 +260,8 @@ function NewTripContent() {
                     value={formData.endDate}
                     onChange={handleInputChange}
                     required
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
+                    max={new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                   />
                 </div>
@@ -334,7 +344,7 @@ function NewTripContent() {
                 <h2 className="text-xl font-semibold text-gray-900">Hotels</h2>
                 <button
                   type="button"
-                  onClick={addHotel}
+                  onClick={() => addHotel('')}
                   className="flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-1" />
@@ -440,7 +450,7 @@ function NewTripContent() {
                 <h2 className="text-xl font-semibold text-gray-900">Restaurants</h2>
                 <button
                   type="button"
-                  onClick={addRestaurant}
+                  onClick={() => addRestaurant('')}
                   className="flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-1" />
@@ -546,7 +556,7 @@ function NewTripContent() {
                 <h2 className="text-xl font-semibold text-gray-900">Activities</h2>
                 <button
                   type="button"
-                  onClick={addActivity}
+                  onClick={() => addActivity('')}
                   className="flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-1" />

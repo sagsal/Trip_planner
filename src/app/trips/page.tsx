@@ -338,7 +338,7 @@ export default function TripsPage() {
                   placeholder="Search trips, countries, cities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black bg-white/90"
                 />
               </div>
             </div>
@@ -348,7 +348,7 @@ export default function TripsPage() {
                 <select
                   value={filterCountry}
                   onChange={(e) => setFilterCountry(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent appearance-none text-gray-900 bg-white"
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent appearance-none text-black bg-white/90"
                 >
                   <option value="" className="text-gray-900">All Countries</option>
                   {countries.map((country) => (

@@ -161,7 +161,7 @@ export default function AboutPage() {
               <Plane className="w-16 h-16 text-black drop-shadow-lg relative z-10" />
             </motion.div>
             <h1 className="text-6xl font-bold text-black drop-shadow-lg">
-              About TripPlanner
+              About Share and Plan
             </h1>
           </div>
           <p className="text-2xl text-black font-light max-w-3xl mx-auto">
@@ -254,7 +254,7 @@ export default function AboutPage() {
             <h2 className="text-4xl font-bold text-black text-center mb-8">Our Story</h2>
             <div className="space-y-6 text-lg text-black leading-relaxed">
               <p>
-                TripPlanner was born from a simple idea: what if we could create a platform where every traveler&apos;s 
+                Share and Plan was born from a simple idea: what if we could create a platform where every traveler&apos;s 
                 experience could help another traveler discover their next great adventure? Founded by a group of 
                 passionate travelers who were tired of generic travel guides and wanted something more personal, 
                 more real.
@@ -262,7 +262,7 @@ export default function AboutPage() {
               <p>
                 We started with a small community of friends sharing their travel stories, but quickly realized 
                 that the world needed a place where authentic travel experiences could be shared and discovered. 
-                Today, TripPlanner has grown into a global community of travelers who believe that the best travel 
+                Today, Share and Plan has grown into a global community of travelers who believe that the best travel 
                 advice comes from those who have been there, done that.
               </p>
               <p>
@@ -320,7 +320,7 @@ export default function AboutPage() {
                 className="bg-[#F13B13] text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#F13B13]/90 transition-colors flex items-center justify-center"
               >
                 <Heart className="w-5 h-5 mr-2" />
-                Get Started
+                Register
               </Link>
               <Link
                 href="/trips"

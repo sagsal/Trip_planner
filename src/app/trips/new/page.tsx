@@ -267,7 +267,7 @@ export default function NewTripPage() {
                       type="text"
                       value={country}
                       onChange={(e) => handleArrayChange('countries', index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       placeholder="Enter country name"
                     />
                     {formData.countries.length > 1 && (
@@ -302,7 +302,7 @@ export default function NewTripPage() {
                       type="text"
                       value={city}
                       onChange={(e) => handleArrayChange('cities', index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       placeholder="Enter city name"
                     />
                     {formData.cities.length > 1 && (
@@ -361,7 +361,7 @@ export default function NewTripPage() {
                         type="text"
                         value={hotel.name}
                         onChange={(e) => updateHotel(hotel.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
                         placeholder="Hotel name"
                       />
                     </div>
@@ -371,7 +371,7 @@ export default function NewTripPage() {
                         type="text"
                         value={hotel.location}
                         onChange={(e) => updateHotel(hotel.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
                         placeholder="City, Country"
                       />
                     </div>
@@ -467,7 +467,7 @@ export default function NewTripPage() {
                         type="text"
                         value={restaurant.name}
                         onChange={(e) => updateRestaurant(restaurant.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
                         placeholder="Restaurant name"
                       />
                     </div>
@@ -477,7 +477,7 @@ export default function NewTripPage() {
                         type="text"
                         value={restaurant.location}
                         onChange={(e) => updateRestaurant(restaurant.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
                         placeholder="City, Country"
                       />
                     </div>
@@ -573,7 +573,7 @@ export default function NewTripPage() {
                         type="text"
                         value={activity.name}
                         onChange={(e) => updateActivity(activity.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
                         placeholder="Activity name"
                       />
                     </div>
@@ -583,7 +583,7 @@ export default function NewTripPage() {
                         type="text"
                         value={activity.location}
                         onChange={(e) => updateActivity(activity.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
                         placeholder="City, Country"
                       />
                     </div>

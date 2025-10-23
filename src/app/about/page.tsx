@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Plane, Heart, Users, Globe, Star, Award, Target, Lightbulb } from 'lucide-react';
 
 export default function AboutPage() {
@@ -181,7 +182,7 @@ export default function AboutPage() {
             <p className="text-xl text-black leading-relaxed max-w-4xl mx-auto">
               To create a global community where travelers can share their experiences, discover new destinations, 
               and inspire others to explore the world. We believe every journey tells a story worth sharing, 
-              and every story can inspire someone else's next adventure.
+              and every story can inspire someone else&apos;s next adventure.
             </p>
           </div>
         </motion.div>
@@ -253,7 +254,7 @@ export default function AboutPage() {
             <h2 className="text-4xl font-bold text-black text-center mb-8">Our Story</h2>
             <div className="space-y-6 text-lg text-black leading-relaxed">
               <p>
-                TripPlanner was born from a simple idea: what if we could create a platform where every traveler's 
+                TripPlanner was born from a simple idea: what if we could create a platform where every traveler&apos;s 
                 experience could help another traveler discover their next great adventure? Founded by a group of 
                 passionate travelers who were tired of generic travel guides and wanted something more personal, 
                 more real.
@@ -265,7 +266,7 @@ export default function AboutPage() {
                 advice comes from those who have been there, done that.
               </p>
               <p>
-                Our platform is more than just reviews and ratings – it's about building connections, sharing 
+                Our platform is more than just reviews and ratings – it&apos;s about building connections, sharing 
                 memories, and inspiring others to explore the beautiful world we live in. Every trip shared, 
                 every review written, and every story told helps someone else plan their perfect adventure.
               </p>
@@ -314,20 +315,20 @@ export default function AboutPage() {
               Join thousands of travelers sharing their experiences and discovering new destinations.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
+              <Link
                 href="/register"
                 className="bg-[#F13B13] text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#F13B13]/90 transition-colors flex items-center justify-center"
               >
                 <Heart className="w-5 h-5 mr-2" />
                 Get Started
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/trips"
                 className="bg-[#0160D6] text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#0160D6]/90 transition-colors flex items-center justify-center"
               >
                 <Globe className="w-5 h-5 mr-2" />
                 Explore Trips
-              </a>
+              </Link>
             </div>
           </div>
         </motion.div>

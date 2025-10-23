@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, Plane } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -275,7 +275,7 @@ export default function LoginPage() {
             {/* Register Link */}
             <div className="mt-6 text-center">
               <p className="text-black">
-                Don't have an account?{' '}
+                        Don&apos;t have an account?{' '}
                 <Link href="/register" className="text-[#0160D6] hover:text-[#0160D6]/80 font-medium">
                   Create one
                 </Link>
@@ -286,5 +286,13 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

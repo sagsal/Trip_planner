@@ -2,9 +2,21 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MapPin, Plane, Heart, Star } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { MapPin, Plane, Heart, Star, Plus, Share2 } from 'lucide-react';
 
-export default function Home() {
+function HomeContent() {
+  const [successMessage, setSuccessMessage] = useState('');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const message = searchParams.get('message');
+    if (message) {
+      setSuccessMessage(message);
+    }
+  }, [searchParams]);
+  
   return (
     <div className="relative min-h-screen overflow-hidden">
               {/* Background Image */}
@@ -190,11 +202,11 @@ export default function Home() {
                         <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-black drop-shadow-lg relative z-10" />
                       </motion.div>
                       <h1 className="text-4xl sm:text-6xl lg:text-8xl font-bold text-black drop-shadow-lg text-center sm:text-left">
-                        TripPlanner
+                        Share and Plan
                       </h1>
                     </div>
                     <p className="text-lg sm:text-xl lg:text-2xl text-black font-light px-4 sm:px-0">
-                      Your Journey, Your Story, Your Memories
+                      the Ultimate Trip Planning Tool
                     </p>
           </motion.div>
 
@@ -206,7 +218,7 @@ export default function Home() {
             className="mb-12"
           >
             <h2 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-black mb-4 sm:mb-6 drop-shadow-md px-4 sm:px-0">
-              Plan, Share & Discover Amazing Trips
+              Plan, Share & Build Amazing Trips
             </h2>
                     <p className="text-base sm:text-lg lg:text-xl text-black mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
                       Create detailed trip journals, share your experiences, and discover new destinations
@@ -227,7 +239,7 @@ export default function Home() {
                       className="w-full sm:w-auto bg-[#F13B13] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
                     >
                       <Heart className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      Get Started
+                      Register
                     </Link>
                     <Link
                       href="/trips"
@@ -246,13 +258,6 @@ export default function Home() {
             className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4 sm:px-0"
           >
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
-              <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Track Your Journey</h3>
-                      <p className="text-[#F0ECE9] text-sm text-center">
-                        Document every destination, from countries to cities, with detailed reviews and ratings.
-                      </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
               <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Share Experiences</h3>
               <p className="text-[#F0ECE9] text-sm text-center">
@@ -260,15 +265,67 @@ export default function Home() {
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
-              <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Discover & Connect</h3>
+              <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Build your next trip</h3>
               <p className="text-[#F0ECE9] text-sm text-center">
-                Explore trips from other travelers and get inspired for your next adventure.
+                Use other traveler itineraries to plan your next trip
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
+              <Share2 className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Share Your Trip</h3>
+              <p className="text-[#F0ECE9] text-sm text-center">
+                Create and share your own detailed trip itineraries with the community.
               </p>
             </div>
           </motion.div>
+
+          {/* Additional Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.0 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 px-4 sm:px-0"
+          >
+            <Link
+              href="/trips/build"
+              className="w-full sm:w-auto bg-[#AAB624] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              Build your trip
+            </Link>
+            <Link
+              href="/trips/new"
+              className="w-full sm:w-auto bg-[#0160D6] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
+            >
+              <Share2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              Share your trip
+            </Link>
+          </motion.div>
+
+          {/* Success Message */}
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 1.2 }}
+              className="mt-8 px-4 sm:px-0"
+            >
+              <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-lg text-center max-w-md mx-auto">
+                {successMessage}
+              </div>
+            </motion.div>
+          )}
         </motion.div>
         </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }

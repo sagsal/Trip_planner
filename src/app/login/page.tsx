@@ -48,11 +48,11 @@ function LoginForm() {
       if (response.ok) {
         const data = await response.json();
         console.log('Login successful, user data:', data.user);
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
-        // Force navigation update
-        window.dispatchEvent(new Event('storage'));
-        router.push('/account');
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(data.user));
+                // Force navigation update
+                window.dispatchEvent(new Event('storage'));
+                router.push('/');
       } else {
         const data = await response.json();
         console.log('Login failed:', data);

@@ -65,7 +65,7 @@ export default function Navigation() {
           {/* Logo */}
                   <Link href="/" className="flex items-center space-x-2">
                     <Plane className="w-8 h-8 text-[#0160D6]" />
-                    <span className="text-2xl font-bold text-black">TripPlanner</span>
+                            <span className="text-2xl font-bold text-black">Share and Plan</span>
                   </Link>
 
           {/* Desktop Navigation */}

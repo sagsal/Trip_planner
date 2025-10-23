@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TripPlanner - Your Journey, Your Story, Your Memories",
-  description: "Plan, share and discover amazing trips. Create detailed trip journals with hotels, restaurants, and activities reviews.",
+  title: "Share and Plan - the Ultimate Trip Planning Tool",
+  description: "Plan, share and build amazing trips. Create detailed trip journals with hotels, restaurants, and activities reviews.",
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

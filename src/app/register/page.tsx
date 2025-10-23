@@ -60,8 +60,8 @@ export default function RegisterPage() {
       if (response.ok) {
         const data = await response.json();
         console.log('Registration successful:', data);
-        // Registration successful - redirect to login page
-        router.push('/login?message=Registration successful! Please sign in.');
+                // Registration successful - redirect to home page
+                router.push('/?message=Registration successful! Please sign in to continue.');
       } else {
         const data = await response.json();
         console.log('Registration failed:', data);

@@ -22,14 +22,14 @@ export default function Home() {
       {/* Floating elements */}
       <div className="absolute inset-0 pointer-events-none">
         <div 
-          className="absolute top-20 left-10 w-4 h-4 bg-white rounded-full opacity-30" 
+          className="absolute top-20 left-4 sm:left-10 w-3 sm:w-4 h-3 sm:h-4 bg-white rounded-full opacity-30" 
           style={{ 
             animation: 'float 6s ease-in-out infinite',
             animationDelay: '0s' 
           }} 
         />
         <div 
-          className="absolute top-40 right-20 w-3 h-3 bg-white rounded-full opacity-20" 
+          className="absolute top-40 right-4 sm:right-20 w-2 sm:w-3 h-2 sm:h-3 bg-white rounded-full opacity-20" 
           style={{ 
             animation: 'float 8s ease-in-out infinite',
             animationDelay: '1s' 
@@ -43,7 +43,7 @@ export default function Home() {
           }} 
         />
         <div 
-          className="absolute top-80 right-1/3 w-5 h-5 bg-white rounded-full opacity-20" 
+          className="absolute top-80 right-1/3 w-4 sm:w-5 h-4 sm:h-5 bg-white rounded-full opacity-20" 
           style={{ 
             animation: 'float 9s ease-in-out infinite',
             animationDelay: '3s' 
@@ -105,7 +105,7 @@ export default function Home() {
 
         {/* Flying airplane elements */}
         <div 
-          className="absolute top-20 left-1/4 w-6 h-6 text-white/20"
+          className="absolute top-20 left-1/4 w-4 sm:w-6 h-4 sm:h-6 text-white/20"
           style={{ 
             animation: 'flyLoop 12s ease-in-out infinite',
             animationDelay: '0s' 
@@ -114,7 +114,7 @@ export default function Home() {
           <Plane className="w-full h-full" />
         </div>
         <div 
-          className="absolute top-40 right-1/3 w-4 h-4 text-white/15"
+          className="absolute top-40 right-1/3 w-3 sm:w-4 h-3 sm:h-4 text-white/15"
           style={{ 
             animation: 'glide 8s ease-in-out infinite',
             animationDelay: '2s' 
@@ -123,7 +123,7 @@ export default function Home() {
           <Plane className="w-full h-full" />
         </div>
         <div 
-          className="absolute top-60 left-1/2 w-5 h-5 text-white/10"
+          className="absolute top-60 left-1/2 w-4 sm:w-5 h-4 sm:h-5 text-white/10"
           style={{ 
             animation: 'flyLoop 15s ease-in-out infinite',
             animationDelay: '6s' 
@@ -134,7 +134,7 @@ export default function Home() {
         
         {/* Flying airplane across screen */}
         <div 
-          className="absolute top-32 w-8 h-8 text-white/25"
+          className="absolute top-32 w-6 sm:w-8 h-6 sm:h-8 text-white/25"
           style={{ 
             animation: 'fly 20s linear infinite',
             animationDelay: '0s' 
@@ -143,7 +143,7 @@ export default function Home() {
           <Plane className="w-full h-full" />
         </div>
         <div 
-          className="absolute top-48 w-6 h-6 text-white/20"
+          className="absolute top-48 w-4 sm:w-6 h-4 sm:h-6 text-white/20"
           style={{ 
             animation: 'fly 25s linear infinite',
             animationDelay: '10s' 
@@ -154,12 +154,12 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 text-center pt-16">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 sm:px-6 lg:px-8 text-center pt-16 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-4xl mx-auto"
+          className="max-w-4xl mx-auto w-full"
         >
           {/* Logo/Title */}
           <motion.div
@@ -168,7 +168,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-8"
           >
-                    <div className="flex items-center justify-center mb-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center mb-4 sm:mb-6">
                       <motion.div
                         animate={{
                           x: [0, 30, -15, 25, -5, 0],
@@ -181,19 +181,19 @@ export default function Home() {
                           repeat: Infinity,
                           ease: "easeInOut",
                         }}
-                        className="mr-4 relative"
+                        className="mb-4 sm:mb-0 sm:mr-4 relative"
                       >
                         {/* Vapor trail effect */}
-                        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 w-6 h-0.5 bg-gradient-to-r from-transparent via-blue-200/30 to-transparent rounded-full"></div>
+                        <div className="absolute -left-4 sm:-left-8 top-1/2 transform -translate-y-1/2 w-3 sm:w-6 h-0.5 bg-gradient-to-r from-transparent via-blue-200/30 to-transparent rounded-full"></div>
                         {/* Glow effect */}
                         <div className="absolute inset-0 bg-blue-400/20 rounded-full blur-sm animate-pulse"></div>
-                        <Plane className="w-16 h-16 text-black drop-shadow-lg relative z-10" />
+                        <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-black drop-shadow-lg relative z-10" />
                       </motion.div>
-                      <h1 className="text-8xl font-bold text-black drop-shadow-lg">
+                      <h1 className="text-4xl sm:text-6xl lg:text-8xl font-bold text-black drop-shadow-lg text-center sm:text-left">
                         TripPlanner
                       </h1>
                     </div>
-                    <p className="text-2xl text-black font-light">
+                    <p className="text-lg sm:text-xl lg:text-2xl text-black font-light px-4 sm:px-0">
                       Your Journey, Your Story, Your Memories
                     </p>
           </motion.div>
@@ -205,12 +205,12 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mb-12"
           >
-            <h2 className="text-5xl font-semibold text-black mb-6 drop-shadow-md">
+            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-black mb-4 sm:mb-6 drop-shadow-md px-4 sm:px-0">
               Plan, Share & Discover Amazing Trips
             </h2>
-                    <p className="text-xl text-black mb-8 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-base sm:text-lg lg:text-xl text-black mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
                       Create detailed trip journals, share your experiences, and discover new destinations
-                      through the eyes of fellow travelers. From hotels to restaurants, activities to reviews
+                      through the eyes of fellow travelers. From hotels to restaurants, activities to reviews -
                       capture every moment of your journey.
                     </p>
           </motion.div>
@@ -220,20 +220,20 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 sm:mb-16 px-4 sm:px-0"
           >
                     <Link
                       href="/register"
-                      className="bg-[#F13B13] text-black px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
+                      className="w-full sm:w-auto bg-[#F13B13] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
                     >
-                      <Heart className="w-5 h-5 mr-2" />
+                      <Heart className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                       Get Started
                     </Link>
                     <Link
                       href="/trips"
-                      className="bg-[#F13B13] text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#F13B13]/90 transition-all duration-300 flex items-center"
+                      className="w-full sm:w-auto bg-[#F13B13] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-[#F13B13]/90 transition-all duration-300 flex items-center justify-center"
                     >
-                      <MapPin className="w-5 h-5 mr-2" />
+                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                       Explore Trips
                     </Link>
           </motion.div>
@@ -243,26 +243,26 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4 sm:px-0"
           >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <MapPin className="w-8 h-8 text-white mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Track Your Journey</h3>
-                      <p className="text-[#F0ECE9] text-sm">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
+              <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Track Your Journey</h3>
+                      <p className="text-[#F0ECE9] text-sm text-center">
                         Document every destination, from countries to cities, with detailed reviews and ratings.
                       </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <Star className="w-8 h-8 text-white mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Share Experiences</h3>
-              <p className="text-[#F0ECE9] text-sm">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
+              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Share Experiences</h3>
+              <p className="text-[#F0ECE9] text-sm text-center">
                 Rate hotels, restaurants, and activities. Share what you loved and what to avoid.
               </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <Heart className="w-8 h-8 text-white mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Discover & Connect</h3>
-              <p className="text-[#F0ECE9] text-sm">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
+              <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Discover & Connect</h3>
+              <p className="text-[#F0ECE9] text-sm text-center">
                 Explore trips from other travelers and get inspired for your next adventure.
               </p>
             </div>

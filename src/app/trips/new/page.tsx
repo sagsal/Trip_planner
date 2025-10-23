@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Plus, Minus, MapPin, Calendar, Star, Save, X } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Hotel {
   id: string;
@@ -32,7 +33,7 @@ interface Activity {
   liked: boolean | null;
 }
 
-export default function NewTripPage() {
+function NewTripContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -678,5 +679,13 @@ export default function NewTripPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function NewTripPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <NewTripContent />
+    </Suspense>
   );
 }

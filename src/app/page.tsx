@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { MapPin, Plane, Heart, Star, Plus, Share2 } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 function HomeContent() {
   const [successMessage, setSuccessMessage] = useState('');
@@ -324,7 +325,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <HomeContent />
     </Suspense>
   );

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, Heart, Filter, Search } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Trip {
   id: string;
@@ -25,7 +26,7 @@ interface Trip {
   };
 }
 
-export default function TripsPage() {
+function TripsContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -471,5 +472,13 @@ export default function TripsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TripsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <TripsContent />
+    </Suspense>
   );
 }

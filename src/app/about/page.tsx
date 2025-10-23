@@ -1,10 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { Plane, Heart, Users, Globe, Star, Award, Target, Lightbulb } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function AboutPage() {
+function AboutContent() {
   return (
     <div className="relative min-h-screen overflow-hidden pt-16">
       {/* Background Image */}
@@ -334,5 +336,13 @@ export default function AboutPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function AboutPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <AboutContent />
+    </Suspense>
   );
 }

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, Plane } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 function LoginForm() {
   const [formData, setFormData] = useState({
@@ -291,7 +292,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <LoginForm />
     </Suspense>
   );

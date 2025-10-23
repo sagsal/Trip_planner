@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, Eye, EyeOff, Plane } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -331,5 +332,13 @@ export default function RegisterPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <RegisterContent />
+    </Suspense>
   );
 }

@@ -1,10 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, MapPin, Calendar, Star } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function BuildTripPage() {
+function BuildTripContent() {
   return (
     <div className="relative min-h-screen overflow-hidden pt-16">
       {/* Background Image */}
@@ -98,5 +100,13 @@ export default function BuildTripPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function BuildTripPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <BuildTripContent />
+    </Suspense>
   );
 }

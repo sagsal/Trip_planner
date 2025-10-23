@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findUserByEmail, getAllUsers } from '@/lib/mockData';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,12 +16,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user by email in mock data
-    const user = findUserByEmail(email);
+    // Find user by email in database
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
     
     console.log('Login attempt for email:', email);
     console.log('Found user:', user ? 'Yes' : 'No');
-    console.log('All users in mock data:', getAllUsers().map(u => ({ email: u.email, name: u.name })));
 
     if (!user) {
       return NextResponse.json(

@@ -65,7 +65,12 @@ function TripDetailContent() {
 
   const parseCountries = (countriesJson: string) => {
     try {
-      return JSON.parse(countriesJson);
+      // Handle double-encoded JSON
+      let parsed = JSON.parse(countriesJson);
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed);
+      }
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -73,7 +78,12 @@ function TripDetailContent() {
 
   const parseCities = (citiesJson: string) => {
     try {
-      return JSON.parse(citiesJson);
+      // Handle double-encoded JSON
+      let parsed = JSON.parse(citiesJson);
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed);
+      }
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }

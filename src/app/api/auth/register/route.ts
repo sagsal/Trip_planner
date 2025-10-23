@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findUserByEmail, addUser, getAllUsers } from '@/lib/mockData';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,8 +23,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists in mock data
-    const existingUser = findUserByEmail(email);
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
 
     if (existingUser) {
       return NextResponse.json(
@@ -34,15 +38,16 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user in mock data
-    const newUser = addUser({
-      name,
-      email,
-      password: hashedPassword
+    // Create user in database
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword
+      }
     });
 
     console.log('Registration successful for:', email);
-    console.log('All users after registration:', getAllUsers().map(u => ({ email: u.email, name: u.name })));
 
     // Return user data (excluding password)
     const { password: _, ...user } = newUser;

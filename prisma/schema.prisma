@@ -2,13 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../node_modules/.prisma/client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -18,9 +18,9 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   trips Trip[]
-  
+
   @@map("users")
 }
 
@@ -35,14 +35,14 @@ model Trip {
   isPublic    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   hotels      Hotel[]
   restaurants Restaurant[]
   activities  Activity[]
-  
+
   @@map("trips")
 }
 
@@ -55,10 +55,10 @@ model Hotel {
   liked       Boolean? // true for liked, false for disliked, null for neutral
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   tripId String
   trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  
+
   @@map("hotels")
 }
 
@@ -71,10 +71,10 @@ model Restaurant {
   liked       Boolean? // true for liked, false for disliked, null for neutral
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   tripId String
   trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  
+
   @@map("restaurants")
 }
 
@@ -87,9 +87,9 @@ model Activity {
   liked       Boolean? // true for liked, false for disliked, null for neutral
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   tripId String
   trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  
+
   @@map("activities")
 }

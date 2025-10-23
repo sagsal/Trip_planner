@@ -67,22 +67,29 @@ export default function LoadingSpinner() {
 
       {/* Floating Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(6)].map((_, i) => (
+        {[
+          { left: 20, top: 30, duration: 3.5, delay: 0 },
+          { left: 80, top: 20, duration: 4, delay: 0.5 },
+          { left: 60, top: 70, duration: 3.2, delay: 1 },
+          { left: 30, top: 80, duration: 4.2, delay: 1.5 },
+          { left: 90, top: 60, duration: 3.8, delay: 0.8 },
+          { left: 10, top: 50, duration: 3.6, delay: 1.2 },
+        ].map((config, i) => (
           <motion.div
             key={i}
             className="absolute w-2 h-2 bg-white/20 rounded-full"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: `${config.left}%`,
+              top: `${config.top}%`,
             }}
             animate={{
               y: [0, -20, 0],
               opacity: [0.2, 0.8, 0.2],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: config.duration,
               repeat: Infinity,
-              delay: Math.random() * 2,
+              delay: config.delay,
               ease: "easeInOut",
             }}
           />

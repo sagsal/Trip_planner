@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Trip {
@@ -25,6 +25,7 @@ function AccountContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [deletingTrip, setDeletingTrip] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -62,6 +63,48 @@ function AccountContent() {
     fetchUserData();
   }, []);
 
+  const handleDeleteTrip = async (tripId: string, tripTitle: string) => {
+    if (!user || deletingTrip) return;
+    
+    const confirmed = window.confirm(`Are you sure you want to delete "${tripTitle}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingTrip(tripId);
+    
+    try {
+      const response = await fetch(`/api/trips/${tripId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        // If trip not found, it might already be deleted, so just remove from UI
+        if (response.status === 404) {
+          setTrips(prevTrips => prevTrips.filter(trip => trip.id !== tripId));
+          alert('Trip was already deleted.');
+          return;
+        }
+        
+        throw new Error(errorData.error || 'Failed to delete trip');
+      }
+
+      // Remove the trip from the local state
+      setTrips(prevTrips => prevTrips.filter(trip => trip.id !== tripId));
+      
+      alert('Trip deleted successfully!');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete trip');
+    } finally {
+      setDeletingTrip(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -72,7 +115,12 @@ function AccountContent() {
 
   const parseCountries = (countriesJson: string) => {
     try {
-      return JSON.parse(countriesJson);
+      // Handle double-encoded JSON
+      let parsed = JSON.parse(countriesJson);
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed);
+      }
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -80,7 +128,12 @@ function AccountContent() {
 
   const parseCities = (citiesJson: string) => {
     try {
-      return JSON.parse(citiesJson);
+      // Handle double-encoded JSON
+      let parsed = JSON.parse(citiesJson);
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed);
+      }
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -207,11 +260,23 @@ function AccountContent() {
                     <div className="flex items-start justify-between mb-4">
                       <h3 className="text-xl font-semibold text-gray-900">{trip.title}</h3>
                       <div className="flex space-x-2">
-                        <button className="text-gray-400 hover:text-gray-600">
+                        <Link
+                          href={`/trips/${trip.id}/edit`}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
                           <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-400 hover:text-red-600">
-                          <Trash2 className="w-4 h-4" />
+                        </Link>
+                        <button 
+                          onClick={() => handleDeleteTrip(trip.id, trip.title)}
+                          disabled={deletingTrip === trip.id || deletingTrip !== null}
+                          className="text-gray-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={deletingTrip === trip.id ? "Deleting..." : "Delete trip"}
+                        >
+                          {deletingTrip === trip.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </div>

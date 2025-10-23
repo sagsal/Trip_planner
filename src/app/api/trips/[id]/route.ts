@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Mock data - same as in the main trips route
 const mockTrips = [
@@ -374,7 +377,15 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const trip = mockTrips.find(t => t.id === id);
+    const trip = await prisma.trip.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        hotels: true,
+        restaurants: true,
+        activities: true
+      }
+    });
 
     if (!trip) {
       return NextResponse.json(
@@ -387,6 +398,193 @@ export async function GET(
 
   } catch (error) {
     console.error('Trip fetch error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const {
+      title,
+      description,
+      startDate,
+      endDate,
+      countries,
+      cities,
+      isPublic,
+      hotels,
+      restaurants,
+      activities,
+      userId,
+      userName,
+      userEmail
+    } = body;
+
+    // Validate required fields
+    if (!title || !startDate || !endDate || !countries || !cities) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Check if trip exists and belongs to user
+    const existingTrip = await prisma.trip.findUnique({
+      where: { id },
+      include: { user: true }
+    });
+
+    if (!existingTrip) {
+      return NextResponse.json(
+        { error: 'Trip not found' },
+        { status: 404 }
+      );
+    }
+
+    if (existingTrip.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized to edit this trip' },
+        { status: 403 }
+      );
+    }
+
+    // Update the trip using a transaction
+    const updatedTrip = await prisma.$transaction(async (tx: any) => {
+      // Update the main trip
+      const trip = await tx.trip.update({
+        where: { id },
+        data: {
+          title,
+          description,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          countries,
+          cities,
+          isPublic
+        }
+      });
+
+      // Delete existing related records
+      await tx.hotel.deleteMany({ where: { tripId: id } });
+      await tx.restaurant.deleteMany({ where: { tripId: id } });
+      await tx.activity.deleteMany({ where: { tripId: id } });
+
+      // Create new hotels
+      if (hotels && hotels.length > 0) {
+        await tx.hotel.createMany({
+          data: hotels.map((hotel: any) => ({
+            name: hotel.name,
+            location: hotel.location,
+            rating: hotel.rating,
+            review: hotel.review,
+            liked: hotel.liked,
+            tripId: id
+          }))
+        });
+      }
+
+      // Create new restaurants
+      if (restaurants && restaurants.length > 0) {
+        await tx.restaurant.createMany({
+          data: restaurants.map((restaurant: any) => ({
+            name: restaurant.name,
+            location: restaurant.location,
+            rating: restaurant.rating,
+            review: restaurant.review,
+            liked: restaurant.liked,
+            tripId: id
+          }))
+        });
+      }
+
+      // Create new activities
+      if (activities && activities.length > 0) {
+        await tx.activity.createMany({
+          data: activities.map((activity: any) => ({
+            name: activity.name,
+            location: activity.location,
+            rating: activity.rating,
+            review: activity.review,
+            liked: activity.liked,
+            tripId: id
+          }))
+        });
+      }
+
+      return trip;
+    });
+
+    console.log('Trip updated successfully:', title, 'by user:', userName);
+
+    return NextResponse.json(
+      { 
+        message: 'Trip updated successfully',
+        trip: updatedTrip
+      },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Trip update error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { userId } = body;
+
+    // Check if trip exists and belongs to user
+    const existingTrip = await prisma.trip.findUnique({
+      where: { id },
+      include: { user: true }
+    });
+
+    if (!existingTrip) {
+      return NextResponse.json(
+        { error: 'Trip not found' },
+        { status: 404 }
+      );
+    }
+
+    if (existingTrip.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized to delete this trip' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the trip (cascade will handle related records)
+    await prisma.trip.delete({
+      where: { id }
+    });
+
+    console.log('Trip deleted successfully:', existingTrip.title, 'by user:', existingTrip.user.name);
+
+    return NextResponse.json(
+      { message: 'Trip deleted successfully' },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Trip delete error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

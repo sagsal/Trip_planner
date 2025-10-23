@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Mock data for now - we'll replace this with Prisma later
 const mockTrips = [
@@ -387,29 +390,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a mock trip (in a real app, this would be saved to database)
-    const newTrip = {
-      id: Date.now().toString(),
-      title,
-      description: description || null,
-      startDate,
-      endDate,
-      countries: JSON.stringify(countries),
-      cities: JSON.stringify(cities),
-      isPublic: true,
-      createdAt: new Date().toISOString(),
-      hotels: hotels || [],
-      restaurants: restaurants || [],
-      activities: activities || [],
-      user: {
-        id: userId,
-        name: userName,
-        email: userEmail
+    // Create trip in database
+    const newTrip = await prisma.trip.create({
+      data: {
+        title,
+        description: description || null,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        countries: JSON.stringify(countries),
+        cities: JSON.stringify(cities),
+        isPublic: true,
+        userId: userId,
+        hotels: {
+          create: (hotels || []).map(hotel => ({
+            name: hotel.name,
+            location: hotel.location,
+            rating: hotel.rating,
+            review: hotel.review,
+            liked: hotel.liked
+          }))
+        },
+        restaurants: {
+          create: (restaurants || []).map(restaurant => ({
+            name: restaurant.name,
+            location: restaurant.location,
+            rating: restaurant.rating,
+            review: restaurant.review,
+            liked: restaurant.liked
+          }))
+        },
+        activities: {
+          create: (activities || []).map(activity => ({
+            name: activity.name,
+            location: activity.location,
+            rating: activity.rating,
+            review: activity.review,
+            liked: activity.liked
+          }))
+        }
+      },
+      include: {
+        user: true,
+        hotels: true,
+        restaurants: true,
+        activities: true
       }
-    };
-
-    // Add to mock data
-    mockTrips.unshift(newTrip);
+    });
 
     console.log('Trip created successfully:', newTrip.title, 'by user:', userName);
 
@@ -437,9 +463,21 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
-    // Return mock data
-    const trips = mockTrips.slice(skip, skip + limit);
-    const total = mockTrips.length;
+    // Fetch trips from database
+    const trips = await prisma.trip.findMany({
+      where: { isPublic: true },
+      include: {
+        user: true,
+        hotels: true,
+        restaurants: true,
+        activities: true
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    });
+
+    const total = await prisma.trip.count({ where: { isPublic: true } });
 
     return NextResponse.json({
       trips,

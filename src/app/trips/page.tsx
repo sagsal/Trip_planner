@@ -1,0 +1,475 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { MapPin, Calendar, Star, User, Heart, Filter, Search } from 'lucide-react';
+
+interface Trip {
+  id: string;
+  title: string;
+  description: string | null;
+  startDate: string;
+  endDate: string;
+  countries: string;
+  cities: string;
+  isPublic: boolean;
+  createdAt: string;
+  hotels: any[];
+  restaurants: any[];
+  activities: any[];
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export default function TripsPage() {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCountry, setFilterCountry] = useState('');
+  const [countries, setCountries] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchTrips();
+  }, []);
+
+  const fetchTrips = async () => {
+    try {
+      const response = await fetch('/api/trips');
+      if (response.ok) {
+        const data = await response.json();
+        setTrips(data.trips);
+        
+        // Extract unique countries for filter
+        const uniqueCountries = new Set<string>();
+        data.trips.forEach((trip: Trip) => {
+          try {
+            const tripCountries = JSON.parse(trip.countries);
+            tripCountries.forEach((country: string) => uniqueCountries.add(country));
+          } catch (e) {
+            // Handle parsing error
+          }
+        });
+        setCountries(Array.from(uniqueCountries).sort());
+      }
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const parseCountries = (countriesJson: string) => {
+    try {
+      return JSON.parse(countriesJson);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseCities = (citiesJson: string) => {
+    try {
+      return JSON.parse(citiesJson);
+    } catch {
+      return [];
+    }
+  };
+
+  const filteredTrips = trips.filter(trip => {
+    const matchesSearch = trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         trip.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         parseCountries(trip.countries).some((country: string) => 
+                           country.toLowerCase().includes(searchTerm.toLowerCase())
+                         ) ||
+                         parseCities(trip.cities).some((city: string) => 
+                           city.toLowerCase().includes(searchTerm.toLowerCase())
+                         );
+    
+    const matchesCountry = !filterCountry || parseCountries(trip.countries).includes(filterCountry);
+    
+    return matchesSearch && matchesCountry;
+  });
+
+  if (isLoading) {
+    return (
+      <div className="relative min-h-screen overflow-hidden pt-16">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-pulse"
+          style={{
+            backgroundImage: 'url(/sea-side-beach-0e.jpg)',
+            animation: 'kenBurns 20s ease-in-out infinite alternate',
+          }}
+        >
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
+        </div>
+
+        {/* Floating elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute top-20 left-10 w-4 h-4 bg-white rounded-full opacity-30"
+            style={{
+              animation: 'float 6s ease-in-out infinite',
+              animationDelay: '0s'
+            }}
+          />
+          <div
+            className="absolute top-40 right-20 w-3 h-3 bg-white rounded-full opacity-20"
+            style={{
+              animation: 'float 8s ease-in-out infinite',
+              animationDelay: '1s'
+            }}
+          />
+          <div
+            className="absolute top-60 left-1/4 w-2 h-2 bg-white rounded-full opacity-25"
+            style={{
+              animation: 'float 7s ease-in-out infinite',
+              animationDelay: '2s'
+            }}
+          />
+          <div
+            className="absolute top-80 right-1/3 w-5 h-5 bg-white rounded-full opacity-20"
+            style={{
+              animation: 'float 9s ease-in-out infinite',
+              animationDelay: '3s'
+            }}
+          />
+          <div
+            className="absolute top-32 right-1/4 w-3 h-3 bg-white rounded-full opacity-15"
+            style={{
+              animation: 'sway 10s ease-in-out infinite',
+              animationDelay: '4s'
+            }}
+          />
+          <div
+            className="absolute top-72 left-1/3 w-2 h-2 bg-white rounded-full opacity-20"
+            style={{
+              animation: 'sway 12s ease-in-out infinite',
+              animationDelay: '5s'
+            }}
+          />
+
+          {/* Animated sparkles */}
+          <div
+            className="absolute top-16 right-16 w-1 h-1 bg-white rounded-full opacity-40"
+            style={{
+              animation: 'float 4s ease-in-out infinite',
+              animationDelay: '0.5s'
+            }}
+          />
+          <div
+            className="absolute top-48 left-16 w-1 h-1 bg-white rounded-full opacity-30"
+            style={{
+              animation: 'float 5s ease-in-out infinite',
+              animationDelay: '1.5s'
+            }}
+          />
+          <div
+            className="absolute top-64 right-8 w-1 h-1 bg-white rounded-full opacity-35"
+            style={{
+              animation: 'float 6s ease-in-out infinite',
+              animationDelay: '2.5s'
+            }}
+          />
+
+          {/* Gentle moving clouds effect */}
+          <div
+            className="absolute top-10 left-0 w-32 h-16 bg-white/5 rounded-full blur-sm"
+            style={{
+              animation: 'sway 15s ease-in-out infinite',
+              animationDelay: '0s'
+            }}
+          />
+          <div
+            className="absolute top-24 right-0 w-24 h-12 bg-white/5 rounded-full blur-sm"
+            style={{
+              animation: 'sway 18s ease-in-out infinite',
+              animationDelay: '3s'
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-white/20 backdrop-blur-sm rounded w-1/4 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white/20 backdrop-blur-sm rounded-lg shadow p-6">
+                  <div className="h-4 bg-white/30 rounded w-3/4 mb-4"></div>
+                  <div className="h-3 bg-white/30 rounded w-1/2 mb-2"></div>
+                  <div className="h-3 bg-white/30 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen overflow-hidden pt-16">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-pulse"
+        style={{
+          backgroundImage: 'url(/sea-side-beach-0e.jpg)',
+          animation: 'kenBurns 20s ease-in-out infinite alternate',
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
+      </div>
+
+      {/* Floating elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          className="absolute top-20 left-10 w-4 h-4 bg-white rounded-full opacity-30"
+          style={{
+            animation: 'float 6s ease-in-out infinite',
+            animationDelay: '0s'
+          }}
+        />
+        <div
+          className="absolute top-40 right-20 w-3 h-3 bg-white rounded-full opacity-20"
+          style={{
+            animation: 'float 8s ease-in-out infinite',
+            animationDelay: '1s'
+          }}
+        />
+        <div
+          className="absolute top-60 left-1/4 w-2 h-2 bg-white rounded-full opacity-25"
+          style={{
+            animation: 'float 7s ease-in-out infinite',
+            animationDelay: '2s'
+          }}
+        />
+        <div
+          className="absolute top-80 right-1/3 w-5 h-5 bg-white rounded-full opacity-20"
+          style={{
+            animation: 'float 9s ease-in-out infinite',
+            animationDelay: '3s'
+          }}
+        />
+        <div
+          className="absolute top-32 right-1/4 w-3 h-3 bg-white rounded-full opacity-15"
+          style={{
+            animation: 'sway 10s ease-in-out infinite',
+            animationDelay: '4s'
+          }}
+        />
+        <div
+          className="absolute top-72 left-1/3 w-2 h-2 bg-white rounded-full opacity-20"
+          style={{
+            animation: 'sway 12s ease-in-out infinite',
+            animationDelay: '5s'
+          }}
+        />
+
+        {/* Animated sparkles */}
+        <div
+          className="absolute top-16 right-16 w-1 h-1 bg-white rounded-full opacity-40"
+          style={{
+            animation: 'float 4s ease-in-out infinite',
+            animationDelay: '0.5s'
+          }}
+        />
+        <div
+          className="absolute top-48 left-16 w-1 h-1 bg-white rounded-full opacity-30"
+          style={{
+            animation: 'float 5s ease-in-out infinite',
+            animationDelay: '1.5s'
+          }}
+        />
+        <div
+          className="absolute top-64 right-8 w-1 h-1 bg-white rounded-full opacity-35"
+          style={{
+            animation: 'float 6s ease-in-out infinite',
+            animationDelay: '2.5s'
+          }}
+        />
+
+        {/* Gentle moving clouds effect */}
+        <div
+          className="absolute top-10 left-0 w-32 h-16 bg-white/5 rounded-full blur-sm"
+          style={{
+            animation: 'sway 15s ease-in-out infinite',
+            animationDelay: '0s'
+          }}
+        />
+        <div
+          className="absolute top-24 right-0 w-24 h-12 bg-white/5 rounded-full blur-sm"
+          style={{
+            animation: 'sway 18s ease-in-out infinite',
+            animationDelay: '3s'
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Amazing Trips</h1>
+          <p className="text-gray-600">
+            Explore travel experiences shared by fellow adventurers
+          </p>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="bg-white/20 backdrop-blur-sm rounded-lg shadow p-6 mb-8 border border-white/30">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search trips, countries, cities..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="md:w-64">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  value={filterCountry}
+                  onChange={(e) => setFilterCountry(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent appearance-none text-gray-900 bg-white"
+                >
+                  <option value="" className="text-gray-900">All Countries</option>
+                  {countries.map((country) => (
+                    <option key={country} value={country} className="text-gray-900">
+                      {country}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-gray-600">
+            Showing {filteredTrips.length} of {trips.length} trips
+          </p>
+        </div>
+
+        {/* Trips Grid */}
+        {filteredTrips.length === 0 ? (
+          <div className="text-center py-12">
+            <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No trips found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || filterCountry 
+                ? 'Try adjusting your search or filter criteria'
+                : 'Be the first to share your travel experience!'
+              }
+            </p>
+            <Link
+              href="/trips/new"
+              className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors"
+            >
+              <Heart className="w-5 h-5 mr-2" />
+              Share Your Trip
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTrips.map((trip, index) => (
+              <motion.div
+                key={trip.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-white/20 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow border border-white/30"
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">{trip.title}</h3>
+                    <div className="flex items-center text-sm text-gray-500 ml-2">
+                      <User className="w-4 h-4 mr-1" />
+                      {trip.user.name}
+                    </div>
+                  </div>
+                  
+                  {trip.description && (
+                    <p className="text-gray-600 mb-4 line-clamp-3">{trip.description}</p>
+                  )}
+                  
+                  <div className="flex items-center text-sm text-gray-500 mb-4">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+                  </div>
+                  
+                  <div className="mb-4">
+                    <div className="flex items-center text-sm text-gray-600 mb-1">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {parseCountries(trip.countries).join(', ')}
+                    </div>
+                    <p className="text-sm text-gray-600 ml-5">
+                      {parseCities(trip.cities).join(', ')}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 mr-1 text-yellow-400" />
+                      <span>{trip.hotels.length} hotels</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 mr-1 text-green-400" />
+                      <span>{trip.restaurants.length} restaurants</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 mr-1 text-purple-400" />
+                      <span>{trip.activities.length} activities</span>
+                    </div>
+                  </div>
+                  
+                  <Link
+                    href={`/trips/${trip.id}`}
+                    className="block w-full bg-[#0160D6] text-white px-4 py-3 rounded-lg text-center hover:bg-[#0160D6]/90 transition-colors"
+                  >
+                    View Details
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Call to Action */}
+        <div className="mt-12 text-center">
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg shadow p-8 border border-white/30">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Share Your Adventure</h2>
+            <p className="text-gray-600 mb-6">
+              Have an amazing trip to share? Help other travelers discover new destinations and experiences.
+            </p>
+            <Link
+              href="/trips/new"
+              className="inline-flex items-center px-8 py-4 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors text-lg font-semibold"
+            >
+              <Heart className="w-5 h-5 mr-2" />
+              Share Your Trip
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

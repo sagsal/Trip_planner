@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  trips Trip[]
+  
+  @@map("users")
+}
+
+model Trip {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  countries   String   // JSON string of countries visited
+  cities      String   // JSON string of cities visited
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  hotels      Hotel[]
+  restaurants Restaurant[]
+  activities  Activity[]
+  
+  @@map("trips")
+}
+
+model Hotel {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  rating      Int?     // 1-5 stars
+  review      String?
+  liked       Boolean? // true for liked, false for disliked, null for neutral
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  @@map("hotels")
+}
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  rating      Int?     // 1-5 stars
+  review      String?
+  liked       Boolean? // true for liked, false for disliked, null for neutral
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  @@map("restaurants")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  rating      Int?     // 1-5 stars
+  review      String?
+  liked       Boolean? // true for liked, false for disliked, null for neutral
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  @@map("activities")
+}

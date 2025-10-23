@@ -369,13 +369,21 @@ const mockTrips = [
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, startDate, endDate, countries, cities, hotels, restaurants, activities } = await request.json();
+    const { title, description, startDate, endDate, countries, cities, hotels, restaurants, activities, userId, userName, userEmail } = await request.json();
 
     // Validate required fields
     if (!title || !startDate || !endDate || !countries || !cities) {
       return NextResponse.json(
         { error: 'Title, start date, end date, countries, and cities are required' },
         { status: 400 }
+      );
+    }
+
+    // Validate user data
+    if (!userId || !userName || !userEmail) {
+      return NextResponse.json(
+        { error: 'User authentication required' },
+        { status: 401 }
       );
     }
 
@@ -394,14 +402,16 @@ export async function POST(request: NextRequest) {
       restaurants: restaurants || [],
       activities: activities || [],
       user: {
-        id: 'mock-user-id',
-        name: 'Current User',
-        email: 'user@example.com'
+        id: userId,
+        name: userName,
+        email: userEmail
       }
     };
 
     // Add to mock data
     mockTrips.unshift(newTrip);
+
+    console.log('Trip created successfully:', newTrip.title, 'by user:', userName);
 
     return NextResponse.json(
       { 

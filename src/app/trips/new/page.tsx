@@ -155,6 +155,16 @@ function NewTripContent() {
     setIsLoading(true);
 
     try {
+      // Get user data from localStorage
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        setError('Please log in to create a trip');
+        setIsLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userData);
+
       const response = await fetch('/api/trips', {
         method: 'POST',
         headers: {
@@ -166,7 +176,10 @@ function NewTripContent() {
           cities: formData.cities.filter(c => c.trim() !== ''),
           hotels: hotels.filter(h => h.name.trim() !== ''),
           restaurants: restaurants.filter(r => r.name.trim() !== ''),
-          activities: activities.filter(a => a.name.trim() !== '')
+          activities: activities.filter(a => a.name.trim() !== ''),
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email
         }),
       });
 

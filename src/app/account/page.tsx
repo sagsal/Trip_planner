@@ -27,49 +27,39 @@ function AccountContent() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // Get user data from localStorage
-    try {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+    const fetchUserData = async () => {
+      try {
+        // Get user data from localStorage
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          
+          // Fetch user's trips from API
+          const response = await fetch('/api/trips');
+          if (response.ok) {
+            const data = await response.json();
+            // Filter trips to show only the current user's trips
+            const userTrips = data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
+            setTrips(userTrips);
+          } else {
+            console.error('Failed to fetch trips');
+            setTrips([]);
+          }
+        } else {
+          setUser(null);
+          setTrips([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setUser(null);
+        setTrips([]);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-    }
+    };
 
-    // For now, we'll use mock data for trips since we don't have authentication set up yet
-    // In a real app, you'd fetch this from your API with proper authentication
-    const mockTrips: Trip[] = [
-      {
-        id: '1',
-        title: 'Singapore Adventure',
-        description: 'Amazing trip to Singapore with family',
-        startDate: '2024-01-15',
-        endDate: '2024-01-22',
-        countries: '["Singapore"]',
-        cities: '["Singapore"]',
-        isPublic: true,
-        createdAt: '2024-01-10',
-        hotels: [
-          { id: '1', name: 'Marina Bay Sands', rating: 5, liked: true },
-          { id: '2', name: 'Raffles Hotel', rating: 4, liked: true }
-        ],
-        restaurants: [
-          { id: '1', name: 'Hawker Center', rating: 5, liked: true },
-          { id: '2', name: 'Din Tai Fung', rating: 4, liked: true }
-        ],
-        activities: [
-          { id: '1', name: 'Gardens by the Bay', rating: 5, liked: true },
-          { id: '2', name: 'Universal Studios', rating: 4, liked: true }
-        ]
-      }
-    ];
-
-    setTimeout(() => {
-      setTrips(mockTrips);
-      setIsLoading(false);
-    }, 1000);
+    fetchUserData();
   }, []);
 
   const formatDate = (dateString: string) => {

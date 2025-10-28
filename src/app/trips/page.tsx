@@ -16,14 +16,48 @@ interface Trip {
   cities: string;
   isPublic: boolean;
   createdAt: string;
-  hotels: any[];
-  restaurants: any[];
-  activities: any[];
+  cities_data: CityData[];
   user: {
     id: string;
     name: string;
     email: string;
   };
+}
+
+interface CityData {
+  id: string;
+  name: string;
+  country: string;
+  hotels: Hotel[];
+  restaurants: Restaurant[];
+  activities: Activity[];
+}
+
+interface Hotel {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
 }
 
 function TripsContent() {
@@ -428,27 +462,36 @@ function TripsContent() {
                   </div>
                   
                   <div className="mb-4">
-                    <div className="flex items-center text-sm text-gray-600 mb-1">
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
                       <MapPin className="w-4 h-4 mr-1" />
                       {parseCountries(trip.countries).join(', ')}
                     </div>
-                    <p className="text-sm text-gray-600 ml-5">
-                      {parseCities(trip.cities).join(', ')}
-                    </p>
+                    {trip.cities_data && trip.cities_data.length > 0 && (
+                      <div className="ml-5">
+                        {trip.cities_data.map((city, index) => (
+                          <div key={city.id} className="text-sm text-gray-600 mb-1">
+                            <span className="font-medium">{city.name}</span>
+                            <span className="text-gray-500 ml-2">
+                              ({city.hotels.length} hotels, {city.restaurants.length} restaurants, {city.activities.length} activities)
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <div className="flex items-center">
                       <Star className="w-4 h-4 mr-1 text-yellow-400" />
-                      <span>{trip.hotels.length} hotels</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.hotels.length, 0) || 0} hotels</span>
                     </div>
                     <div className="flex items-center">
                       <Star className="w-4 h-4 mr-1 text-green-400" />
-                      <span>{trip.restaurants.length} restaurants</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.restaurants.length, 0) || 0} restaurants</span>
                     </div>
                     <div className="flex items-center">
                       <Star className="w-4 h-4 mr-1 text-purple-400" />
-                      <span>{trip.activities.length} activities</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.activities.length, 0) || 0} activities</span>
                     </div>
                   </div>
                   

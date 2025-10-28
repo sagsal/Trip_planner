@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Plus, Minus, MapPin, Calendar, Star, Save, X } from 'lucide-react';
+import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Hotel {
@@ -13,7 +13,6 @@ interface Hotel {
   rating: number;
   review: string;
   liked: boolean | null;
-  city: string;
 }
 
 interface Restaurant {
@@ -23,7 +22,6 @@ interface Restaurant {
   rating: number;
   review: string;
   liked: boolean | null;
-  city: string;
 }
 
 interface Activity {
@@ -33,26 +31,75 @@ interface Activity {
   rating: number;
   review: string;
   liked: boolean | null;
-  city: string;
+}
+
+interface CityData {
+  id: string;
+  name: string;
+  country: string;
+  hotels: Hotel[];
+  restaurants: Restaurant[];
+  activities: Activity[];
 }
 
 function NewTripContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [user, setUser] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     startDate: '',
     endDate: '',
-    countries: [''],
-    cities: ['']
+    countries: ['']
   });
 
-  const [hotels, setHotels] = useState<Hotel[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [citiesData, setCitiesData] = useState<CityData[]>([]);
+
+  // State for adding new city
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+
+  // Load user data from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      // Redirect to login if no user data
+      router.push('/login');
+    }
+  }, [router]);
+
+  // Common countries and cities data
+  const countriesData = {
+    'Colombia': ['Medellín', 'Bogotá', 'Cartagena', 'Cali', 'Barranquilla'],
+    'Spain': ['Madrid', 'Barcelona', 'Seville', 'Valencia', 'Bilbao'],
+    'France': ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse'],
+    'Italy': ['Rome', 'Milan', 'Florence', 'Venice', 'Naples'],
+    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Hiroshima', 'Nagoya'],
+    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Krabi'],
+    'Mexico': ['Mexico City', 'Cancun', 'Guadalajara', 'Tijuana', 'Puebla'],
+    'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza'],
+    'India': ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'],
+    'Germany': ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt'],
+    'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Liverpool', 'Edinburgh'],
+    'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'],
+    'Canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
+    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
+    'Other': []
+  };
+
+  const toggleSection = (cityId: string, section: string) => {
+    const key = `${cityId}-${section}`;
+    setExpandedSections(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -62,91 +109,150 @@ function NewTripContent() {
     }));
   };
 
-  const handleArrayChange = (field: 'countries' | 'cities', index: number, value: string) => {
+  const handleArrayChange = (field: 'countries', index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].map((item, i) => i === index ? value : item)
     }));
   };
 
-  const addArrayItem = (field: 'countries' | 'cities') => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: [...prev[field], '']
-    }));
+  const addCity = () => {
+    if (!selectedCountry || !selectedCity) return;
+    
+    const newCity: CityData = {
+      id: Date.now().toString(),
+      name: selectedCity,
+      country: selectedCountry,
+      hotels: [],
+      restaurants: [],
+      activities: []
+    };
+    setCitiesData(prev => [...prev, newCity]);
+    
+    // Reset selections
+    setSelectedCountry('');
+    setSelectedCity('');
   };
 
-  const removeArrayItem = (field: 'countries' | 'cities', index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
-    }));
+  const removeCity = (cityId: string) => {
+    setCitiesData(prev => prev.filter(city => city.id !== cityId));
   };
 
-  const addHotel = (city: string) => {
-    setHotels(prev => [...prev, {
+  const updateCity = (cityId: string, field: keyof CityData, value: any) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId ? { ...city, [field]: value } : city
+    ));
+  };
+
+  const addHotel = (cityId: string) => {
+    const newHotel: Hotel = {
       id: Date.now().toString(),
       name: '',
       location: '',
       rating: 0,
       review: '',
-      liked: null,
-      city: city
-    }]);
-  };
-
-  const updateHotel = (id: string, field: keyof Hotel, value: any) => {
-    setHotels(prev => prev.map(hotel => 
-      hotel.id === id ? { ...hotel, [field]: value } : hotel
+      liked: null
+    };
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { ...city, hotels: [...city.hotels, newHotel] }
+        : city
     ));
   };
 
-  const removeHotel = (id: string) => {
-    setHotels(prev => prev.filter(hotel => hotel.id !== id));
+  const updateHotel = (cityId: string, hotelId: string, field: keyof Hotel, value: any) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { 
+            ...city, 
+            hotels: city.hotels.map(hotel => 
+              hotel.id === hotelId ? { ...hotel, [field]: value } : hotel
+            )
+          }
+        : city
+    ));
   };
 
-  const addRestaurant = (city: string) => {
-    setRestaurants(prev => [...prev, {
+  const removeHotel = (cityId: string, hotelId: string) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { ...city, hotels: city.hotels.filter(hotel => hotel.id !== hotelId) }
+        : city
+    ));
+  };
+
+  const addRestaurant = (cityId: string) => {
+    const newRestaurant: Restaurant = {
       id: Date.now().toString(),
       name: '',
       location: '',
       rating: 0,
       review: '',
-      liked: null,
-      city: city
-    }]);
-  };
-
-  const updateRestaurant = (id: string, field: keyof Restaurant, value: any) => {
-    setRestaurants(prev => prev.map(restaurant => 
-      restaurant.id === id ? { ...restaurant, [field]: value } : restaurant
+      liked: null
+    };
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { ...city, restaurants: [...city.restaurants, newRestaurant] }
+        : city
     ));
   };
 
-  const removeRestaurant = (id: string) => {
-    setRestaurants(prev => prev.filter(restaurant => restaurant.id !== id));
+  const updateRestaurant = (cityId: string, restaurantId: string, field: keyof Restaurant, value: any) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { 
+            ...city, 
+            restaurants: city.restaurants.map(restaurant => 
+              restaurant.id === restaurantId ? { ...restaurant, [field]: value } : restaurant
+            )
+          }
+        : city
+    ));
   };
 
-  const addActivity = (city: string) => {
-    setActivities(prev => [...prev, {
+  const removeRestaurant = (cityId: string, restaurantId: string) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { ...city, restaurants: city.restaurants.filter(restaurant => restaurant.id !== restaurantId) }
+        : city
+    ));
+  };
+
+  const addActivity = (cityId: string) => {
+    const newActivity: Activity = {
       id: Date.now().toString(),
       name: '',
       location: '',
       rating: 0,
       review: '',
-      liked: null,
-      city: city
-    }]);
-  };
-
-  const updateActivity = (id: string, field: keyof Activity, value: any) => {
-    setActivities(prev => prev.map(activity => 
-      activity.id === id ? { ...activity, [field]: value } : activity
+      liked: null
+    };
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { ...city, activities: [...city.activities, newActivity] }
+        : city
     ));
   };
 
-  const removeActivity = (id: string) => {
-    setActivities(prev => prev.filter(activity => activity.id !== id));
+  const updateActivity = (cityId: string, activityId: string, field: keyof Activity, value: any) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { 
+            ...city, 
+            activities: city.activities.map(activity => 
+              activity.id === activityId ? { ...activity, [field]: value } : activity
+            )
+          }
+        : city
+    ));
+  };
+
+  const removeActivity = (cityId: string, activityId: string) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { ...city, activities: city.activities.filter(activity => activity.id !== activityId) }
+        : city
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,16 +260,36 @@ function NewTripContent() {
     setError('');
     setIsLoading(true);
 
+    if (!user) {
+      setError('Please log in to create a trip');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // Get user data from localStorage
-      const userData = localStorage.getItem('user');
-      if (!userData) {
-        setError('Please log in to create a trip');
+
+      // Debug: Log what we're sending
+      console.log('Cities Data being sent:', citiesData);
+      console.log('Filtered Cities Data:', citiesData.map(city => ({
+        name: city.name,
+        country: city.country,
+        hotels: city.hotels.filter(h => h.name.trim() !== ''),
+        restaurants: city.restaurants.filter(r => r.name.trim() !== ''),
+        activities: city.activities.filter(a => a.name.trim() !== '')
+      })));
+
+      // Check if any cities have items but they're empty
+      const hasEmptyItems = citiesData.some(city => 
+        (city.hotels.length > 0 && city.hotels.every(h => h.name.trim() === '')) ||
+        (city.restaurants.length > 0 && city.restaurants.every(r => r.name.trim() === '')) ||
+        (city.activities.length > 0 && city.activities.every(a => a.name.trim() === ''))
+      );
+
+      if (hasEmptyItems) {
+        setError('Please fill in the names for all hotels, restaurants, and activities before saving.');
         setIsLoading(false);
         return;
       }
-
-      const user = JSON.parse(userData);
 
       const response = await fetch('/api/trips', {
         method: 'POST',
@@ -173,10 +299,13 @@ function NewTripContent() {
         body: JSON.stringify({
           ...formData,
           countries: formData.countries.filter(c => c.trim() !== ''),
-          cities: formData.cities.filter(c => c.trim() !== ''),
-          hotels: hotels.filter(h => h.name.trim() !== ''),
-          restaurants: restaurants.filter(r => r.name.trim() !== ''),
-          activities: activities.filter(a => a.name.trim() !== ''),
+          citiesData: citiesData.map(city => ({
+            name: city.name,
+            country: city.country,
+            hotels: city.hotels.filter(h => h.name.trim() !== ''),
+            restaurants: city.restaurants.filter(r => r.name.trim() !== ''),
+            activities: city.activities.filter(a => a.name.trim() !== '')
+          })),
           userId: user.id,
           userName: user.name,
           userEmail: user.email
@@ -280,393 +409,573 @@ function NewTripContent() {
                 </div>
               </div>
 
-              {/* Countries */}
+              {/* Country */}
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Countries Visited *
+                  Country *
                 </label>
-                {formData.countries.map((country, index) => (
-                  <div key={index} className="flex items-center space-x-2 mb-2">
-                    <input
-                      type="text"
-                      value={country}
-                      onChange={(e) => handleArrayChange('countries', index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                      placeholder="Enter country name"
-                    />
-                    {formData.countries.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeArrayItem('countries', index)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addArrayItem('countries')}
-                  className="flex items-center text-blue-600 hover:text-blue-700 mt-2"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Country
-                </button>
-              </div>
-
-              {/* Cities */}
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cities Visited *
-                </label>
-                {formData.cities.map((city, index) => (
-                  <div key={index} className="flex items-center space-x-2 mb-2">
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => handleArrayChange('cities', index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                      placeholder="Enter city name"
-                    />
-                    {formData.cities.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeArrayItem('cities', index)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addArrayItem('cities')}
-                  className="flex items-center text-blue-600 hover:text-blue-700 mt-2"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add City
-                </button>
+                <input
+                  type="text"
+                  name="country"
+                  value={formData.countries[0] || ''}
+                  onChange={(e) => handleArrayChange('countries', 0, e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                  placeholder="Enter country name"
+                />
               </div>
             </div>
 
-            {/* Hotels */}
+            {/* Cities and their data */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Hotels</h2>
-                <button
-                  type="button"
-                  onClick={() => addHotel('')}
-                  className="flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Hotel
-                </button>
+                <h2 className="text-xl font-semibold text-gray-900">Cities & Details</h2>
               </div>
 
-              {hotels.map((hotel) => (
-                <div key={hotel.id} className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">Hotel Details</h3>
+              {/* Country & City Selection */}
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-8 mb-8 border border-blue-200">
+                <div className="text-center mb-6">
+                  <div className="text-6xl mb-4">🌍</div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-2">Select Your Destination</h3>
+                  <p className="text-gray-600 text-lg">First choose a country, then select a city!</p>
+                </div>
+                
+                <div className="max-w-2xl mx-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        🌍 Country *
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                        value={selectedCountry}
+                        onChange={(e) => {
+                          setSelectedCountry(e.target.value);
+                          setSelectedCity(''); // Reset city when country changes
+                        }}
+                      >
+                        <option value="">Select a country...</option>
+                        {Object.keys(countriesData).map(country => (
+                          <option key={country} value={country}>{country}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        🏙️ City *
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                        value={selectedCity}
+                        onChange={(e) => setSelectedCity(e.target.value)}
+                        disabled={!selectedCountry}
+                      >
+                        <option value="">Select a city...</option>
+                        {selectedCountry && countriesData[selectedCountry as keyof typeof countriesData]?.map(city => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                        {selectedCountry && (
+                          <option value="custom">+ Add custom city</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Custom city input */}
+                  {selectedCity === 'custom' && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        🏙️ Custom City Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter custom city name"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const input = e.target as HTMLInputElement;
+                            if (input.value.trim()) {
+                              setSelectedCity(input.value.trim());
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="text-center">
                     <button
                       type="button"
-                      onClick={() => removeHotel(hotel.id)}
-                      className="text-red-600 hover:text-red-700"
+                      onClick={addCity}
+                      disabled={!selectedCountry || !selectedCity}
+                      className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      <X className="w-4 h-4" />
+                      Add City ✨
                     </button>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                      <input
-                        type="text"
-                        value={hotel.name}
-                        onChange={(e) => updateHotel(hotel.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="Hotel name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={hotel.location}
-                        onChange={(e) => updateHotel(hotel.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="City, Country"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div className="flex items-center space-x-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => updateHotel(hotel.id, 'rating', rating)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            hotel.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          <Star className="w-5 h-5 fill-current" />
-                        </button>
-                      ))}
+                </div>
+              </div>
+
+              {/* Show message when no cities */}
+              {citiesData.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-8 max-w-2xl mx-auto border border-gray-200">
+                    <div className="text-6xl mb-4">🏙️</div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Ready to Plan Your Trip?</h3>
+                    <p className="text-gray-600 mb-6">Add your first city above to unlock all the planning features!</p>
+                    
+                    {/* Interactive Preview */}
+                    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-4">✨ What happens after adding a city:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="text-2xl mb-2">🏨</div>
+                          <div className="font-medium text-blue-900">Hotels</div>
+                          <div className="text-blue-700">Add multiple hotels</div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-2xl mb-2">🍽️</div>
+                          <div className="font-medium text-green-900">Restaurants</div>
+                          <div className="text-green-700">Add multiple restaurants</div>
+                        </div>
+                        <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="text-2xl mb-2">🎯</div>
+                          <div className="font-medium text-purple-900">Activities</div>
+                          <div className="text-purple-700">Add multiple activities</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                    <textarea
-                      value={hotel.review}
-                      onChange={(e) => updateHotel(hotel.id, 'review', e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                      placeholder="What did you think about this hotel?"
-                    />
+                </div>
+              )}
+
+              {citiesData.map((city, cityIndex) => (
+                <div key={city.id} className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
+                  {/* City Header */}
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {cityIndex + 1}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
+                        <p className="text-gray-600">📍 {city.country}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeCity(city.id)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience</label>
-                    <div className="flex space-x-4">
+
+                  {/* Expandable Sections */}
+                  <div className="space-y-4">
+                    {/* Hotels Section */}
+                    <div className="border border-gray-200 rounded-lg">
                       <button
                         type="button"
-                        onClick={() => updateHotel(hotel.id, 'liked', true)}
-                        className={`px-4 py-2 rounded-lg ${
-                          hotel.liked === true ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}
+                        onClick={() => toggleSection(city.id, 'hotels')}
+                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
                       >
-                        Loved it
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">🏨</span>
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900">Hotels</h4>
+                            <p className="text-sm text-gray-600">{city.hotels.length} hotel{city.hotels.length !== 1 ? 's' : ''} added</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            {city.hotels.length}
+                          </span>
+                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-hotels`] ? 'rotate-180' : ''}`} />
+                        </div>
                       </button>
+                      
+                      {expandedSections[`${city.id}-hotels`] && (
+                        <div className="border-t border-gray-200 p-4 bg-gray-50">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-gray-600">Add hotels for {city.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => addHotel(city.id)}
+                              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Hotel
+                            </button>
+                          </div>
+                    {city.hotels.map((hotel, index) => (
+                      <div key={hotel.id} className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 mb-4 border border-blue-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-xl">🏨</span>
+                            <h5 className="font-semibold text-gray-800">Hotel {index + 1}</h5>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeHotel(city.id, hotel.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                            <input
+                              type="text"
+                              value={hotel.name}
+                              onChange={(e) => updateHotel(city.id, hotel.id, 'name', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
+                              placeholder="Hotel name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                            <input
+                              type="text"
+                              value={hotel.location}
+                              onChange={(e) => updateHotel(city.id, hotel.id, 'location', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
+                              placeholder="Address"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                          <div className="flex items-center space-x-2">
+                            {[1, 2, 3, 4, 5].map((rating) => (
+                              <button
+                                key={rating}
+                                type="button"
+                                onClick={() => updateHotel(city.id, hotel.id, 'rating', rating)}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                  hotel.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                }`}
+                              >
+                                <Star className="w-4 h-4 fill-current" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
+                          <textarea
+                            value={hotel.review}
+                            onChange={(e) => updateHotel(city.id, hotel.id, 'review', e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                            placeholder="What did you think about this hotel?"
+                          />
+                        </div>
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience</label>
+                          <div className="flex space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => updateHotel(city.id, hotel.id, 'liked', true)}
+                              className={`px-3 py-1 rounded-lg text-sm ${
+                                hotel.liked === true ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              Loved it
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateHotel(city.id, hotel.id, 'liked', false)}
+                              className={`px-3 py-1 rounded-lg text-sm ${
+                                hotel.liked === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              Not great
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Restaurants Section */}
+                    <div className="border border-gray-200 rounded-lg">
                       <button
                         type="button"
-                        onClick={() => updateHotel(hotel.id, 'liked', false)}
-                        className={`px-4 py-2 rounded-lg ${
-                          hotel.liked === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
-                        }`}
+                        onClick={() => toggleSection(city.id, 'restaurants')}
+                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
                       >
-                        Not great
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">🍽️</span>
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900">Restaurants</h4>
+                            <p className="text-sm text-gray-600">{city.restaurants.length} restaurant{city.restaurants.length !== 1 ? 's' : ''} added</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                            {city.restaurants.length}
+                          </span>
+                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-restaurants`] ? 'rotate-180' : ''}`} />
+                        </div>
                       </button>
+                      
+                      {expandedSections[`${city.id}-restaurants`] && (
+                        <div className="border-t border-gray-200 p-4 bg-gray-50">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-gray-600">Add restaurants for {city.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => addRestaurant(city.id)}
+                              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Restaurant
+                            </button>
+                          </div>
+                          {city.restaurants.map((restaurant, index) => (
+                            <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-5 mb-4 border border-green-200">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-xl">🍽️</span>
+                                  <h5 className="font-semibold text-gray-800">Restaurant {index + 1}</h5>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeRestaurant(city.id, restaurant.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                  <input
+                                    type="text"
+                                    value={restaurant.name}
+                                    onChange={(e) => updateRestaurant(city.id, restaurant.id, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                                    placeholder="Restaurant name"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    value={restaurant.location}
+                                    onChange={(e) => updateRestaurant(city.id, restaurant.id, 'location', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                                    placeholder="Address"
+                                  />
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                                <div className="flex items-center space-x-2">
+                                  {[1, 2, 3, 4, 5].map((rating) => (
+                                    <button
+                                      key={rating}
+                                      type="button"
+                                      onClick={() => updateRestaurant(city.id, restaurant.id, 'rating', rating)}
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                        restaurant.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                      }`}
+                                    >
+                                      <Star className="w-4 h-4 fill-current" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
+                                <textarea
+                                  value={restaurant.review}
+                                  onChange={(e) => updateRestaurant(city.id, restaurant.id, 'review', e.target.value)}
+                                  rows={2}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                                  placeholder="What did you think about this restaurant?"
+                                />
+                              </div>
+                              <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience</label>
+                                <div className="flex space-x-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateRestaurant(city.id, restaurant.id, 'liked', true)}
+                                    className={`px-3 py-1 rounded-lg text-sm ${
+                                      restaurant.liked === true ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    Loved it
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateRestaurant(city.id, restaurant.id, 'liked', false)}
+                                    className={`px-3 py-1 rounded-lg text-sm ${
+                                      restaurant.liked === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    Not great
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Activities Section */}
+                    <div className="border border-gray-200 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(city.id, 'activities')}
+                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">🎯</span>
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900">Activities</h4>
+                            <p className="text-sm text-gray-600">{city.activities.length} activit{city.activities.length !== 1 ? 'ies' : 'y'} added</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                            {city.activities.length}
+                          </span>
+                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-activities`] ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+                      
+                      {expandedSections[`${city.id}-activities`] && (
+                        <div className="border-t border-gray-200 p-4 bg-gray-50">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-gray-600">Add activities for {city.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => addActivity(city.id)}
+                              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Activity
+                            </button>
+                          </div>
+                          {city.activities.map((activity, index) => (
+                            <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-5 mb-4 border border-purple-200">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-xl">🎯</span>
+                                  <h5 className="font-semibold text-gray-800">Activity {index + 1}</h5>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeActivity(city.id, activity.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                  <input
+                                    type="text"
+                                    value={activity.name}
+                                    onChange={(e) => updateActivity(city.id, activity.id, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                                    placeholder="Activity name"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    value={activity.location}
+                                    onChange={(e) => updateActivity(city.id, activity.id, 'location', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                                    placeholder="Address"
+                                  />
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                                <div className="flex items-center space-x-2">
+                                  {[1, 2, 3, 4, 5].map((rating) => (
+                                    <button
+                                      key={rating}
+                                      type="button"
+                                      onClick={() => updateActivity(city.id, activity.id, 'rating', rating)}
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                        activity.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                      }`}
+                                    >
+                                      <Star className="w-4 h-4 fill-current" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
+                                <textarea
+                                  value={activity.review}
+                                  onChange={(e) => updateActivity(city.id, activity.id, 'review', e.target.value)}
+                                  rows={2}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                                  placeholder="What did you think about this activity?"
+                                />
+                              </div>
+                              <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience</label>
+                                <div className="flex space-x-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateActivity(city.id, activity.id, 'liked', true)}
+                                    className={`px-3 py-1 rounded-lg text-sm ${
+                                      activity.liked === true ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    Loved it
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateActivity(city.id, activity.id, 'liked', false)}
+                                    className={`px-3 py-1 rounded-lg text-sm ${
+                                      activity.liked === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    Not great
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
-            </div>
 
-            {/* Restaurants */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Restaurants</h2>
-                <button
-                  type="button"
-                  onClick={() => addRestaurant('')}
-                  className="flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Restaurant
-                </button>
-              </div>
-
-              {restaurants.map((restaurant) => (
-                <div key={restaurant.id} className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">Restaurant Details</h3>
-                    <button
-                      type="button"
-                      onClick={() => removeRestaurant(restaurant.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                      <input
-                        type="text"
-                        value={restaurant.name}
-                        onChange={(e) => updateRestaurant(restaurant.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="Restaurant name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={restaurant.location}
-                        onChange={(e) => updateRestaurant(restaurant.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="City, Country"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div className="flex items-center space-x-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => updateRestaurant(restaurant.id, 'rating', rating)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            restaurant.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          <Star className="w-5 h-5 fill-current" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                    <textarea
-                      value={restaurant.review}
-                      onChange={(e) => updateRestaurant(restaurant.id, 'review', e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                      placeholder="What did you think about this restaurant?"
-                    />
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience</label>
-                    <div className="flex space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => updateRestaurant(restaurant.id, 'liked', true)}
-                        className={`px-4 py-2 rounded-lg ${
-                          restaurant.liked === true ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        Loved it
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateRestaurant(restaurant.id, 'liked', false)}
-                        className={`px-4 py-2 rounded-lg ${
-                          restaurant.liked === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        Not great
-                      </button>
-                    </div>
-                  </div>
+              {/* Add Another City Button */}
+              {citiesData.length > 0 && (
+                <div className="text-center mt-8">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Scroll to top to show the country/city selection
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all font-semibold text-lg shadow-lg"
+                  >
+                    🌍 Add Another City
+                  </button>
+                  <p className="text-sm text-gray-600 mt-2">Click to add more cities to your trip</p>
                 </div>
-              ))}
-            </div>
-
-            {/* Activities */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Activities</h2>
-                <button
-                  type="button"
-                  onClick={() => addActivity('')}
-                  className="flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Activity
-                </button>
-              </div>
-
-              {activities.map((activity) => (
-                <div key={activity.id} className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">Activity Details</h3>
-                    <button
-                      type="button"
-                      onClick={() => removeActivity(activity.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                      <input
-                        type="text"
-                        value={activity.name}
-                        onChange={(e) => updateActivity(activity.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="Activity name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={activity.location}
-                        onChange={(e) => updateActivity(activity.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="City, Country"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div className="flex items-center space-x-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => updateActivity(activity.id, 'rating', rating)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            activity.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          <Star className="w-5 h-5 fill-current" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                    <textarea
-                      value={activity.review}
-                      onChange={(e) => updateActivity(activity.id, 'review', e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                      placeholder="What did you think about this activity?"
-                    />
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience</label>
-                    <div className="flex space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => updateActivity(activity.id, 'liked', true)}
-                        className={`px-4 py-2 rounded-lg ${
-                          activity.liked === true ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        Loved it
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateActivity(activity.id, 'liked', false)}
-                        className={`px-4 py-2 rounded-lg ${
-                          activity.liked === false ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        Not great
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              )}
             </div>
 
             {/* Error Message */}

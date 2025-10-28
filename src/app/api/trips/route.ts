@@ -372,12 +372,12 @@ const mockTrips = [
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, startDate, endDate, countries, cities, hotels, restaurants, activities, userId, userName, userEmail } = await request.json();
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail } = await request.json();
 
     // Validate required fields
-    if (!title || !startDate || !endDate || !countries || !cities) {
+    if (!title || !startDate || !endDate || !countries) {
       return NextResponse.json(
-        { error: 'Title, start date, end date, countries, and cities are required' },
+        { error: 'Title, start date, end date, and country are required' },
         { status: 400 }
       );
     }
@@ -390,7 +390,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create trip in database
+    // Create trip in database with hierarchical structure
     const newTrip = await prisma.trip.create({
       data: {
         title,
@@ -398,42 +398,52 @@ export async function POST(request: NextRequest) {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         countries: JSON.stringify(countries),
-        cities: JSON.stringify(cities),
+        cities: cities ? JSON.stringify(cities) : JSON.stringify([]),
         isPublic: true,
         userId: userId,
-        hotels: {
-          create: (hotels || []).map(hotel => ({
-            name: hotel.name,
-            location: hotel.location,
-            rating: hotel.rating,
-            review: hotel.review,
-            liked: hotel.liked
-          }))
-        },
-        restaurants: {
-          create: (restaurants || []).map(restaurant => ({
-            name: restaurant.name,
-            location: restaurant.location,
-            rating: restaurant.rating,
-            review: restaurant.review,
-            liked: restaurant.liked
-          }))
-        },
-        activities: {
-          create: (activities || []).map(activity => ({
-            name: activity.name,
-            location: activity.location,
-            rating: activity.rating,
-            review: activity.review,
-            liked: activity.liked
+        cities_data: {
+          create: (citiesData || []).map((cityData: any) => ({
+            name: cityData.name,
+            country: cityData.country,
+            hotels: {
+              create: (cityData.hotels || []).map((hotel: any) => ({
+                name: hotel.name,
+                location: hotel.location,
+                rating: hotel.rating,
+                review: hotel.review,
+                liked: hotel.liked
+              }))
+            },
+            restaurants: {
+              create: (cityData.restaurants || []).map((restaurant: any) => ({
+                name: restaurant.name,
+                location: restaurant.location,
+                rating: restaurant.rating,
+                review: restaurant.review,
+                liked: restaurant.liked
+              }))
+            },
+            activities: {
+              create: (cityData.activities || []).map((activity: any) => ({
+                name: activity.name,
+                location: activity.location,
+                rating: activity.rating,
+                review: activity.review,
+                liked: activity.liked
+              }))
+            }
           }))
         }
       },
       include: {
         user: true,
-        hotels: true,
-        restaurants: true,
-        activities: true
+        cities_data: {
+          include: {
+            hotels: true,
+            restaurants: true,
+            activities: true
+          }
+        }
       }
     });
 
@@ -468,9 +478,13 @@ export async function GET(request: NextRequest) {
       where: { isPublic: true },
       include: {
         user: true,
-        hotels: true,
-        restaurants: true,
-        activities: true
+        cities_data: {
+          include: {
+            hotels: true,
+            restaurants: true,
+            activities: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' },
       skip,

@@ -17,14 +17,48 @@ interface Trip {
   cities: string;
   isPublic: boolean;
   createdAt: string;
-  hotels: any[];
-  restaurants: any[];
-  activities: any[];
+  cities_data: CityData[];
   user: {
     id: string;
     name: string;
     email: string;
   };
+}
+
+interface CityData {
+  id: string;
+  name: string;
+  country: string;
+  hotels: Hotel[];
+  restaurants: Restaurant[];
+  activities: Activity[];
+}
+
+interface Hotel {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
 }
 
 function TripDetailContent() {
@@ -218,87 +252,101 @@ function TripDetailContent() {
             </div>
           </div>
 
-          {/* Hotels */}
-          {trip.hotels.length > 0 && (
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Hotels</h2>
-              <div className="space-y-6">
-                {trip.hotels.map((hotel) => (
-                  <div key={hotel.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900">{hotel.name}</h3>
-                        {hotel.location && (
-                          <p className="text-gray-600">{hotel.location}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        {hotel.rating > 0 && renderStars(hotel.rating)}
-                        {renderLikeButton(hotel.liked)}
-                      </div>
-                    </div>
-                    {hotel.review && (
-                      <p className="text-gray-700 leading-relaxed">{hotel.review}</p>
-                    )}
+          {/* Cities and their details */}
+          {trip.cities_data && trip.cities_data.length > 0 && (
+            <div className="space-y-8">
+              {trip.cities_data.map((city) => (
+                <div key={city.id} className="bg-white rounded-lg shadow-lg p-8">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{city.name}</h2>
+                    <p className="text-gray-600">{city.country}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Restaurants */}
-          {trip.restaurants.length > 0 && (
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Restaurants</h2>
-              <div className="space-y-6">
-                {trip.restaurants.map((restaurant) => (
-                  <div key={restaurant.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900">{restaurant.name}</h3>
-                        {restaurant.location && (
-                          <p className="text-gray-600">{restaurant.location}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        {restaurant.rating > 0 && renderStars(restaurant.rating)}
-                        {renderLikeButton(restaurant.liked)}
+                  {/* Hotels for this city */}
+                  {city.hotels.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Hotels</h3>
+                      <div className="space-y-4">
+                        {city.hotels.map((hotel) => (
+                          <div key={hotel.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
+                                {hotel.location && (
+                                  <p className="text-gray-600 text-sm">{hotel.location}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-3">
+                                {hotel.rating && hotel.rating > 0 && renderStars(hotel.rating)}
+                                {renderLikeButton(hotel.liked ?? null)}
+                              </div>
+                            </div>
+                            {hotel.review && (
+                              <p className="text-gray-700 text-sm leading-relaxed">{hotel.review}</p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    {restaurant.review && (
-                      <p className="text-gray-700 leading-relaxed">{restaurant.review}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  )}
 
-          {/* Activities */}
-          {trip.activities.length > 0 && (
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Activities</h2>
-              <div className="space-y-6">
-                {trip.activities.map((activity) => (
-                  <div key={activity.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900">{activity.name}</h3>
-                        {activity.location && (
-                          <p className="text-gray-600">{activity.location}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        {activity.rating > 0 && renderStars(activity.rating)}
-                        {renderLikeButton(activity.liked)}
+                  {/* Restaurants for this city */}
+                  {city.restaurants.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Restaurants</h3>
+                      <div className="space-y-4">
+                        {city.restaurants.map((restaurant) => (
+                          <div key={restaurant.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900">{restaurant.name}</h4>
+                                {restaurant.location && (
+                                  <p className="text-gray-600 text-sm">{restaurant.location}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-3">
+                                {restaurant.rating && restaurant.rating > 0 && renderStars(restaurant.rating)}
+                                {renderLikeButton(restaurant.liked ?? null)}
+                              </div>
+                            </div>
+                            {restaurant.review && (
+                              <p className="text-gray-700 text-sm leading-relaxed">{restaurant.review}</p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    {activity.review && (
-                      <p className="text-gray-700 leading-relaxed">{activity.review}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  )}
+
+                  {/* Activities for this city */}
+                  {city.activities.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Activities</h3>
+                      <div className="space-y-4">
+                        {city.activities.map((activity) => (
+                          <div key={activity.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900">{activity.name}</h4>
+                                {activity.location && (
+                                  <p className="text-gray-600 text-sm">{activity.location}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-3">
+                                {activity.rating && activity.rating > 0 && renderStars(activity.rating)}
+                                {renderLikeButton(activity.liked ?? null)}
+                              </div>
+                            </div>
+                            {activity.review && (
+                              <p className="text-gray-700 text-sm leading-relaxed">{activity.review}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 

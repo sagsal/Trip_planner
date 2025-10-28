@@ -381,9 +381,13 @@ export async function GET(
       where: { id },
       include: {
         user: true,
-        hotels: true,
-        restaurants: true,
-        activities: true
+        cities_data: {
+          include: {
+            hotels: true,
+            restaurants: true,
+            activities: true
+          }
+        }
       }
     });
 
@@ -421,16 +425,14 @@ export async function PUT(
       countries,
       cities,
       isPublic,
-      hotels,
-      restaurants,
-      activities,
+      citiesData,
       userId,
       userName,
       userEmail
     } = body;
 
     // Validate required fields
-    if (!title || !startDate || !endDate || !countries || !cities) {
+    if (!title || !startDate || !endDate || !countries) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -468,56 +470,52 @@ export async function PUT(
           startDate: new Date(startDate),
           endDate: new Date(endDate),
           countries,
-          cities,
+          cities: cities || JSON.stringify([]),
           isPublic
         }
       });
 
-      // Delete existing related records
-      await tx.hotel.deleteMany({ where: { tripId: id } });
-      await tx.restaurant.deleteMany({ where: { tripId: id } });
-      await tx.activity.deleteMany({ where: { tripId: id } });
+      // Delete existing cities and their related records (cascade will handle hotels, restaurants, activities)
+      await tx.city.deleteMany({ where: { tripId: id } });
 
-      // Create new hotels
-      if (hotels && hotels.length > 0) {
-        await tx.hotel.createMany({
-          data: hotels.map((hotel: any) => ({
-            name: hotel.name,
-            location: hotel.location,
-            rating: hotel.rating,
-            review: hotel.review,
-            liked: hotel.liked,
-            tripId: id
-          }))
-        });
-      }
-
-      // Create new restaurants
-      if (restaurants && restaurants.length > 0) {
-        await tx.restaurant.createMany({
-          data: restaurants.map((restaurant: any) => ({
-            name: restaurant.name,
-            location: restaurant.location,
-            rating: restaurant.rating,
-            review: restaurant.review,
-            liked: restaurant.liked,
-            tripId: id
-          }))
-        });
-      }
-
-      // Create new activities
-      if (activities && activities.length > 0) {
-        await tx.activity.createMany({
-          data: activities.map((activity: any) => ({
-            name: activity.name,
-            location: activity.location,
-            rating: activity.rating,
-            review: activity.review,
-            liked: activity.liked,
-            tripId: id
-          }))
-        });
+      // Create new cities with their data
+      if (citiesData && citiesData.length > 0) {
+        for (const cityData of citiesData) {
+          const city = await tx.city.create({
+            data: {
+              name: cityData.name,
+              country: cityData.country,
+              tripId: id,
+              hotels: {
+                create: (cityData.hotels || []).map((hotel: any) => ({
+                  name: hotel.name,
+                  location: hotel.location,
+                  rating: hotel.rating,
+                  review: hotel.review,
+                  liked: hotel.liked
+                }))
+              },
+              restaurants: {
+                create: (cityData.restaurants || []).map((restaurant: any) => ({
+                  name: restaurant.name,
+                  location: restaurant.location,
+                  rating: restaurant.rating,
+                  review: restaurant.review,
+                  liked: restaurant.liked
+                }))
+              },
+              activities: {
+                create: (cityData.activities || []).map((activity: any) => ({
+                  name: activity.name,
+                  location: activity.location,
+                  rating: activity.rating,
+                  review: activity.review,
+                  liked: activity.liked
+                }))
+              }
+            }
+          });
+        }
       }
 
       return trip;

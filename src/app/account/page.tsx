@@ -16,9 +16,43 @@ interface Trip {
   cities: string;
   isPublic: boolean;
   createdAt: string;
-  hotels: any[];
-  restaurants: any[];
-  activities: any[];
+  cities_data: CityData[];
+}
+
+interface CityData {
+  id: string;
+  name: string;
+  country: string;
+  hotels: Hotel[];
+  restaurants: Restaurant[];
+  activities: Activity[];
+}
+
+interface Hotel {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
 }
 
 function AccountContent() {
@@ -201,7 +235,7 @@ function AccountContent() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Hotels Reviewed</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {trips.reduce((acc, trip) => acc + trip.hotels.length, 0)}
+                  {trips.reduce((acc, trip) => acc + (trip.cities_data?.reduce((cityTotal, city) => cityTotal + city.hotels.length, 0) || 0), 0)}
                 </p>
               </div>
             </div>
@@ -212,7 +246,7 @@ function AccountContent() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Restaurants</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {trips.reduce((acc, trip) => acc + trip.restaurants.length, 0)}
+                  {trips.reduce((acc, trip) => acc + (trip.cities_data?.reduce((cityTotal, city) => cityTotal + city.restaurants.length, 0) || 0), 0)}
                 </p>
               </div>
             </div>
@@ -223,7 +257,7 @@ function AccountContent() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Activities</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {trips.reduce((acc, trip) => acc + trip.activities.length, 0)}
+                  {trips.reduce((acc, trip) => acc + (trip.cities_data?.reduce((cityTotal, city) => cityTotal + city.activities.length, 0) || 0), 0)}
                 </p>
               </div>
             </div>
@@ -296,9 +330,9 @@ function AccountContent() {
                     </div>
                     
                     <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{trip.hotels.length} hotels</span>
-                      <span>{trip.restaurants.length} restaurants</span>
-                      <span>{trip.activities.length} activities</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.hotels.length, 0) || 0} hotels</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.restaurants.length, 0) || 0} restaurants</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.activities.length, 0) || 0} activities</span>
                     </div>
                     
                     <div className="flex space-x-2">

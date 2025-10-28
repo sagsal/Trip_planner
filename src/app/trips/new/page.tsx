@@ -447,7 +447,7 @@ function NewTripContent() {
                         🌍 Country *
                       </label>
                       <select
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
                         value={selectedCountry}
                         onChange={(e) => {
                           setSelectedCountry(e.target.value);
@@ -465,7 +465,7 @@ function NewTripContent() {
                         🏙️ City *
                       </label>
                       <select
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
                         value={selectedCity}
                         onChange={(e) => setSelectedCity(e.target.value)}
                         disabled={!selectedCountry}

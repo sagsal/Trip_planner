@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+// Set route runtime config to ensure proper timeout handling
+export const maxDuration = 30; // 30 seconds max
 
 // Mock data for now - we'll replace this with Prisma later
 const mockTrips = [

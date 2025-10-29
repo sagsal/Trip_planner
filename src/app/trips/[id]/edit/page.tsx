@@ -116,7 +116,24 @@ function EditTripContent() {
 
   const fetchTrip = async () => {
     try {
-      const response = await fetch(`/api/trips/${tripId}`);
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      let response;
+      try {
+        response = await fetch(`/api/trips/${tripId}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout. Please try again.');
+        }
+        throw fetchError;
+      }
+      
       if (!response.ok) {
         throw new Error('Failed to fetch trip');
       }
@@ -318,13 +335,28 @@ function EditTripContent() {
         userEmail: user.email
       };
 
-      const response = await fetch(`/api/trips/${tripId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(tripData),
-      });
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for update
+      
+      let response;
+      try {
+        response = await fetch(`/api/trips/${tripId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(tripData),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout. Please try again.');
+        }
+        throw fetchError;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

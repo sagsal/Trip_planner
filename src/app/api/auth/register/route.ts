@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+// Set route runtime config to ensure proper timeout handling
+export const maxDuration = 30; // 30 seconds max
 
 export async function POST(request: NextRequest) {
   try {

@@ -112,13 +112,28 @@ function AccountContent() {
     setDeletingTrip(tripId);
     
     try {
-      const response = await fetch(`/api/trips/${tripId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: user.id }),
-      });
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      let response;
+      try {
+        response = await fetch(`/api/trips/${tripId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: user.id }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout. Please try again.');
+        }
+        throw fetchError;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

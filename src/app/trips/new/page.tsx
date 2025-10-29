@@ -312,26 +312,43 @@ function NewTripContent() {
         return;
       }
 
-      const response = await fetch('/api/trips', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          countries: formData.countries.filter(c => c.trim() !== ''),
-          citiesData: citiesData.map(city => ({
-            name: city.name,
-            country: city.country,
-            hotels: city.hotels.filter(h => h.name.trim() !== ''),
-            restaurants: city.restaurants.filter(r => r.name.trim() !== ''),
-            activities: city.activities.filter(a => a.name.trim() !== '')
-          })),
-          userId: user.id,
-          userName: user.name,
-          userEmail: user.email
-        }),
-      });
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for trip creation
+      
+      let response;
+      try {
+        response = await fetch('/api/trips', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...formData,
+            countries: formData.countries.filter(c => c.trim() !== ''),
+            citiesData: citiesData.map(city => ({
+              name: city.name,
+              country: city.country,
+              hotels: city.hotels.filter(h => h.name.trim() !== ''),
+              restaurants: city.restaurants.filter(r => r.name.trim() !== ''),
+              activities: city.activities.filter(a => a.name.trim() !== '')
+            })),
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          setError('Request timeout. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+        throw fetchError;
+      }
 
       if (response.ok) {
         router.push('/account');

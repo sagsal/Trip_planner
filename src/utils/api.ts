@@ -23,7 +23,8 @@ function getBaseUrl(): string {
 export async function apiCall<T>(
   url: string, 
   options: RequestInit = {},
-  retries: number = 3
+  retries: number = 3,
+  timeout: number = 15000 // 15 second default timeout
 ): Promise<ApiResponse<T>> {
   const defaultOptions: RequestInit = {
     headers: {
@@ -51,7 +52,24 @@ export async function apiCall<T>(
     try {
       console.log(`API call attempt ${attempt}: ${urlWithCacheBust}`);
       
-      const response = await fetch(urlWithCacheBust, defaultOptions);
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      let response;
+      try {
+        response = await fetch(urlWithCacheBust, {
+          ...defaultOptions,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout');
+        }
+        throw fetchError;
+      }
       
       if (response.ok) {
         const data = await response.json();

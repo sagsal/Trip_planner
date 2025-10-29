@@ -398,6 +398,14 @@ export async function GET(
       );
     }
 
+    // Only allow access to public trips
+    if (!trip.isPublic) {
+      return NextResponse.json(
+        { error: 'Trip not found' },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json({ trip });
 
   } catch (error) {

@@ -9,11 +9,15 @@ export interface ApiResponse<T> {
 // Get the base URL for API calls
 function getBaseUrl(): string {
   if (typeof window !== 'undefined') {
-    // Client-side: use current origin
-    return window.location.origin;
+    // Client-side: force localhost for development to prevent tripshare.org issues
+    const currentOrigin = window.location.origin;
+    if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
+      return 'http://localhost:3003'; // Use current port
+    }
+    return currentOrigin;
   }
   // Server-side: use localhost for development
-  return 'http://localhost:3000';
+  return 'http://localhost:3003';
 }
 
 export async function apiCall<T>(
@@ -24,6 +28,9 @@ export async function apiCall<T>(
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       ...options.headers,
     },
     ...options,
@@ -33,10 +40,12 @@ export async function apiCall<T>(
   const baseUrl = getBaseUrl();
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
   
-  // Add cache-busting parameter
+  // Add aggressive cache-busting parameters
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(7);
   const urlWithCacheBust = fullUrl.includes('?') 
-    ? `${fullUrl}&t=${Date.now()}&cb=${Math.random()}` 
-    : `${fullUrl}?t=${Date.now()}&cb=${Math.random()}`;
+    ? `${fullUrl}&t=${timestamp}&cb=${random}&v=2&nocache=true` 
+    : `${fullUrl}?t=${timestamp}&cb=${random}&v=2&nocache=true`;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {

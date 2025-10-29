@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { fetchTrip } from '@/utils/api';
 
 interface Trip {
   id: string;
@@ -69,18 +70,17 @@ function TripDetailContent() {
 
   useEffect(() => {
     if (params.id) {
-      fetchTrip(params.id as string);
+      fetchTripData(params.id as string);
     }
   }, [params.id]);
 
-  const fetchTrip = async (id: string) => {
+  const fetchTripData = async (id: string) => {
     try {
-      const response = await fetch(`/api/trips/${id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTrip(data.trip);
+      const result = await fetchTrip(id);
+      if (result.data) {
+        setTrip(result.data.trip);
       } else {
-        setError('Trip not found');
+        setError(result.error || 'Trip not found');
       }
     } catch (error) {
       setError('Error loading trip');

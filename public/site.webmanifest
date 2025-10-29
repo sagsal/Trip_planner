@@ -1,8 +1,18 @@
 {
-  "name": "TripPlanner",
+  "name": "Share and Plan",
   "short_name": "TripPlanner",
   "description": "Plan, share and discover amazing trips. Create detailed trip journals with hotels, restaurants, and activities reviews.",
   "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    },
     {
       "src": "/favicon-16x16.png",
       "sizes": "16x16",

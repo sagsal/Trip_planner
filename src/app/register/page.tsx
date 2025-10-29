@@ -70,7 +70,11 @@ function RegisterContent() {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      setError('An error occurred during registration');
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('An error occurred during registration. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

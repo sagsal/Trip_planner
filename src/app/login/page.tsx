@@ -61,7 +61,11 @@ function LoginForm() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An error occurred during login');
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('An error occurred during login. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

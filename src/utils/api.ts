@@ -6,6 +6,16 @@ export interface ApiResponse<T> {
   status: number;
 }
 
+// Get the base URL for API calls
+function getBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    // Client-side: use current origin
+    return window.location.origin;
+  }
+  // Server-side: use localhost for development
+  return 'http://localhost:3000';
+}
+
 export async function apiCall<T>(
   url: string, 
   options: RequestInit = {},
@@ -19,10 +29,14 @@ export async function apiCall<T>(
     ...options,
   };
 
+  // Ensure we have an absolute URL
+  const baseUrl = getBaseUrl();
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+  
   // Add cache-busting parameter
-  const urlWithCacheBust = url.includes('?') 
-    ? `${url}&t=${Date.now()}` 
-    : `${url}?t=${Date.now()}`;
+  const urlWithCacheBust = fullUrl.includes('?') 
+    ? `${fullUrl}&t=${Date.now()}&cb=${Math.random()}` 
+    : `${fullUrl}?t=${Date.now()}&cb=${Math.random()}`;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {

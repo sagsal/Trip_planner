@@ -460,8 +460,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Trip creation error:', error);
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

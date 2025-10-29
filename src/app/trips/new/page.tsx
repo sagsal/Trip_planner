@@ -61,6 +61,7 @@ function NewTripContent() {
   // State for adding new city
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [customCityName, setCustomCityName] = useState('');
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
 
   // Load user data from localStorage
@@ -74,23 +75,203 @@ function NewTripContent() {
     }
   }, [router]);
 
-  // Common countries and cities data - memoized for performance
+  // All countries of the world with selected cities - memoized for performance
   const countriesData = useMemo(() => ({
-    'Colombia': ['Medellín', 'Bogotá', 'Cartagena', 'Cali', 'Barranquilla'],
-    'Spain': ['Madrid', 'Barcelona', 'Seville', 'Valencia', 'Bilbao'],
-    'France': ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse'],
-    'Italy': ['Rome', 'Milan', 'Florence', 'Venice', 'Naples'],
-    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Hiroshima', 'Nagoya'],
-    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Krabi'],
-    'Mexico': ['Mexico City', 'Cancun', 'Guadalajara', 'Tijuana', 'Puebla'],
+    'Afghanistan': ['Kabul', 'Herat', 'Kandahar', 'Mazar-i-Sharif'],
+    'Albania': ['Tirana', 'Durrës', 'Vlorë', 'Shkodër'],
+    'Algeria': ['Algiers', 'Oran', 'Constantine', 'Annaba'],
+    'Andorra': ['Andorra la Vella'],
+    'Angola': ['Luanda', 'Huambo', 'Lobito', 'Benguela'],
+    'Antigua and Barbuda': ['St. John\'s'],
+    'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza'],
+    'Armenia': ['Yerevan', 'Gyumri', 'Vanadzor'],
+    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
+    'Austria': ['Vienna', 'Graz', 'Linz', 'Salzburg'],
+    'Azerbaijan': ['Baku', 'Ganja', 'Sumqayit'],
+    'Bahamas': ['Nassau', 'Freeport'],
+    'Bahrain': ['Manama'],
+    'Bangladesh': ['Dhaka', 'Chittagong', 'Khulna', 'Sylhet'],
+    'Barbados': ['Bridgetown'],
+    'Belarus': ['Minsk', 'Gomel', 'Mogilev'],
+    'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Bruges'],
+    'Belize': ['Belize City', 'San Ignacio'],
+    'Benin': ['Cotonou', 'Porto-Novo', 'Parakou'],
+    'Bhutan': ['Thimphu', 'Phuntsholing'],
+    'Bolivia': ['La Paz', 'Santa Cruz', 'Cochabamba'],
+    'Bosnia and Herzegovina': ['Sarajevo', 'Banja Luka', 'Tuzla'],
+    'Botswana': ['Gaborone', 'Francistown', 'Maun'],
     'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza'],
-    'India': ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'],
+    'Brunei': ['Bandar Seri Begawan'],
+    'Bulgaria': ['Sofia', 'Plovdiv', 'Varna', 'Burgas'],
+    'Burkina Faso': ['Ouagadougou', 'Bobo-Dioulasso'],
+    'Burundi': ['Bujumbura', 'Gitega'],
+    'Cambodia': ['Phnom Penh', 'Siem Reap', 'Battambang'],
+    'Cameroon': ['Douala', 'Yaoundé', 'Garoua'],
+    'Canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
+    'Cape Verde': ['Praia', 'Mindelo'],
+    'Central African Republic': ['Bangui'],
+    'Chad': ['N\'Djamena', 'Moundou'],
+    'Chile': ['Santiago', 'Valparaíso', 'Concepción'],
+    'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu'],
+    'Colombia': ['Medellín', 'Bogotá', 'Cartagena', 'Cali', 'Barranquilla'],
+    'Comoros': ['Moroni'],
+    'Congo': ['Brazzaville', 'Pointe-Noire'],
+    'Costa Rica': ['San José', 'Cartago', 'Alajuela'],
+    'Croatia': ['Zagreb', 'Split', 'Rijeka', 'Dubrovnik'],
+    'Cuba': ['Havana', 'Santiago de Cuba', 'Camagüey'],
+    'Cyprus': ['Nicosia', 'Limassol', 'Larnaca'],
+    'Czech Republic': ['Prague', 'Brno', 'Ostrava'],
+    'Denmark': ['Copenhagen', 'Aarhus', 'Odense'],
+    'Djibouti': ['Djibouti'],
+    'Dominica': ['Roseau'],
+    'Dominican Republic': ['Santo Domingo', 'Santiago', 'La Romana'],
+    'East Timor': ['Dili'],
+    'Ecuador': ['Quito', 'Guayaquil', 'Cuenca'],
+    'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Luxor'],
+    'El Salvador': ['San Salvador', 'Santa Ana', 'San Miguel'],
+    'Equatorial Guinea': ['Malabo', 'Bata'],
+    'Eritrea': ['Asmara', 'Massawa'],
+    'Estonia': ['Tallinn', 'Tartu', 'Narva'],
+    'Eswatini': ['Mbabane', 'Manzini'],
+    'Ethiopia': ['Addis Ababa', 'Dire Dawa', 'Mekelle'],
+    'Fiji': ['Suva', 'Lautoka'],
+    'Finland': ['Helsinki', 'Tampere', 'Turku'],
+    'France': ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse'],
+    'Gabon': ['Libreville', 'Port-Gentil'],
+    'Gambia': ['Banjul', 'Serekunda'],
+    'Georgia': ['Tbilisi', 'Batumi', 'Kutaisi'],
     'Germany': ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt'],
+    'Ghana': ['Accra', 'Kumasi', 'Tamale'],
+    'Greece': ['Athens', 'Thessaloniki', 'Patras', 'Heraklion'],
+    'Grenada': ['St. George\'s'],
+    'Guatemala': ['Guatemala City', 'Quetzaltenango'],
+    'Guinea': ['Conakry', 'Nzérékoré'],
+    'Guinea-Bissau': ['Bissau'],
+    'Guyana': ['Georgetown', 'New Amsterdam'],
+    'Haiti': ['Port-au-Prince', 'Cap-Haïtien'],
+    'Honduras': ['Tegucigalpa', 'San Pedro Sula'],
+    'Hungary': ['Budapest', 'Debrecen', 'Szeged'],
+    'Iceland': ['Reykjavik', 'Akureyri'],
+    'India': ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'],
+    'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Medan'],
+    'Iran': ['Tehran', 'Mashhad', 'Isfahan', 'Shiraz'],
+    'Iraq': ['Baghdad', 'Mosul', 'Basra', 'Erbil'],
+    'Ireland': ['Dublin', 'Cork', 'Limerick', 'Galway'],
+    'Israel': ['Jerusalem', 'Tel Aviv', 'Haifa', 'Beersheba'],
+    'Italy': ['Rome', 'Milan', 'Florence', 'Venice', 'Naples'],
+    'Jamaica': ['Kingston', 'Montego Bay'],
+    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Hiroshima', 'Nagoya'],
+    'Jordan': ['Amman', 'Irbid', 'Zarqa'],
+    'Kazakhstan': ['Almaty', 'Nur-Sultan', 'Shymkent'],
+    'Kenya': ['Nairobi', 'Mombasa', 'Kisumu'],
+    'Kiribati': ['Tarawa'],
+    'Kosovo': ['Pristina', 'Prizren'],
+    'Kuwait': ['Kuwait City', 'Al Ahmadi'],
+    'Kyrgyzstan': ['Bishkek', 'Osh'],
+    'Laos': ['Vientiane', 'Luang Prabang'],
+    'Latvia': ['Riga', 'Daugavpils', 'Liepāja'],
+    'Lebanon': ['Beirut', 'Tripoli', 'Sidon'],
+    'Lesotho': ['Maseru'],
+    'Liberia': ['Monrovia', 'Gbarnga'],
+    'Libya': ['Tripoli', 'Benghazi', 'Misrata'],
+    'Liechtenstein': ['Vaduz'],
+    'Lithuania': ['Vilnius', 'Kaunas', 'Klaipėda'],
+    'Luxembourg': ['Luxembourg City'],
+    'Madagascar': ['Antananarivo', 'Toamasina'],
+    'Malawi': ['Lilongwe', 'Blantyre'],
+    'Malaysia': ['Kuala Lumpur', 'George Town', 'Ipoh', 'Johor Bahru'],
+    'Maldives': ['Malé'],
+    'Mali': ['Bamako', 'Sikasso'],
+    'Malta': ['Valletta', 'Sliema'],
+    'Marshall Islands': ['Majuro'],
+    'Mauritania': ['Nouakchott', 'Nouadhibou'],
+    'Mauritius': ['Port Louis'],
+    'Mexico': ['Mexico City', 'Cancun', 'Guadalajara', 'Tijuana', 'Puebla'],
+    'Micronesia': ['Palikir'],
+    'Moldova': ['Chișinău', 'Tiraspol'],
+    'Monaco': ['Monaco'],
+    'Mongolia': ['Ulaanbaatar', 'Darkhan'],
+    'Montenegro': ['Podgorica', 'Nikšić'],
+    'Morocco': ['Casablanca', 'Rabat', 'Fez', 'Marrakech'],
+    'Mozambique': ['Maputo', 'Beira', 'Nampula'],
+    'Myanmar': ['Yangon', 'Mandalay', 'Naypyidaw'],
+    'Namibia': ['Windhoek', 'Swakopmund'],
+    'Nauru': ['Yaren'],
+    'Nepal': ['Kathmandu', 'Pokhara', 'Lalitpur'],
+    'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht'],
+    'New Zealand': ['Auckland', 'Wellington', 'Christchurch', 'Hamilton'],
+    'Nicaragua': ['Managua', 'León', 'Granada'],
+    'Niger': ['Niamey', 'Zinder'],
+    'Nigeria': ['Lagos', 'Abuja', 'Kano', 'Ibadan'],
+    'North Korea': ['Pyongyang', 'Hamhung'],
+    'North Macedonia': ['Skopje', 'Bitola'],
+    'Norway': ['Oslo', 'Bergen', 'Trondheim', 'Stavanger'],
+    'Oman': ['Muscat', 'Salalah'],
+    'Pakistan': ['Karachi', 'Lahore', 'Islamabad', 'Faisalabad'],
+    'Palau': ['Ngerulmud'],
+    'Palestine': ['Jerusalem', 'Ramallah', 'Gaza'],
+    'Panama': ['Panama City', 'Colón'],
+    'Papua New Guinea': ['Port Moresby', 'Lae'],
+    'Paraguay': ['Asunción', 'Ciudad del Este'],
+    'Peru': ['Lima', 'Arequipa', 'Cusco', 'Trujillo'],
+    'Philippines': ['Manila', 'Quezon City', 'Cebu', 'Davao'],
+    'Poland': ['Warsaw', 'Kraków', 'Wrocław', 'Gdańsk'],
+    'Portugal': ['Lisbon', 'Porto', 'Coimbra', 'Braga'],
+    'Qatar': ['Doha', 'Al Rayyan'],
+    'Romania': ['Bucharest', 'Cluj-Napoca', 'Timișoara'],
+    'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg'],
+    'Rwanda': ['Kigali'],
+    'Saint Kitts and Nevis': ['Basseterre'],
+    'Saint Lucia': ['Castries'],
+    'Saint Vincent and the Grenadines': ['Kingstown'],
+    'Samoa': ['Apia'],
+    'San Marino': ['San Marino'],
+    'São Tomé and Príncipe': ['São Tomé'],
+    'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina'],
+    'Senegal': ['Dakar', 'Thiès'],
+    'Serbia': ['Belgrade', 'Novi Sad', 'Niš'],
+    'Seychelles': ['Victoria'],
+    'Sierra Leone': ['Freetown'],
+    'Singapore': ['Singapore'],
+    'Slovakia': ['Bratislava', 'Košice'],
+    'Slovenia': ['Ljubljana', 'Maribor'],
+    'Solomon Islands': ['Honiara'],
+    'Somalia': ['Mogadishu', 'Hargeisa'],
+    'South Africa': ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'],
+    'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu'],
+    'South Sudan': ['Juba'],
+    'Spain': ['Madrid', 'Barcelona', 'Seville', 'Valencia', 'Bilbao'],
+    'Sri Lanka': ['Colombo', 'Kandy', 'Galle'],
+    'Sudan': ['Khartoum', 'Omdurman'],
+    'Suriname': ['Paramaribo'],
+    'Sweden': ['Stockholm', 'Gothenburg', 'Malmö'],
+    'Switzerland': ['Zurich', 'Geneva', 'Basel', 'Bern'],
+    'Syria': ['Damascus', 'Aleppo', 'Homs'],
+    'Taiwan': ['Taipei', 'Kaohsiung', 'Taichung'],
+    'Tajikistan': ['Dushanbe', 'Khujand'],
+    'Tanzania': ['Dar es Salaam', 'Dodoma', 'Arusha'],
+    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Krabi'],
+    'Togo': ['Lomé', 'Sokodé'],
+    'Tonga': ['Nuku\'alofa'],
+    'Trinidad and Tobago': ['Port of Spain', 'San Fernando'],
+    'Tunisia': ['Tunis', 'Sfax', 'Sousse'],
+    'Turkey': ['Istanbul', 'Ankara', 'Izmir', 'Antalya'],
+    'Turkmenistan': ['Ashgabat', 'Türkmenabat'],
+    'Tuvalu': ['Funafuti'],
+    'Uganda': ['Kampala', 'Entebbe'],
+    'Ukraine': ['Kyiv', 'Kharkiv', 'Odesa', 'Lviv'],
+    'United Arab Emirates': ['Dubai', 'Abu Dhabi', 'Sharjah'],
     'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Liverpool', 'Edinburgh'],
     'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'],
-    'Canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
-    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
-    'Other': []
+    'Uruguay': ['Montevideo', 'Salto'],
+    'Uzbekistan': ['Tashkent', 'Samarkand', 'Bukhara'],
+    'Vanuatu': ['Port Vila'],
+    'Vatican City': ['Vatican City'],
+    'Venezuela': ['Caracas', 'Maracaibo', 'Valencia'],
+    'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Hai Phong'],
+    'Yemen': ['Sana\'a', 'Aden'],
+    'Zambia': ['Lusaka', 'Kitwe'],
+    'Zimbabwe': ['Harare', 'Bulawayo']
   }), []);
 
   const toggleSection = useCallback((cityId: string, section: string) => {
@@ -117,11 +298,12 @@ function NewTripContent() {
   }, []);
 
   const addCity = () => {
-    if (!selectedCountry || !selectedCity) return;
+    const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
+    if (!selectedCountry || !nameToAdd) return;
     
     const newCity: CityData = {
       id: Date.now().toString(),
-      name: selectedCity,
+      name: nameToAdd,
       country: selectedCountry,
       hotels: [{
         id: Date.now().toString() + '-hotel',
@@ -153,6 +335,7 @@ function NewTripContent() {
     // Reset selections
     setSelectedCountry('');
     setSelectedCity('');
+    setCustomCityName('');
   };
 
   const removeCity = (cityId: string) => {
@@ -299,18 +482,7 @@ function NewTripContent() {
         activities: city.activities.filter(a => a.name.trim() !== '')
       })));
 
-      // Check if any cities have items but they're empty
-      const hasEmptyItems = citiesData.some(city => 
-        (city.hotels.length > 0 && city.hotels.every(h => h.name.trim() === '')) ||
-        (city.restaurants.length > 0 && city.restaurants.every(r => r.name.trim() === '')) ||
-        (city.activities.length > 0 && city.activities.every(a => a.name.trim() === ''))
-      );
-
-      if (hasEmptyItems) {
-        setError('Please fill in the names for all hotels, restaurants, and activities before saving.');
-        setIsLoading(false);
-        return;
-      }
+      // Hotels, restaurants, and activities are optional - no validation needed
 
       // Create AbortController for timeout
       const controller = new AbortController();
@@ -354,7 +526,9 @@ function NewTripContent() {
         router.push('/account');
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to create trip');
+        const errorMessage = data.details ? `${data.error}: ${data.details}` : (data.error || 'Failed to create trip');
+        setError(errorMessage);
+        console.error('Trip creation failed:', data);
       }
     } catch (error) {
       setError('An error occurred while creating the trip');
@@ -453,20 +627,6 @@ function NewTripContent() {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Cities & Details</h2>
-                {/* Add City Button - Moved up here */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Scroll to country/city selection
-                    const selectionElement = document.getElementById('country-city-selection');
-                    if (selectionElement) {
-                      selectionElement.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all font-semibold text-lg shadow-lg"
-                >
-                  🌍 Add City
-                </button>
               </div>
 
               {/* Country & City Selection */}
@@ -504,7 +664,13 @@ function NewTripContent() {
                       <select
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
                         value={selectedCity}
-                        onChange={(e) => setSelectedCity(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setSelectedCity(value);
+                          if (value !== 'custom') {
+                            setCustomCityName('');
+                          }
+                        }}
                         disabled={!selectedCountry}
                       >
                         <option value="">Select a city...</option>
@@ -521,18 +687,23 @@ function NewTripContent() {
                   {/* Custom city input */}
                   {selectedCity === 'custom' && (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-bold mb-2" style={{ color: '#000000', fontWeight: 'bold', fontSize: '14px' }}>
                         🏙️ Custom City Name *
                       </label>
                       <input
                         type="text"
                         placeholder="Enter custom city name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                        onKeyPress={(e) => {
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                        style={{ color: '#000000' }}
+                        value={customCityName}
+                        onChange={(e) => setCustomCityName(e.target.value)}
+                        onKeyDown={(e) => {
                           if (e.key === 'Enter') {
-                            const input = e.target as HTMLInputElement;
-                            if (input.value.trim()) {
-                              setSelectedCity(input.value.trim());
+                            e.preventDefault();
+                            if (customCityName.trim()) {
+                              // Keep select on 'custom' but allow Add City to use typed name
+                              // Optionally trigger add immediately:
+                              addCity();
                             }
                           }
                         }}
@@ -544,7 +715,11 @@ function NewTripContent() {
                 <button
                   type="button"
                       onClick={addCity}
-                      disabled={!selectedCountry || !selectedCity}
+                      disabled={
+                        !selectedCountry ||
+                        !selectedCity ||
+                        (selectedCity === 'custom' && customCityName.trim() === '')
+                      }
                       className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                       Add City ✨
@@ -662,7 +837,7 @@ function NewTripContent() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input
                         type="text"
                         value={hotel.name}
@@ -767,7 +942,7 @@ function NewTripContent() {
                   </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input
                         type="text"
                         value={restaurant.name}
@@ -872,7 +1047,7 @@ function NewTripContent() {
                   </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input
                         type="text"
                         value={activity.name}

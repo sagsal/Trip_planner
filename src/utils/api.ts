@@ -6,20 +6,6 @@ export interface ApiResponse<T> {
   status: number;
 }
 
-// Get the base URL for API calls
-function getBaseUrl(): string {
-  if (typeof window !== 'undefined') {
-    // Client-side: force localhost for development to prevent tripshare.org issues
-    const currentOrigin = window.location.origin;
-    if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
-      return 'http://localhost:3003'; // Use current port
-    }
-    return currentOrigin;
-  }
-  // Server-side: use localhost for development
-  return 'http://localhost:3003';
-}
-
 export async function apiCall<T>(
   url: string, 
   options: RequestInit = {},
@@ -29,36 +15,26 @@ export async function apiCall<T>(
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      'Cache-Control': 'no-cache',
       ...options.headers,
     },
     ...options,
   };
 
-  // Ensure we have an absolute URL
-  const baseUrl = getBaseUrl();
-  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
-  
-  // Add aggressive cache-busting parameters
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(7);
-  const urlWithCacheBust = fullUrl.includes('?') 
-    ? `${fullUrl}&t=${timestamp}&cb=${random}&v=2&nocache=true` 
-    : `${fullUrl}?t=${timestamp}&cb=${random}&v=2&nocache=true`;
+  // Use relative URLs for better compatibility with Next.js routing
+  // This ensures requests stay within the same origin and avoid ERR_NETWORK_CHANGED errors
+  // Absolute URLs (starting with http) are used as-is for external APIs
+  const fetchUrl = url;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`API call attempt ${attempt}: ${urlWithCacheBust}`);
-      
       // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
       
       let response;
       try {
-        response = await fetch(urlWithCacheBust, {
+        response = await fetch(fetchUrl, {
           ...defaultOptions,
           signal: controller.signal,
         });
@@ -91,9 +67,15 @@ export async function apiCall<T>(
       console.error(`API call error (attempt ${attempt}):`, error);
       
       if (attempt === retries) {
-        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.message.includes('ERR_NETWORK_CHANGED'))) {
           return { 
             error: 'Network error. Please check your connection and try again.', 
+            status: 0 
+          };
+        }
+        if (error instanceof Error && error.message === 'Request timeout') {
+          return { 
+            error: 'Request timeout. Please try again.', 
             status: 0 
           };
         }

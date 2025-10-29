@@ -41,12 +41,8 @@ export default function Navigation() {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Also check periodically in case of same-tab changes
-    const interval = setInterval(checkAuth, 1000);
-    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
     };
   }, []);
 

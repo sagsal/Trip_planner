@@ -465,19 +465,6 @@ function EditTripContent() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Country *</label>
-              <input
-                type="text"
-                name="countries"
-                value={formData.countries}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Colombia"
-              />
-            </div>
-
             {/* Cities and their data */}
             <div className="bg-gray-50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-6">
@@ -675,15 +662,6 @@ function EditTripContent() {
                             <option value="4">4 Stars</option>
                             <option value="5">5 Stars</option>
                           </select>
-                          <select
-                            value={hotel.liked === undefined ? '' : hotel.liked.toString()}
-                            onChange={(e) => updateHotel(city.id, hotel.id, 'liked', e.target.value === '' ? undefined : e.target.value === 'true')}
-                            className="px-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="">Overall Experience</option>
-                            <option value="true">Liked</option>
-                            <option value="false">Disliked</option>
-                          </select>
                         </div>
                         <textarea
                           placeholder="Review (optional)"
@@ -750,15 +728,6 @@ function EditTripContent() {
                             <option value="4">4 Stars</option>
                             <option value="5">5 Stars</option>
                           </select>
-                          <select
-                            value={restaurant.liked === undefined ? '' : restaurant.liked.toString()}
-                            onChange={(e) => updateRestaurant(city.id, restaurant.id, 'liked', e.target.value === '' ? undefined : e.target.value === 'true')}
-                            className="px-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="">Overall Experience</option>
-                            <option value="true">Liked</option>
-                            <option value="false">Disliked</option>
-                          </select>
                         </div>
                         <textarea
                           placeholder="Review (optional)"
@@ -824,15 +793,6 @@ function EditTripContent() {
                             <option value="3">3 Stars</option>
                             <option value="4">4 Stars</option>
                             <option value="5">5 Stars</option>
-                          </select>
-                          <select
-                            value={activity.liked === undefined ? '' : activity.liked.toString()}
-                            onChange={(e) => updateActivity(city.id, activity.id, 'liked', e.target.value === '' ? undefined : e.target.value === 'true')}
-                            className="px-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="">Overall Experience</option>
-                            <option value="true">Liked</option>
-                            <option value="false">Disliked</option>
                           </select>
                         </div>
                         <textarea

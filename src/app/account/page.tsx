@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
 
@@ -60,47 +60,69 @@ interface Activity {
 function AccountContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [deletingTrip, setDeletingTrip] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Get user data from localStorage
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          
-          // Fetch user's trips from API
-          const result = await fetchTrips();
-          if (result.data) {
-            // Filter trips to show only the current user's trips
-            const userTrips = result.data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
-            setTrips(userTrips);
-          } else {
-            console.error('Failed to fetch trips:', result.error);
-            setTrips([]);
-          }
-        } else {
-          setUser(null);
-          setTrips([]);
-          // Redirect to login if no user found
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setUser(null);
-        setTrips([]);
-        // Redirect to login on error
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
+  const fetchUserTrips = async (showRetryState = false) => {
+    try {
+      if (showRetryState) {
+        setIsRetrying(true);
+      } else {
+        setIsLoading(true);
       }
-    };
+      setError(null);
+      
+      // Get user data from localStorage
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        router.push('/login');
+        return;
+      }
 
-    fetchUserData();
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      
+      // Fetch user's trips from API
+      const result = await fetchTrips();
+      if (result.data) {
+        // Filter trips to show only the current user's trips
+        const userTrips = result.data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
+        setTrips(userTrips);
+        setError(null);
+      } else if (result.error) {
+        // Network or API error - show user-friendly message
+        setError(result.error);
+        // Don't clear trips if we already have some (they might be stale but better than nothing)
+        if (trips.length === 0) {
+          setTrips([]);
+        }
+      } else {
+        setTrips([]);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      // Only redirect to login if it's an authentication issue, not a network issue
+      if (error instanceof Error && !error.message.includes('Network') && !error.message.includes('fetch') && !error.message.includes('ERR_NETWORK')) {
+        router.push('/login');
+      } else {
+        setError('Unable to load trips. Please check your connection and try again.');
+        // Keep existing trips if available
+        if (trips.length === 0) {
+          setTrips([]);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRetrying(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserTrips();
   }, []);
 
   const handleDeleteTrip = async (tripId: string, tripTitle: string) => {
@@ -285,10 +307,42 @@ function AccountContent() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+              <p className="text-red-800">{error}</p>
+            </div>
+            <button
+              onClick={() => fetchUserTrips(true)}
+              disabled={isRetrying}
+              className="ml-4 inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Retrying...' : 'Retry'}
+            </button>
+          </div>
+        )}
+
         {/* My Trips */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">My Trips</h2>
-          {trips.length === 0 ? (
+          {error && trips.length === 0 ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to load trips</h3>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <button
+                onClick={() => fetchUserTrips(true)}
+                disabled={isRetrying}
+                className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-5 h-5 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+                {isRetrying ? 'Retrying...' : 'Try Again'}
+              </button>
+            </div>
+          ) : trips.length === 0 ? (
             <div className="text-center py-12">
               <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No trips yet</h3>

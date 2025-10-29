@@ -391,6 +391,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure user exists to satisfy FK constraint
+    let userRecord = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userRecord) {
+      userRecord = await prisma.user.findUnique({ where: { email: userEmail } });
+    }
+    if (!userRecord) {
+      // Create a minimal user record if missing (for demo/local use)
+      userRecord = await prisma.user.create({
+        data: {
+          email: userEmail,
+          name: userName,
+          password: 'placeholder'
+        }
+      });
+    }
+
     // Create trip in database with hierarchical structure
     const newTrip = await prisma.trip.create({
       data: {
@@ -401,7 +417,7 @@ export async function POST(request: NextRequest) {
         countries: JSON.stringify(countries),
         cities: cities ? JSON.stringify(cities) : JSON.stringify([]),
         isPublic: true,
-        userId: userId,
+        userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => ({
             name: cityData.name,

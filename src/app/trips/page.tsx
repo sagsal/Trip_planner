@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, Heart, Filter, Search } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { fetchTrips } from '@/utils/api';
 
 interface Trip {
   id: string;
@@ -68,19 +69,19 @@ function TripsContent() {
   const [countries, setCountries] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchTrips();
+    fetchTripsData();
   }, []);
 
-  const fetchTrips = async () => {
+  const fetchTripsData = async () => {
     try {
-      const response = await fetch('/api/trips');
-      if (response.ok) {
-        const data = await response.json();
-        setTrips(data.trips);
+      const result = await fetchTrips();
+      
+      if (result.data) {
+        setTrips(result.data.trips);
         
         // Extract unique countries for filter
         const uniqueCountries = new Set<string>();
-        data.trips.forEach((trip: Trip) => {
+        result.data.trips.forEach((trip: Trip) => {
           try {
             const tripCountries = JSON.parse(trip.countries);
             tripCountries.forEach((country: string) => uniqueCountries.add(country));
@@ -89,9 +90,11 @@ function TripsContent() {
           }
         });
         setCountries(Array.from(uniqueCountries).sort());
+      } else if (result.error) {
+        console.error('Error fetching trips:', result.error);
       }
     } catch (error) {
-      console.error('Error fetching trips:', error);
+      console.error('Unexpected error:', error);
     } finally {
       setIsLoading(false);
     }

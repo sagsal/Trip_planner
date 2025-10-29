@@ -71,14 +71,14 @@ function AccountContent() {
           setUser(parsedUser);
           
           // Fetch user's trips from API
-          const response = await fetch('/api/trips');
+          const response = await fetch(`/api/trips?t=${Date.now()}`);
           if (response.ok) {
             const data = await response.json();
             // Filter trips to show only the current user's trips
             const userTrips = data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
             setTrips(userTrips);
           } else {
-            console.error('Failed to fetch trips');
+            console.error('Failed to fetch trips:', response.status, response.statusText);
             setTrips([]);
           }
         } else {

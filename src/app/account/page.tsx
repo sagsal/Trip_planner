@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -60,6 +61,7 @@ function AccountContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [deletingTrip, setDeletingTrip] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -84,11 +86,15 @@ function AccountContent() {
         } else {
           setUser(null);
           setTrips([]);
+          // Redirect to login if no user found
+          router.push('/login');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
         setUser(null);
         setTrips([]);
+        // Redirect to login on error
+        router.push('/login');
       } finally {
         setIsLoading(false);
       }

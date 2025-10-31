@@ -33,13 +33,20 @@ interface Activity {
   liked: boolean | null;
 }
 
+interface Day {
+  id: string;
+  dayNumber: number;
+  restaurants: Restaurant[];
+  activities: Activity[];
+}
+
 interface CityData {
   id: string;
   name: string;
   country: string;
-  hotels: Hotel[];
-  restaurants: Restaurant[];
-  activities: Activity[];
+  numberOfDays: number;
+  hotel: Hotel | null;
+  days: Day[];
 }
 
 function NewTripContent() {
@@ -53,6 +60,7 @@ function NewTripContent() {
     description: '',
     startDate: '',
     endDate: '',
+    numberOfDays: '',
     countries: ['']
   });
 
@@ -62,6 +70,8 @@ function NewTripContent() {
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [customCityName, setCustomCityName] = useState('');
+  const [selectedNumberOfDays, setSelectedNumberOfDays] = useState('');
+  const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
 
   // Load user data from localStorage
@@ -299,36 +309,26 @@ function NewTripContent() {
 
   const addCity = () => {
     const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
-    if (!selectedCountry || !nameToAdd) return;
+    if (!selectedCountry || !nameToAdd || !selectedNumberOfDays) return;
     
+    const numberOfDays = parseInt(selectedNumberOfDays);
+    if (isNaN(numberOfDays) || numberOfDays < 1) return;
+
+    // Create days array
+    const days: Day[] = Array.from({ length: numberOfDays }, (_, index) => ({
+      id: `${Date.now()}-day-${index + 1}`,
+      dayNumber: index + 1,
+      restaurants: [],
+      activities: []
+    }));
+
     const newCity: CityData = {
       id: Date.now().toString(),
       name: nameToAdd,
       country: selectedCountry,
-      hotels: [{
-        id: Date.now().toString() + '-hotel',
-        name: '',
-        location: '',
-        rating: 0,
-        review: '',
-        liked: null
-      }],
-      restaurants: [{
-        id: Date.now().toString() + '-restaurant',
-        name: '',
-        location: '',
-        rating: 0,
-        review: '',
-        liked: null
-      }],
-      activities: [{
-        id: Date.now().toString() + '-activity',
-        name: '',
-        location: '',
-        rating: 0,
-        review: '',
-        liked: null
-      }]
+      numberOfDays: numberOfDays,
+      hotel: selectedHotel,
+      days: days
     };
     setCitiesData(prev => [...prev, newCity]);
     
@@ -336,6 +336,33 @@ function NewTripContent() {
     setSelectedCountry('');
     setSelectedCity('');
     setCustomCityName('');
+    setSelectedNumberOfDays('');
+    setSelectedHotel(null);
+  };
+
+  // Hotel management - now single hotel per city
+  const updateHotel = (cityId: string, field: keyof Hotel, value: any) => {
+    setCitiesData(prev => prev.map(city => {
+      if (city.id === cityId) {
+        const updatedHotel = city.hotel ? { ...city.hotel, [field]: value } : {
+          id: Date.now().toString(),
+          name: '',
+          location: '',
+          rating: 0,
+          review: '',
+          liked: null,
+          [field]: value
+        };
+        return { ...city, hotel: updatedHotel };
+      }
+      return city;
+    }));
+  };
+
+  const setHotelForCity = (cityId: string, hotel: Hotel | null) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId ? { ...city, hotel } : city
+    ));
   };
 
   const removeCity = (cityId: string) => {
@@ -348,44 +375,8 @@ function NewTripContent() {
     ));
   };
 
-  const addHotel = (cityId: string) => {
-    const newHotel: Hotel = {
-      id: Date.now().toString(),
-      name: '',
-      location: '',
-      rating: 0,
-      review: '',
-      liked: null
-    };
-    setCitiesData(prev => prev.map(city => 
-      city.id === cityId 
-        ? { ...city, hotels: [...city.hotels, newHotel] }
-        : city
-    ));
-  };
-
-  const updateHotel = (cityId: string, hotelId: string, field: keyof Hotel, value: any) => {
-    setCitiesData(prev => prev.map(city => 
-      city.id === cityId 
-        ? { 
-            ...city, 
-            hotels: city.hotels.map(hotel => 
-              hotel.id === hotelId ? { ...hotel, [field]: value } : hotel
-            )
-          }
-        : city
-    ));
-  };
-
-  const removeHotel = (cityId: string, hotelId: string) => {
-    setCitiesData(prev => prev.map(city => 
-      city.id === cityId 
-        ? { ...city, hotels: city.hotels.filter(hotel => hotel.id !== hotelId) }
-        : city
-    ));
-  };
-
-  const addRestaurant = (cityId: string) => {
+  // Restaurant management per day
+  const addRestaurant = (cityId: string, dayId: string) => {
     const newRestaurant: Restaurant = {
       id: Date.now().toString(),
       name: '',
@@ -396,33 +387,55 @@ function NewTripContent() {
     };
     setCitiesData(prev => prev.map(city => 
       city.id === cityId 
-        ? { ...city, restaurants: [...city.restaurants, newRestaurant] }
-        : city
-    ));
-  };
-
-  const updateRestaurant = (cityId: string, restaurantId: string, field: keyof Restaurant, value: any) => {
-    setCitiesData(prev => prev.map(city => 
-      city.id === cityId 
         ? { 
             ...city, 
-            restaurants: city.restaurants.map(restaurant => 
-              restaurant.id === restaurantId ? { ...restaurant, [field]: value } : restaurant
+            days: city.days.map(day => 
+              day.id === dayId 
+                ? { ...day, restaurants: [...day.restaurants, newRestaurant] }
+                : day
             )
           }
         : city
     ));
   };
 
-  const removeRestaurant = (cityId: string, restaurantId: string) => {
+  const updateRestaurant = (cityId: string, dayId: string, restaurantId: string, field: keyof Restaurant, value: any) => {
     setCitiesData(prev => prev.map(city => 
       city.id === cityId 
-        ? { ...city, restaurants: city.restaurants.filter(restaurant => restaurant.id !== restaurantId) }
+        ? { 
+            ...city, 
+            days: city.days.map(day => 
+              day.id === dayId
+                ? {
+                    ...day,
+                    restaurants: day.restaurants.map(restaurant => 
+                      restaurant.id === restaurantId ? { ...restaurant, [field]: value } : restaurant
+                    )
+                  }
+                : day
+            )
+          }
         : city
     ));
   };
 
-  const addActivity = (cityId: string) => {
+  const removeRestaurant = (cityId: string, dayId: string, restaurantId: string) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { 
+            ...city, 
+            days: city.days.map(day => 
+              day.id === dayId
+                ? { ...day, restaurants: day.restaurants.filter(restaurant => restaurant.id !== restaurantId) }
+                : day
+            )
+          }
+        : city
+    ));
+  };
+
+  // Activity management per day
+  const addActivity = (cityId: string, dayId: string) => {
     const newActivity: Activity = {
       id: Date.now().toString(),
       name: '',
@@ -433,28 +446,49 @@ function NewTripContent() {
     };
     setCitiesData(prev => prev.map(city => 
       city.id === cityId 
-        ? { ...city, activities: [...city.activities, newActivity] }
-        : city
-    ));
-  };
-
-  const updateActivity = (cityId: string, activityId: string, field: keyof Activity, value: any) => {
-    setCitiesData(prev => prev.map(city => 
-      city.id === cityId 
         ? { 
             ...city, 
-            activities: city.activities.map(activity => 
-              activity.id === activityId ? { ...activity, [field]: value } : activity
+            days: city.days.map(day => 
+              day.id === dayId 
+                ? { ...day, activities: [...day.activities, newActivity] }
+                : day
             )
           }
         : city
     ));
   };
 
-  const removeActivity = (cityId: string, activityId: string) => {
+  const updateActivity = (cityId: string, dayId: string, activityId: string, field: keyof Activity, value: any) => {
     setCitiesData(prev => prev.map(city => 
       city.id === cityId 
-        ? { ...city, activities: city.activities.filter(activity => activity.id !== activityId) }
+        ? { 
+            ...city, 
+            days: city.days.map(day => 
+              day.id === dayId
+                ? {
+                    ...day,
+                    activities: day.activities.map(activity => 
+                      activity.id === activityId ? { ...activity, [field]: value } : activity
+                    )
+                  }
+                : day
+            )
+          }
+        : city
+    ));
+  };
+
+  const removeActivity = (cityId: string, dayId: string, activityId: string) => {
+    setCitiesData(prev => prev.map(city => 
+      city.id === cityId 
+        ? { 
+            ...city, 
+            days: city.days.map(day => 
+              day.id === dayId
+                ? { ...day, activities: day.activities.filter(activity => activity.id !== activityId) }
+                : day
+            )
+          }
         : city
     ));
   };
@@ -474,13 +508,33 @@ function NewTripContent() {
 
       // Debug: Log what we're sending
       console.log('Cities Data being sent:', citiesData);
-      console.log('Filtered Cities Data:', citiesData.map(city => ({
-        name: city.name,
-        country: city.country,
-        hotels: city.hotels.filter(h => h.name.trim() !== ''),
-        restaurants: city.restaurants.filter(r => r.name.trim() !== ''),
-        activities: city.activities.filter(a => a.name.trim() !== '')
-      })));
+
+      // Transform new structure to API format
+      // Flatten days: collect all restaurants and activities from all days
+      // Hotels are already at city level
+      const transformedCitiesData = citiesData.map(city => {
+        const allRestaurants: Restaurant[] = [];
+        const allActivities: Activity[] = [];
+        
+        city.days.forEach(day => {
+          allRestaurants.push(...day.restaurants.filter(r => r.name.trim() !== ''));
+          allActivities.push(...day.activities.filter(a => a.name.trim() !== ''));
+        });
+
+        return {
+          name: city.name,
+          country: city.country,
+          numberOfDays: city.numberOfDays,
+          hotels: city.hotel && city.hotel.name.trim() ? [city.hotel] : [],
+          restaurants: allRestaurants,
+          activities: allActivities,
+          days: city.days.map(day => ({
+            dayNumber: day.dayNumber,
+            restaurants: day.restaurants.filter(r => r.name.trim() !== ''),
+            activities: day.activities.filter(a => a.name.trim() !== '')
+          }))
+        };
+      });
 
       // Hotels, restaurants, and activities are optional - no validation needed
 
@@ -498,13 +552,7 @@ function NewTripContent() {
           body: JSON.stringify({
             ...formData,
             countries: formData.countries.filter(c => c.trim() !== ''),
-            citiesData: citiesData.map(city => ({
-              name: city.name,
-              country: city.country,
-              hotels: city.hotels.filter(h => h.name.trim() !== ''),
-              restaurants: city.restaurants.filter(r => r.name.trim() !== ''),
-              activities: city.activities.filter(a => a.name.trim() !== '')
-            })),
+            citiesData: transformedCitiesData,
             userId: user.id,
             userName: user.name,
             userEmail: user.email
@@ -621,6 +669,24 @@ function NewTripContent() {
                 </div>
               </div>
 
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Days *
+                </label>
+                <select
+                  name="numberOfDays"
+                  value={formData.numberOfDays}
+                  onChange={(e) => setFormData(prev => ({ ...prev, numberOfDays: e.target.value }))}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                >
+                  <option value="">Select number of days</option>
+                  {Array.from({ length: 90 }, (_, i) => i + 1).map(num => (
+                    <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
+                  ))}
+                </select>
+              </div>
+
                   </div>
 
             {/* Cities and their data */}
@@ -700,14 +766,52 @@ function NewTripContent() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            if (customCityName.trim()) {
-                              // Keep select on 'custom' but allow Add City to use typed name
-                              // Optionally trigger add immediately:
-                              addCity();
-                            }
                           }
                         }}
                       />
+                    </div>
+                  )}
+
+                  {/* Number of Days and Hotel for this city */}
+                  {(selectedCity || (selectedCity === 'custom' && customCityName.trim())) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          📅 Number of Days *
+                        </label>
+                        <select
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                          value={selectedNumberOfDays}
+                          onChange={(e) => setSelectedNumberOfDays(e.target.value)}
+                        >
+                          <option value="">Select days...</option>
+                          {Array.from({ length: 30 }, (_, i) => i + 1).map(num => (
+                            <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          🏨 Hotel
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Hotel name (optional)"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                          style={{ color: '#000000' }}
+                          value={selectedHotel?.name || ''}
+                          onChange={(e) => {
+                            setSelectedHotel({
+                              id: selectedHotel?.id || Date.now().toString(),
+                              name: e.target.value,
+                              location: selectedHotel?.location || '',
+                              rating: selectedHotel?.rating || 0,
+                              review: selectedHotel?.review || '',
+                              liked: selectedHotel?.liked || null
+                            });
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
                   
@@ -718,7 +822,8 @@ function NewTripContent() {
                       disabled={
                         !selectedCountry ||
                         !selectedCity ||
-                        (selectedCity === 'custom' && customCityName.trim() === '')
+                        (selectedCity === 'custom' && customCityName.trim() === '') ||
+                        !selectedNumberOfDays
                       }
                       className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
@@ -771,7 +876,7 @@ function NewTripContent() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
-                        <p className="text-gray-600">📍 {city.country}</p>
+                        <p className="text-gray-600">📍 {city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
                       </div>
                     </div>
                     <button
@@ -783,322 +888,294 @@ function NewTripContent() {
                     </button>
                   </div>
                   
-                  {/* Expandable Sections */}
-                  <div className="space-y-4">
-                    {/* Hotels Section */}
-                    <div className="border border-gray-200 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => toggleSection(city.id, 'hotels')}
-                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">🏨</span>
+                  {/* Hotel Section - Single Hotel */}
+                  <div className="mb-6">
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span className="text-2xl mr-2">🏨</span>
+                        Hotel
+                      </h4>
+                      {city.hotel ? (
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                              <input
+                                type="text"
+                                value={city.hotel.name}
+                                onChange={(e) => updateHotel(city.id, 'name', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                placeholder="Hotel name"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                              <input
+                                type="text"
+                                value={city.hotel.location}
+                                onChange={(e) => updateHotel(city.id, 'location', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                placeholder="Address"
+                              />
+                            </div>
+                          </div>
+                          <div className="mb-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                            <div className="flex items-center space-x-2">
+                              {[1, 2, 3, 4, 5].map((rating) => (
+                                <button
+                                  key={rating}
+                                  type="button"
+                                  onClick={() => updateHotel(city.id, 'rating', rating)}
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                    city.hotel!.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                  }`}
+                                >
+                                  <Star className="w-4 h-4 fill-current" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                           <div>
-                            <h4 className="text-lg font-semibold text-gray-900">Hotels</h4>
-                            <p className="text-sm text-gray-600">{city.hotels.length} hotel{city.hotels.length !== 1 ? 's' : ''} added</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                            {city.hotels.length}
-                          </span>
-                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-hotels`] ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-                      
-                      {expandedSections[`${city.id}-hotels`] && (
-                        <div className="border-t border-gray-200 p-4 bg-gray-50">
-                          <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm text-gray-600">Add hotels for {city.name}</p>
-                            <button
-                              type="button"
-                              onClick={() => addHotel(city.id)}
-                              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Hotel
-                            </button>
-                          </div>
-                    {city.hotels.map((hotel, index) => (
-                      <div key={hotel.id} className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 mb-4 border border-blue-200">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-xl">🏨</span>
-                            <h5 className="font-semibold text-gray-800">Hotel {index + 1}</h5>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
+                            <textarea
+                              value={city.hotel.review}
+                              onChange={(e) => updateHotel(city.id, 'review', e.target.value)}
+                              rows={2}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                              placeholder="What did you think about this hotel?"
+                            />
                           </div>
                           <button
                             type="button"
-                            onClick={() => removeHotel(city.id, hotel.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                            onClick={() => setHotelForCity(city.id, null)}
+                            className="mt-3 text-red-500 hover:text-red-700 text-sm"
                           >
-                            <X className="w-4 h-4" />
+                            Remove Hotel
                           </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <input
-                        type="text"
-                        value={hotel.name}
-                              onChange={(e) => updateHotel(city.id, hotel.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                        placeholder="Hotel name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={hotel.location}
-                              onChange={(e) => updateHotel(city.id, hotel.id, 'location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black"
-                              placeholder="Address"
-                      />
-                    </div>
-                  </div>
-                        <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div className="flex items-center space-x-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                                onClick={() => updateHotel(city.id, hotel.id, 'rating', rating)}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                            hotel.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                                <Star className="w-4 h-4 fill-current" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                        <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                    <textarea
-                      value={hotel.review}
-                            onChange={(e) => updateHotel(city.id, hotel.id, 'review', e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                      placeholder="What did you think about this hotel?"
-                    />
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-600 mb-3">No hotel added</p>
+                          <button
+                            type="button"
+                            onClick={() => updateHotel(city.id, 'name', '')}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          >
+                            <Plus className="w-4 h-4 inline mr-2" />
+                            Add Hotel
+                          </button>
                         </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Days Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      📅 Days ({city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'})
+                    </h4>
+                    {city.days.map((day) => (
+                      <div key={day.id} className="border border-gray-200 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection(`${city.id}-${day.id}`, 'day')}
+                          className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <span className="text-2xl">📅</span>
+                            <div>
+                              <h4 className="text-lg font-semibold text-gray-900">Day {day.dayNumber}</h4>
+                              <p className="text-sm text-gray-600">
+                                {day.restaurants.length} restaurant{day.restaurants.length !== 1 ? 's' : ''}, {' '}
+                                {day.activities.length} activit{day.activities.length !== 1 ? 'ies' : 'y'}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-${day.id}-day`] ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {expandedSections[`${city.id}-${day.id}-day`] && (
+                          <div className="border-t border-gray-200 p-4 bg-gray-50">
+                            {/* Restaurants for this day */}
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <h5 className="font-semibold text-gray-900 flex items-center">
+                                  <span className="text-xl mr-2">🍽️</span>
+                                  Restaurants
+                                </h5>
+                                <button
+                                  type="button"
+                                  onClick={() => addRestaurant(city.id, day.id)}
+                                  className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add Restaurant
+                                </button>
+                              </div>
+                              {day.restaurants.length === 0 ? (
+                                <p className="text-gray-500 text-sm text-center py-4">No restaurants added for this day</p>
+                              ) : (
+                                day.restaurants.map((restaurant, index) => (
+                                  <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 mb-3 border border-green-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-lg">🍽️</span>
+                                        <h6 className="font-semibold text-gray-800">Restaurant {index + 1}</h6>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeRestaurant(city.id, day.id, restaurant.id)}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                        <input
+                                          type="text"
+                                          value={restaurant.name}
+                                          onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'name', e.target.value)}
+                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
+                                          placeholder="Restaurant name"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                                        <input
+                                          type="text"
+                                          value={restaurant.location}
+                                          onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'location', e.target.value)}
+                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
+                                          placeholder="Address"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="mb-2">
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Rating</label>
+                                      <div className="flex items-center space-x-1">
+                                        {[1, 2, 3, 4, 5].map((rating) => (
+                                          <button
+                                            key={rating}
+                                            type="button"
+                                            onClick={() => updateRestaurant(city.id, day.id, restaurant.id, 'rating', rating)}
+                                            className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                                              restaurant.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                            }`}
+                                          >
+                                            <Star className="w-3 h-3 fill-current" />
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
+                                      <textarea
+                                        value={restaurant.review}
+                                        onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'review', e.target.value)}
+                                        rows={2}
+                                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
+                                        placeholder="Review"
+                                      />
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+
+                            {/* Activities for this day */}
+                            <div>
+                              <div className="flex items-center justify-between mb-4">
+                                <h5 className="font-semibold text-gray-900 flex items-center">
+                                  <span className="text-xl mr-2">🎯</span>
+                                  Activities
+                                </h5>
+                                <button
+                                  type="button"
+                                  onClick={() => addActivity(city.id, day.id)}
+                                  className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add Activity
+                                </button>
+                              </div>
+                              {day.activities.length === 0 ? (
+                                <p className="text-gray-500 text-sm text-center py-4">No activities added for this day</p>
+                              ) : (
+                                day.activities.map((activity, index) => (
+                                  <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-3 border border-purple-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-lg">🎯</span>
+                                        <h6 className="font-semibold text-gray-800">Activity {index + 1}</h6>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeActivity(city.id, day.id, activity.id)}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                        <input
+                                          type="text"
+                                          value={activity.name}
+                                          onChange={(e) => updateActivity(city.id, day.id, activity.id, 'name', e.target.value)}
+                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
+                                          placeholder="Activity name"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                                        <input
+                                          type="text"
+                                          value={activity.location}
+                                          onChange={(e) => updateActivity(city.id, day.id, activity.id, 'location', e.target.value)}
+                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
+                                          placeholder="Address"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="mb-2">
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Rating</label>
+                                      <div className="flex items-center space-x-1">
+                                        {[1, 2, 3, 4, 5].map((rating) => (
+                                          <button
+                                            key={rating}
+                                            type="button"
+                                            onClick={() => updateActivity(city.id, day.id, activity.id, 'rating', rating)}
+                                            className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                                              activity.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                            }`}
+                                          >
+                                            <Star className="w-3 h-3 fill-current" />
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
+                                      <textarea
+                                        value={activity.review}
+                                        onChange={(e) => updateActivity(city.id, day.id, activity.id, 'review', e.target.value)}
+                                        rows={2}
+                                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
+                                        placeholder="Review"
+                                      />
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
-                        </div>
-                      )}
-                  </div>
-                  
-                    {/* Restaurants Section */}
-                    <div className="border border-gray-200 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => toggleSection(city.id, 'restaurants')}
-                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">🍽️</span>
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-900">Restaurants</h4>
-                            <p className="text-sm text-gray-600">{city.restaurants.length} restaurant{city.restaurants.length !== 1 ? 's' : ''} added</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                            {city.restaurants.length}
-                          </span>
-                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-restaurants`] ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-                      
-                      {expandedSections[`${city.id}-restaurants`] && (
-                        <div className="border-t border-gray-200 p-4 bg-gray-50">
-                          <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm text-gray-600">Add restaurants for {city.name}</p>
-                <button
-                  type="button"
-                              onClick={() => addRestaurant(city.id)}
-                              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                              <Plus className="w-4 h-4 mr-2" />
-                  Add Restaurant
-                </button>
-              </div>
-                          {city.restaurants.map((restaurant, index) => (
-                            <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-5 mb-4 border border-green-200">
-                  <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center space-x-3">
-                                  <span className="text-xl">🍽️</span>
-                                  <h5 className="font-semibold text-gray-800">Restaurant {index + 1}</h5>
-                                </div>
-                    <button
-                      type="button"
-                                  onClick={() => removeRestaurant(city.id, restaurant.id)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <input
-                        type="text"
-                        value={restaurant.name}
-                                    onChange={(e) => updateRestaurant(city.id, restaurant.id, 'name', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                        placeholder="Restaurant name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={restaurant.location}
-                                    onChange={(e) => updateRestaurant(city.id, restaurant.id, 'location', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                                    placeholder="Address"
-                      />
-                    </div>
-                  </div>
-                              <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div className="flex items-center space-x-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                                      onClick={() => updateRestaurant(city.id, restaurant.id, 'rating', rating)}
-                                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                            restaurant.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                                      <Star className="w-4 h-4 fill-current" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                              <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                    <textarea
-                      value={restaurant.review}
-                                  onChange={(e) => updateRestaurant(city.id, restaurant.id, 'review', e.target.value)}
-                      rows={2}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                      placeholder="What did you think about this restaurant?"
-                    />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                  
-                    {/* Activities Section */}
-                    <div className="border border-gray-200 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => toggleSection(city.id, 'activities')}
-                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">🎯</span>
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-900">Activities</h4>
-                            <p className="text-sm text-gray-600">{city.activities.length} activit{city.activities.length !== 1 ? 'ies' : 'y'} added</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                            {city.activities.length}
-                          </span>
-                          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedSections[`${city.id}-activities`] ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-                      
-                      {expandedSections[`${city.id}-activities`] && (
-                        <div className="border-t border-gray-200 p-4 bg-gray-50">
-                          <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm text-gray-600">Add activities for {city.name}</p>
-                <button
-                  type="button"
-                              onClick={() => addActivity(city.id)}
-                              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                >
-                              <Plus className="w-4 h-4 mr-2" />
-                  Add Activity
-                </button>
-              </div>
-                          {city.activities.map((activity, index) => (
-                            <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-5 mb-4 border border-purple-200">
-                  <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center space-x-3">
-                                  <span className="text-xl">🎯</span>
-                                  <h5 className="font-semibold text-gray-800">Activity {index + 1}</h5>
-                                </div>
-                    <button
-                      type="button"
-                                  onClick={() => removeActivity(city.id, activity.id)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <input
-                        type="text"
-                        value={activity.name}
-                                    onChange={(e) => updateActivity(city.id, activity.id, 'name', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                        placeholder="Activity name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={activity.location}
-                                    onChange={(e) => updateActivity(city.id, activity.id, 'location', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                                    placeholder="Address"
-                      />
-                    </div>
-                  </div>
-                              <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div className="flex items-center space-x-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                                      onClick={() => updateActivity(city.id, activity.id, 'rating', rating)}
-                                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                            activity.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                                      <Star className="w-4 h-4 fill-current" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                              <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                    <textarea
-                      value={activity.review}
-                                  onChange={(e) => updateActivity(city.id, activity.id, 'review', e.target.value)}
-                      rows={2}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                      placeholder="What did you think about this activity?"
-                    />
-                  </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
               ))}

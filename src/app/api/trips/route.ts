@@ -407,7 +407,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Log received data for debugging
+    console.log('Received citiesData:', JSON.stringify(citiesData, null, 2));
+
     // Create trip in database with hierarchical structure
+    // Handle both old structure (hotels/restaurants/activities arrays) and new structure (days array)
     const newTrip = await prisma.trip.create({
       data: {
         title,
@@ -419,37 +423,58 @@ export async function POST(request: NextRequest) {
         isPublic: true,
         userId: userRecord.id,
         cities_data: {
-          create: (citiesData || []).map((cityData: any) => ({
-            name: cityData.name,
-            country: cityData.country,
-            hotels: {
-              create: (cityData.hotels || []).map((hotel: any) => ({
-                name: hotel.name,
-                location: hotel.location,
-                rating: hotel.rating,
-                review: hotel.review,
-                liked: hotel.liked
-              }))
-            },
-            restaurants: {
-              create: (cityData.restaurants || []).map((restaurant: any) => ({
-                name: restaurant.name,
-                location: restaurant.location,
-                rating: restaurant.rating,
-                review: restaurant.review,
-                liked: restaurant.liked
-              }))
-            },
-            activities: {
-              create: (cityData.activities || []).map((activity: any) => ({
-                name: activity.name,
-                location: activity.location,
-                rating: activity.rating,
-                review: activity.review,
-                liked: activity.liked
-              }))
+          create: (citiesData || []).map((cityData: any) => {
+            // Handle new structure with days array - flatten restaurants and activities from all days
+            let hotels = cityData.hotels || [];
+            let restaurants = cityData.restaurants || [];
+            let activities = cityData.activities || [];
+
+            // If we have days array, flatten restaurants and activities from all days
+            if (cityData.days && Array.isArray(cityData.days)) {
+              restaurants = [];
+              activities = [];
+              cityData.days.forEach((day: any) => {
+                if (day.restaurants && Array.isArray(day.restaurants)) {
+                  restaurants.push(...day.restaurants);
+                }
+                if (day.activities && Array.isArray(day.activities)) {
+                  activities.push(...day.activities);
+                }
+              });
             }
-          }))
+
+            return {
+              name: cityData.name,
+              country: cityData.country,
+              hotels: {
+                create: hotels.map((hotel: any) => ({
+                  name: hotel.name || '',
+                  location: hotel.location || '',
+                  rating: hotel.rating || null,
+                  review: hotel.review || null,
+                  liked: hotel.liked ?? null
+                }))
+              },
+              restaurants: {
+                create: restaurants.map((restaurant: any) => ({
+                  name: restaurant.name || '',
+                  location: restaurant.location || '',
+                  rating: restaurant.rating || null,
+                  review: restaurant.review || null,
+                  liked: restaurant.liked ?? null
+                }))
+              },
+              activities: {
+                create: activities.map((activity: any) => ({
+                  name: activity.name || '',
+                  location: activity.location || '',
+                  rating: activity.rating || null,
+                  review: activity.review || null,
+                  liked: activity.liked ?? null
+                }))
+              }
+            };
+          })
         }
       },
       include: {
@@ -480,9 +505,19 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       console.error('Error details:', error.message);
       console.error('Error stack:', error.stack);
+      // Log Prisma errors in detail
+      if (error.message.includes('Prisma') || error.message.includes('prisma')) {
+        console.error('Prisma error detected:', error);
+      }
     }
+    // Return more detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Internal server error', 
+        details: errorMessage,
+        message: process.env.NODE_ENV === 'development' ? errorMessage : 'Failed to create trip. Please try again.'
+      },
       { status: 500 }
     );
   }

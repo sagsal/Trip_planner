@@ -45,3 +45,9 @@ next-env.d.ts
 /src/generated/prisma
 
 /src/generated/prisma
+
+# Prevent duplicate favicon conflict
+src/app/favicon.ico
+
+# Prevent duplicate favicon conflict
+src/app/favicon.ico

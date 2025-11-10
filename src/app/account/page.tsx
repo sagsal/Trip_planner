@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2 } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
 
@@ -17,6 +17,7 @@ interface Trip {
   countries: string;
   cities: string;
   isPublic: boolean;
+  isDraft?: boolean;
   createdAt: string;
   cities_data: CityData[];
 }
@@ -59,11 +60,13 @@ interface Activity {
 
 function AccountContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [draftTrips, setDraftTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [deletingTrip, setDeletingTrip] = useState<string | null>(null);
+  const [deletingDraft, setDeletingDraft] = useState<string | null>(null);
   const router = useRouter();
 
   const fetchUserTrips = async (showRetryState = false) => {
@@ -85,23 +88,39 @@ function AccountContent() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       
-      // Fetch user's trips from API
-      const result = await fetchTrips();
-      if (result.data) {
-        // Filter trips to show only the current user's trips
-        const userTrips = result.data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
-        setTrips(userTrips);
-        setError(null);
-      } else if (result.error) {
-        // Network or API error - show user-friendly message
-        setError(result.error);
-        // Don't clear trips if we already have some (they might be stale but better than nothing)
-        if (trips.length === 0) {
-          setTrips([]);
+      // Fetch user's trips from API (both shared and drafts)
+      try {
+        const [sharedResult, draftsResult] = await Promise.all([
+          fetchTrips(), // Shared/public trips
+          fetch(`/api/trips?drafts=true&userId=${parsedUser.id}`).then(r => r.json()).catch(() => ({ trips: [] })) // Draft trips
+        ]);
+        
+        if (sharedResult.data) {
+          // Filter shared trips to show only the current user's trips
+          const userSharedTrips = sharedResult.data.trips.filter((trip: any) => trip.user.id === parsedUser.id && (!trip.isDraft || trip.isDraft === false));
+          setTrips(userSharedTrips);
+        } else if (sharedResult.error) {
+          setError(sharedResult.error);
         }
-      } else {
-        setTrips([]);
+        
+        // Set draft trips
+        if (draftsResult.trips) {
+          setDraftTrips(draftsResult.trips);
+        }
+        
         setError(null);
+      } catch (fetchError) {
+        // If both fail, try to at least get shared trips
+        const result = await fetchTrips();
+        if (result.data) {
+          const userTrips = result.data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
+          const drafts = userTrips.filter((trip: any) => trip.isDraft === true);
+          const shared = userTrips.filter((trip: any) => !trip.isDraft || trip.isDraft === false);
+          setDraftTrips(drafts);
+          setTrips(shared);
+        } else if (result.error) {
+          setError(result.error);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -179,6 +198,40 @@ function AccountContent() {
       alert(error instanceof Error ? error.message : 'Failed to delete trip');
     } finally {
       setDeletingTrip(null);
+    }
+  };
+
+  const handleDeleteDraft = async (draftId: string, draftTitle: string) => {
+    if (!user || deletingDraft) return;
+    
+    const confirmed = window.confirm(`Are you sure you want to delete "${draftTitle}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingDraft(draftId);
+    
+    try {
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete draft trip');
+      }
+
+      // Remove the draft from the local state
+      setDraftTrips(prevDrafts => prevDrafts.filter(draft => draft.id !== draftId));
+      
+      alert('Draft trip deleted successfully!');
+    } catch (error) {
+      console.error('Delete draft error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete draft trip');
+    } finally {
+      setDeletingDraft(null);
     }
   };
 
@@ -325,9 +378,118 @@ function AccountContent() {
           </div>
         )}
 
-        {/* My Trips */}
+        {/* Draft Trips */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">My Trips</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">📝 Draft Trips</h2>
+            <Link
+              href="/trips/build"
+              className="px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors flex items-center font-semibold"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Build New Trip
+            </Link>
+          </div>
+          <p className="text-gray-600 text-sm mb-6">
+            Create draft trips to collect ideas from other travelers. Add items from shared trips, then click "Share Trip" when ready to publish.
+          </p>
+          {draftTrips.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {draftTrips.map((trip, index) => (
+                <motion.div
+                  key={trip.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow border-2 border-yellow-200"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-xl font-semibold text-gray-900">{trip.title}</h3>
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
+                            DRAFT
+                          </span>
+                        </div>
+                        {trip.description && (
+                          <p className="text-gray-600 text-sm mb-2 line-clamp-2">{trip.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-1">Countries: {parseCountries(trip.countries).join(', ') || 'Not set'}</p>
+                      <p className="text-sm text-gray-600">Cities: {parseCities(trip.cities).join(', ') || 'Not set'}</p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.hotels.length, 0) || 0} hotels</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.restaurants.length, 0) || 0} restaurants</span>
+                      <span>{trip.cities_data?.reduce((total, city) => total + city.activities.length, 0) || 0} activities</span>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-2">
+                      <Link
+                        href={`/trips/build/${trip.id}`}
+                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700 transition-colors flex items-center justify-center font-semibold"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit Draft
+                      </Link>
+                      <Link
+                        href={`/trips/${trip.id}/share`}
+                        className="w-full bg-[#AAB624] text-white px-4 py-2 rounded-lg text-center hover:bg-[#AAB624]/90 transition-colors flex items-center justify-center font-semibold"
+                      >
+                        <Share2 className="w-4 h-4 mr-1" />
+                        Share Trip
+                      </Link>
+                      <button
+                        onClick={() => handleDeleteDraft(trip.id, trip.title)}
+                        disabled={deletingDraft === trip.id || deletingDraft !== null}
+                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg text-center hover:bg-red-700 transition-colors flex items-center justify-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingDraft === trip.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </>
+                        )}
+                      </button>
+                      <p className="text-xs text-gray-500 text-center mt-1">
+                        Share anytime when ready
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center border-2 border-dashed border-yellow-200">
+              <div className="text-6xl mb-4">📝</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Draft Trips Yet</h3>
+              <p className="text-gray-600 mb-6">
+                Start building your trip by collecting ideas from other travelers!
+              </p>
+              <Link
+                href="/trips/build"
+                className="inline-flex items-center px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors font-semibold"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Build Your First Trip
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* My Shared Trips */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">My Shared Trips</h2>
           {error && trips.length === 0 ? (
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />

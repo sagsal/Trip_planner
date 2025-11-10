@@ -1,0 +1,2066 @@
+'use client';
+
+import { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Plus, Trash2, Copy, Save, Share2, Eye, X, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import Link from 'next/link';
+
+interface Hotel {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  review?: string;
+  liked?: boolean;
+}
+
+interface Day {
+  id: string;
+  dayNumber: number;
+  restaurants: Restaurant[];
+  activities: Activity[];
+}
+
+interface CityData {
+  id: string;
+  name: string;
+  country: string;
+  numberOfDays: number;
+  hotel: Hotel | null;
+  hotels: Hotel[];
+  days: Day[];
+}
+
+interface DraftTrip {
+  id: string;
+  title: string;
+  description?: string;
+  countries: string[];
+  citiesData: CityData[];
+  createdAt: string;
+}
+
+interface SharedTrip {
+  id: string;
+  title: string;
+  description?: string;
+  user: {
+    name: string;
+  };
+  cities_data: {
+    id: string;
+    name: string;
+    country: string;
+    hotels: Hotel[];
+    restaurants: Restaurant[];
+    activities: Activity[];
+  }[];
+}
+
+function DraftEditContent() {
+  const router = useRouter();
+  const params = useParams();
+  const draftId = params.id as string;
+
+  const [user, setUser] = useState<any>(null);
+  const [draftTrip, setDraftTrip] = useState<DraftTrip | null>(null);
+  const [sharedTrips, setSharedTrips] = useState<SharedTrip[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [showBrowseTrips, setShowBrowseTrips] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+  const [addingRestaurant, setAddingRestaurant] = useState<{cityId: string, dayId: string} | null>(null);
+  const [addingActivity, setAddingActivity] = useState<{cityId: string, dayId: string} | null>(null);
+  const [addingHotel, setAddingHotel] = useState<string | null>(null);
+  const [newRestaurantName, setNewRestaurantName] = useState('');
+  const [newActivityName, setNewActivityName] = useState('');
+  const [newHotelName, setNewHotelName] = useState('');
+
+  // State for adding new city to existing draft
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [customCityName, setCustomCityName] = useState('');
+  const [selectedNumberOfDays, setSelectedNumberOfDays] = useState('');
+
+  // Draft trip form state (same as share trip)
+  const [draftData, setDraftData] = useState({
+    startDate: '',
+    endDate: '',
+    tripRating: 0,
+    tripReview: ''
+  });
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+      loadDraftTrip();
+      loadSharedTrips();
+    } else {
+      router.push('/login');
+    }
+  }, [draftId, router]);
+
+  const loadDraftTrip = async () => {
+    try {
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      if (!user) {
+        setError('User not found. Please log in again.');
+        return;
+      }
+      const userIdParam = `?userId=${user.id}`;
+      const response = await fetch(`/api/trips/${draftId}${userIdParam}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Draft trip not found');
+        return;
+      }
+      
+      const result = await response.json();
+      // API returns { trip: {...} }
+      const data = result.trip || result;
+      
+      if (!data) {
+        setError('Draft trip not found');
+        return;
+      }
+      
+      // Verify it's a draft trip
+      if (!data.isDraft) {
+        setError('This trip is not a draft trip');
+        return;
+      }
+      
+      // Parse countries safely
+      let countries: string[] = [];
+      try {
+        if (typeof data.countries === 'string') {
+          const parsed = JSON.parse(data.countries);
+          countries = Array.isArray(parsed) ? parsed : (typeof parsed === 'string' ? JSON.parse(parsed) : []);
+        } else if (Array.isArray(data.countries)) {
+          countries = data.countries;
+        }
+      } catch (e) {
+        console.error('Error parsing countries:', e);
+        countries = [];
+      }
+      
+      // Transform the data to match our interface
+      const transformed: DraftTrip = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        countries,
+          citiesData: data.cities_data.map((city: any) => {
+            // Group restaurants and activities by day (for now, we'll distribute them)
+            // In a full implementation, we'd store day info in DB
+            const days: Day[] = [];
+            const restaurants = city.restaurants || [];
+            const activities = city.activities || [];
+            // Calculate numberOfDays from stored data or default to 1
+            // If we have items, estimate days based on typical distribution (3-5 items per day)
+            // Otherwise default to 1 day
+            const totalItems = restaurants.length + activities.length;
+            const estimatedDays = totalItems > 0 ? Math.max(1, Math.ceil(totalItems / 4)) : 1;
+            const numberOfDays = city.numberOfDays || estimatedDays;
+
+            // Distribute items across days (simple round-robin)
+            for (let i = 0; i < numberOfDays; i++) {
+              days.push({
+                id: `day-${i + 1}`,
+                dayNumber: i + 1,
+                restaurants: restaurants.filter((_: any, idx: number) => idx % numberOfDays === i),
+                activities: activities.filter((_: any, idx: number) => idx % numberOfDays === i)
+              });
+            }
+
+            return {
+              id: city.id,
+              name: city.name,
+              country: city.country,
+              numberOfDays: numberOfDays,
+              hotel: city.hotels && city.hotels.length > 0 ? city.hotels[0] : null,
+              hotels: city.hotels || [],
+              days
+            };
+          }),
+          createdAt: data.createdAt
+        };
+        setDraftTrip(transformed);
+        
+        // Load existing draft data if available
+        // Extract tripReview from description if it exists (format: "Review: ...")
+        let tripReview = '';
+        let description = data.description || '';
+        if (description && description.includes('Review:')) {
+          const reviewMatch = description.match(/Review:\s*(.+)/s);
+          if (reviewMatch) {
+            tripReview = reviewMatch[1].trim();
+            // Remove review from description
+            description = description.replace(/\n\nReview:.*/s, '').trim();
+          }
+        }
+        
+        setDraftData({
+          startDate: data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : '',
+          endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : '',
+          tripRating: 0, // Rating is not stored separately, would need schema update
+          tripReview: tripReview
+        });
+        setError(null);
+    } catch (err) {
+      console.error('Error loading draft trip:', err);
+      setError('An error occurred while loading the draft trip');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadSharedTrips = async () => {
+    try {
+      const response = await fetch('/api/trips?public=true');
+      if (response.ok) {
+        const data = await response.json();
+        setSharedTrips(data.trips || []);
+      }
+    } catch (err) {
+      console.error('Error loading shared trips:', err);
+    }
+  };
+
+  const handleAddHotel = (cityId: string) => {
+    setAddingHotel(cityId);
+    setNewHotelName('');
+  };
+
+  const handleSaveHotel = async () => {
+    if (!addingHotel || !newHotelName.trim()) {
+      setAddingHotel(null);
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemType: 'hotel',
+          item: { name: newHotelName.trim(), location: '' },
+          cityId: addingHotel
+        })
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess('Hotel added successfully');
+        setTimeout(() => setSuccess(null), 3000);
+        setAddingHotel(null);
+        setNewHotelName('');
+      } else {
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+          }
+        } else {
+          const text = await response.text();
+          errorData = { error: text || `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.error('Add hotel error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          url: `/api/trips/${draftId}`
+        });
+        setError(errorData.error || errorData.message || `Failed to add hotel (${response.status})`);
+      }
+    } catch (err) {
+      console.error('Add hotel exception:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while adding the hotel');
+    }
+  };
+
+  const handleCancelHotel = () => {
+    setAddingHotel(null);
+    setNewHotelName('');
+  };
+
+  const handleUpdateHotel = async (hotelId: string, field: string, value: any) => {
+    try {
+      setError(null);
+      // Get the hotel to update
+      const hotel = draftTrip?.citiesData
+        .flatMap(city => city.hotels)
+        .find(h => h.id === hotelId);
+      
+      if (!hotel) {
+        setError('Hotel not found');
+        return;
+      }
+
+      const updatedHotel = {
+        ...hotel,
+        [field]: value
+      };
+
+      const response = await fetch(`/api/hotels/${hotelId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedHotel)
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to update hotel');
+      }
+    } catch (err) {
+      console.error('Error updating hotel:', err);
+      setError('An error occurred while updating the hotel');
+    }
+  };
+
+  const handleDeleteHotel = async (cityId: string, hotelId: string) => {
+    if (!confirm('Are you sure you want to delete this hotel?')) return;
+
+    try {
+      const response = await fetch(`/api/hotels/${hotelId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess('Hotel deleted successfully');
+      } else {
+        setError('Failed to delete hotel');
+      }
+    } catch (err) {
+      setError('An error occurred while deleting the hotel');
+    }
+  };
+
+  const handleAddRestaurant = (cityId: string, dayId: string) => {
+    setAddingRestaurant({ cityId, dayId });
+    setNewRestaurantName('');
+  };
+
+  const handleSaveRestaurant = async () => {
+    if (!addingRestaurant || !newRestaurantName.trim()) {
+      setAddingRestaurant(null);
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemType: 'restaurant',
+          item: { name: newRestaurantName.trim(), location: '' },
+          cityId: addingRestaurant.cityId,
+          dayId: addingRestaurant.dayId
+        })
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess('Restaurant added successfully');
+        setTimeout(() => setSuccess(null), 3000);
+        setAddingRestaurant(null);
+        setNewRestaurantName('');
+      } else {
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+          }
+        } else {
+          const text = await response.text();
+          errorData = { error: text || `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.error('Add restaurant error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          url: `/api/trips/${draftId}`
+        });
+        setError(errorData.error || errorData.message || `Failed to add restaurant (${response.status})`);
+      }
+    } catch (err) {
+      console.error('Add restaurant exception:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while adding the restaurant');
+    }
+  };
+
+  const handleCancelRestaurant = () => {
+    setAddingRestaurant(null);
+    setNewRestaurantName('');
+  };
+
+  const handleUpdateRestaurant = async (restaurantId: string, field: string, value: any) => {
+    try {
+      setError(null);
+      // Get the restaurant to update
+      const restaurant = draftTrip?.citiesData
+        .flatMap(city => city.days.flatMap(day => day.restaurants))
+        .find(r => r.id === restaurantId);
+      
+      if (!restaurant) {
+        setError('Restaurant not found');
+        return;
+      }
+
+      const updatedRestaurant = {
+        ...restaurant,
+        [field]: value
+      };
+
+      const response = await fetch(`/api/restaurants/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedRestaurant)
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to update restaurant');
+      }
+    } catch (err) {
+      console.error('Error updating restaurant:', err);
+      setError('An error occurred while updating the restaurant');
+    }
+  };
+
+  const handleDeleteRestaurant = async (restaurantId: string) => {
+    if (!confirm('Are you sure you want to delete this restaurant?')) return;
+
+    try {
+      const response = await fetch(`/api/restaurants/${restaurantId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess('Restaurant deleted successfully');
+      } else {
+        setError('Failed to delete restaurant');
+      }
+    } catch (err) {
+      setError('An error occurred while deleting the restaurant');
+    }
+  };
+
+  const handleAddActivity = (cityId: string, dayId: string) => {
+    setAddingActivity({ cityId, dayId });
+    setNewActivityName('');
+  };
+
+  const handleSaveActivity = async () => {
+    if (!addingActivity || !newActivityName.trim()) {
+      setAddingActivity(null);
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemType: 'activity',
+          item: { name: newActivityName.trim(), location: '' },
+          cityId: addingActivity.cityId,
+          dayId: addingActivity.dayId
+        })
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess('Activity added successfully');
+        setTimeout(() => setSuccess(null), 3000);
+        setAddingActivity(null);
+        setNewActivityName('');
+      } else {
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+          }
+        } else {
+          const text = await response.text();
+          errorData = { error: text || `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.error('Add activity error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          url: `/api/trips/${draftId}`
+        });
+        setError(errorData.error || errorData.message || `Failed to add activity (${response.status})`);
+      }
+    } catch (err) {
+      console.error('Add activity exception:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while adding the activity');
+    }
+  };
+
+  const handleCancelActivity = () => {
+    setAddingActivity(null);
+    setNewActivityName('');
+  };
+
+  const handleUpdateActivity = async (activityId: string, field: string, value: any) => {
+    try {
+      setError(null);
+      // Get the activity to update
+      const activity = draftTrip?.citiesData
+        .flatMap(city => city.days.flatMap(day => day.activities))
+        .find(a => a.id === activityId);
+      
+      if (!activity) {
+        setError('Activity not found');
+        return;
+      }
+
+      const updatedActivity = {
+        ...activity,
+        [field]: value
+      };
+
+      const response = await fetch(`/api/activities/${activityId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedActivity)
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to update activity');
+      }
+    } catch (err) {
+      console.error('Error updating activity:', err);
+      setError('An error occurred while updating the activity');
+    }
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    if (!confirm('Are you sure you want to delete this activity?')) return;
+
+    try {
+      const response = await fetch(`/api/activities/${activityId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess('Activity deleted successfully');
+      } else {
+        setError('Failed to delete activity');
+      }
+    } catch (err) {
+      setError('An error occurred while deleting the activity');
+    }
+  };
+
+  const handleCopyItem = async (itemType: 'hotel' | 'restaurant' | 'activity', item: any, targetCityId: string, targetDayId?: string) => {
+    try {
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemType,
+          item,
+          cityId: targetCityId,
+          dayId: targetDayId
+        })
+      });
+
+      if (response.ok) {
+        loadDraftTrip();
+        setSuccess(`${itemType} copied successfully!`);
+      } else {
+        setError('Failed to copy item');
+      }
+    } catch (err) {
+      setError('An error occurred while copying the item');
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!draftTrip) {
+      setError('Draft trip not loaded');
+      return;
+    }
+
+    try {
+      setError(null);
+      // Prepare countries - ensure it's always an array
+      let countries: string[] = [];
+      if (typeof draftTrip.countries === 'string') {
+        try {
+          const parsed = JSON.parse(draftTrip.countries);
+          countries = Array.isArray(parsed) ? parsed : (typeof parsed === 'string' ? JSON.parse(parsed) : []);
+        } catch (e) {
+          countries = [];
+        }
+      } else if (Array.isArray(draftTrip.countries)) {
+        countries = draftTrip.countries;
+      }
+
+      // Prepare cities data for the update
+      const citiesData = draftTrip.citiesData.map(city => {
+        const allRestaurants: any[] = [];
+        const allActivities: any[] = [];
+        
+        city.days.forEach(day => {
+          allRestaurants.push(...(day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''));
+          allActivities.push(...(day.activities || []).filter((a: any) => a.name && a.name.trim() !== ''));
+        });
+
+        return {
+          name: city.name,
+          country: city.country,
+          numberOfDays: city.numberOfDays,
+          hotels: city.hotel && city.hotel.name && city.hotel.name.trim() ? [city.hotel] : [],
+          restaurants: allRestaurants,
+          activities: allActivities,
+          days: city.days.map(day => ({
+            dayNumber: day.dayNumber,
+            restaurants: (day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''),
+            activities: (day.activities || []).filter((a: any) => a.name && a.name.trim() !== '')
+          }))
+        };
+      });
+
+      // Save draft with dates, ratings, and comments - include required fields
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: draftTrip.title,
+          description: draftTrip.description || '',
+          countries: JSON.stringify(countries),
+          cities: JSON.stringify(draftTrip.citiesData.map(c => c.name)),
+          citiesData: citiesData,
+          startDate: draftData.startDate || null,
+          endDate: draftData.endDate || null,
+          isDraft: true,
+          isPublic: false,
+          tripRating: draftData.tripRating,
+          tripReview: draftData.tripReview,
+          userId: user.id
+        })
+      });
+
+      if (response.ok) {
+        setSuccess('Draft saved successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+        // Reload to get updated data
+        loadDraftTrip();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to save draft');
+      }
+    } catch (err) {
+      console.error('Error saving draft:', err);
+      setError('Error saving draft');
+    }
+  };
+
+  const handleShareTrip = async () => {
+    if (!draftTrip) {
+      setError('Draft trip not loaded');
+      return;
+    }
+
+    // Check if dates are provided - required for sharing
+    if (!draftData.startDate || !draftData.endDate) {
+      setError('Please fill in Start Date and End Date in the Trip Details section before sharing');
+      return;
+    }
+
+    try {
+      setError(null);
+      
+      // Prepare countries - ensure it's always an array
+      let countries: string[] = [];
+      if (typeof draftTrip.countries === 'string') {
+        try {
+          const parsed = JSON.parse(draftTrip.countries);
+          countries = Array.isArray(parsed) ? parsed : (typeof parsed === 'string' ? JSON.parse(parsed) : []);
+        } catch (e) {
+          countries = [];
+        }
+      } else if (Array.isArray(draftTrip.countries)) {
+        countries = draftTrip.countries;
+      }
+
+      // Prepare cities data for the update
+      const citiesData = draftTrip.citiesData.map(city => {
+        const allRestaurants: any[] = [];
+        const allActivities: any[] = [];
+        
+        city.days.forEach(day => {
+          allRestaurants.push(...(day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''));
+          allActivities.push(...(day.activities || []).filter((a: any) => a.name && a.name.trim() !== ''));
+        });
+
+        return {
+          name: city.name,
+          country: city.country,
+          numberOfDays: city.numberOfDays,
+          hotels: city.hotel && city.hotel.name && city.hotel.name.trim() ? [city.hotel] : [],
+          restaurants: allRestaurants,
+          activities: allActivities,
+          days: city.days.map(day => ({
+            dayNumber: day.dayNumber,
+            restaurants: (day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''),
+            activities: (day.activities || []).filter((a: any) => a.name && a.name.trim() !== '')
+          }))
+        };
+      });
+
+      // Share the trip directly - set isDraft to false and isPublic to true
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: draftTrip.title,
+          description: draftTrip.description || '',
+          countries: JSON.stringify(countries),
+          cities: JSON.stringify(draftTrip.citiesData.map(c => c.name)),
+          citiesData: citiesData,
+          startDate: draftData.startDate,
+          endDate: draftData.endDate,
+          isDraft: false, // Convert from draft to shared
+          isPublic: true, // Make it public so all users can see it
+          tripRating: draftData.tripRating,
+          tripReview: draftData.tripReview,
+          userId: user.id
+        })
+      });
+
+      if (response.ok) {
+        setSuccess('Trip shared successfully! It is now published and visible to all users.');
+        setTimeout(() => {
+          router.push(`/trips/${draftId}`);
+        }, 2000);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to share trip');
+      }
+    } catch (err) {
+      console.error('Error sharing trip:', err);
+      setError('An error occurred while sharing the trip');
+    }
+  };
+
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // All countries of the world with selected cities - same as build page
+  const countriesData = useMemo(() => ({
+    'Afghanistan': ['Kabul', 'Herat', 'Kandahar', 'Mazar-i-Sharif'],
+    'Albania': ['Tirana', 'Durrës', 'Vlorë', 'Shkodër'],
+    'Algeria': ['Algiers', 'Oran', 'Constantine', 'Annaba'],
+    'Andorra': ['Andorra la Vella'],
+    'Angola': ['Luanda', 'Huambo', 'Lobito', 'Benguela'],
+    'Antigua and Barbuda': ['St. John\'s'],
+    'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza'],
+    'Armenia': ['Yerevan', 'Gyumri', 'Vanadzor'],
+    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
+    'Austria': ['Vienna', 'Graz', 'Linz', 'Salzburg'],
+    'Azerbaijan': ['Baku', 'Ganja', 'Sumqayit'],
+    'Bahamas': ['Nassau', 'Freeport'],
+    'Bahrain': ['Manama'],
+    'Bangladesh': ['Dhaka', 'Chittagong', 'Khulna', 'Sylhet'],
+    'Barbados': ['Bridgetown'],
+    'Belarus': ['Minsk', 'Gomel', 'Mogilev'],
+    'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Bruges'],
+    'Belize': ['Belize City', 'San Ignacio'],
+    'Benin': ['Cotonou', 'Porto-Novo', 'Parakou'],
+    'Bhutan': ['Thimphu', 'Phuntsholing'],
+    'Bolivia': ['La Paz', 'Santa Cruz', 'Cochabamba'],
+    'Bosnia and Herzegovina': ['Sarajevo', 'Banja Luka', 'Tuzla'],
+    'Botswana': ['Gaborone', 'Francistown', 'Maun'],
+    'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza'],
+    'Brunei': ['Bandar Seri Begawan'],
+    'Bulgaria': ['Sofia', 'Plovdiv', 'Varna', 'Burgas'],
+    'Burkina Faso': ['Ouagadougou', 'Bobo-Dioulasso'],
+    'Burundi': ['Bujumbura', 'Gitega'],
+    'Cambodia': ['Phnom Penh', 'Siem Reap', 'Battambang'],
+    'Cameroon': ['Douala', 'Yaoundé', 'Garoua'],
+    'Canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
+    'Cape Verde': ['Praia', 'Mindelo'],
+    'Central African Republic': ['Bangui'],
+    'Chad': ['N\'Djamena', 'Moundou'],
+    'Chile': ['Santiago', 'Valparaíso', 'Concepción'],
+    'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu'],
+    'Colombia': ['Medellín', 'Bogotá', 'Cartagena', 'Cali', 'Barranquilla'],
+    'Comoros': ['Moroni'],
+    'Congo': ['Brazzaville', 'Pointe-Noire'],
+    'Costa Rica': ['San José', 'Cartago', 'Alajuela'],
+    'Croatia': ['Zagreb', 'Split', 'Rijeka', 'Dubrovnik'],
+    'Cuba': ['Havana', 'Santiago de Cuba', 'Camagüey'],
+    'Cyprus': ['Nicosia', 'Limassol', 'Larnaca'],
+    'Czech Republic': ['Prague', 'Brno', 'Ostrava'],
+    'Denmark': ['Copenhagen', 'Aarhus', 'Odense'],
+    'Djibouti': ['Djibouti'],
+    'Dominica': ['Roseau'],
+    'Dominican Republic': ['Santo Domingo', 'Santiago', 'La Romana'],
+    'East Timor': ['Dili'],
+    'Ecuador': ['Quito', 'Guayaquil', 'Cuenca'],
+    'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Luxor'],
+    'El Salvador': ['San Salvador', 'Santa Ana', 'San Miguel'],
+    'Equatorial Guinea': ['Malabo', 'Bata'],
+    'Eritrea': ['Asmara', 'Massawa'],
+    'Estonia': ['Tallinn', 'Tartu', 'Narva'],
+    'Eswatini': ['Mbabane', 'Manzini'],
+    'Ethiopia': ['Addis Ababa', 'Dire Dawa', 'Mekelle'],
+    'Fiji': ['Suva', 'Lautoka'],
+    'Finland': ['Helsinki', 'Tampere', 'Turku'],
+    'France': ['Paris', 'Lyon', 'Marseille', 'Nice', 'Toulouse'],
+    'Gabon': ['Libreville', 'Port-Gentil'],
+    'Gambia': ['Banjul', 'Serekunda'],
+    'Georgia': ['Tbilisi', 'Batumi', 'Kutaisi'],
+    'Germany': ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt'],
+    'Ghana': ['Accra', 'Kumasi', 'Tamale'],
+    'Greece': ['Athens', 'Thessaloniki', 'Patras', 'Heraklion'],
+    'Grenada': ['St. George\'s'],
+    'Guatemala': ['Guatemala City', 'Quetzaltenango'],
+    'Guinea': ['Conakry', 'Nzérékoré'],
+    'Guinea-Bissau': ['Bissau'],
+    'Guyana': ['Georgetown', 'New Amsterdam'],
+    'Haiti': ['Port-au-Prince', 'Cap-Haïtien'],
+    'Honduras': ['Tegucigalpa', 'San Pedro Sula'],
+    'Hungary': ['Budapest', 'Debrecen', 'Szeged'],
+    'Iceland': ['Reykjavik', 'Akureyri'],
+    'India': ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'],
+    'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Medan'],
+    'Iran': ['Tehran', 'Mashhad', 'Isfahan', 'Shiraz'],
+    'Iraq': ['Baghdad', 'Mosul', 'Basra', 'Erbil'],
+    'Ireland': ['Dublin', 'Cork', 'Limerick', 'Galway'],
+    'Israel': ['Jerusalem', 'Tel Aviv', 'Haifa', 'Beersheba'],
+    'Italy': ['Rome', 'Milan', 'Florence', 'Venice', 'Naples'],
+    'Jamaica': ['Kingston', 'Montego Bay'],
+    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Hiroshima', 'Nagoya'],
+    'Jordan': ['Amman', 'Irbid', 'Zarqa'],
+    'Kazakhstan': ['Almaty', 'Nur-Sultan', 'Shymkent'],
+    'Kenya': ['Nairobi', 'Mombasa', 'Kisumu'],
+    'Kiribati': ['Tarawa'],
+    'Kosovo': ['Pristina', 'Prizren'],
+    'Kuwait': ['Kuwait City', 'Al Ahmadi'],
+    'Kyrgyzstan': ['Bishkek', 'Osh'],
+    'Laos': ['Vientiane', 'Luang Prabang'],
+    'Latvia': ['Riga', 'Daugavpils', 'Liepāja'],
+    'Lebanon': ['Beirut', 'Tripoli', 'Sidon'],
+    'Lesotho': ['Maseru'],
+    'Liberia': ['Monrovia', 'Gbarnga'],
+    'Libya': ['Tripoli', 'Benghazi', 'Misrata'],
+    'Liechtenstein': ['Vaduz'],
+    'Lithuania': ['Vilnius', 'Kaunas', 'Klaipėda'],
+    'Luxembourg': ['Luxembourg City'],
+    'Madagascar': ['Antananarivo', 'Toamasina'],
+    'Malawi': ['Lilongwe', 'Blantyre'],
+    'Malaysia': ['Kuala Lumpur', 'George Town', 'Ipoh', 'Johor Bahru'],
+    'Maldives': ['Malé'],
+    'Mali': ['Bamako', 'Sikasso'],
+    'Malta': ['Valletta', 'Sliema'],
+    'Marshall Islands': ['Majuro'],
+    'Mauritania': ['Nouakchott', 'Nouadhibou'],
+    'Mauritius': ['Port Louis'],
+    'Mexico': ['Mexico City', 'Cancun', 'Guadalajara', 'Tijuana', 'Puebla'],
+    'Micronesia': ['Palikir'],
+    'Moldova': ['Chișinău', 'Tiraspol'],
+    'Monaco': ['Monaco'],
+    'Mongolia': ['Ulaanbaatar', 'Darkhan'],
+    'Montenegro': ['Podgorica', 'Nikšić'],
+    'Morocco': ['Casablanca', 'Rabat', 'Fez', 'Marrakech'],
+    'Mozambique': ['Maputo', 'Beira', 'Nampula'],
+    'Myanmar': ['Yangon', 'Mandalay', 'Naypyidaw'],
+    'Namibia': ['Windhoek', 'Swakopmund'],
+    'Nauru': ['Yaren'],
+    'Nepal': ['Kathmandu', 'Pokhara', 'Lalitpur'],
+    'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht'],
+    'New Zealand': ['Auckland', 'Wellington', 'Christchurch', 'Hamilton'],
+    'Nicaragua': ['Managua', 'León', 'Granada'],
+    'Niger': ['Niamey', 'Zinder'],
+    'Nigeria': ['Lagos', 'Abuja', 'Kano', 'Ibadan'],
+    'North Korea': ['Pyongyang', 'Hamhung'],
+    'North Macedonia': ['Skopje', 'Bitola'],
+    'Norway': ['Oslo', 'Bergen', 'Trondheim', 'Stavanger'],
+    'Oman': ['Muscat', 'Salalah'],
+    'Pakistan': ['Karachi', 'Lahore', 'Islamabad', 'Faisalabad'],
+    'Palau': ['Ngerulmud'],
+    'Palestine': ['Jerusalem', 'Ramallah', 'Gaza'],
+    'Panama': ['Panama City', 'Colón'],
+    'Papua New Guinea': ['Port Moresby', 'Lae'],
+    'Paraguay': ['Asunción', 'Ciudad del Este'],
+    'Peru': ['Lima', 'Arequipa', 'Cusco', 'Trujillo'],
+    'Philippines': ['Manila', 'Quezon City', 'Cebu', 'Davao'],
+    'Poland': ['Warsaw', 'Kraków', 'Wrocław', 'Gdańsk'],
+    'Portugal': ['Lisbon', 'Porto', 'Coimbra', 'Braga'],
+    'Qatar': ['Doha', 'Al Rayyan'],
+    'Romania': ['Bucharest', 'Cluj-Napoca', 'Timișoara'],
+    'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg'],
+    'Rwanda': ['Kigali'],
+    'Saint Kitts and Nevis': ['Basseterre'],
+    'Saint Lucia': ['Castries'],
+    'Saint Vincent and the Grenadines': ['Kingstown'],
+    'Samoa': ['Apia'],
+    'San Marino': ['San Marino'],
+    'São Tomé and Príncipe': ['São Tomé'],
+    'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina'],
+    'Senegal': ['Dakar', 'Thiès'],
+    'Serbia': ['Belgrade', 'Novi Sad', 'Niš'],
+    'Seychelles': ['Victoria'],
+    'Sierra Leone': ['Freetown'],
+    'Singapore': ['Singapore'],
+    'Slovakia': ['Bratislava', 'Košice'],
+    'Slovenia': ['Ljubljana', 'Maribor'],
+    'Solomon Islands': ['Honiara'],
+    'Somalia': ['Mogadishu', 'Hargeisa'],
+    'South Africa': ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'],
+    'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu'],
+    'South Sudan': ['Juba'],
+    'Spain': ['Madrid', 'Barcelona', 'Seville', 'Valencia', 'Bilbao'],
+    'Sri Lanka': ['Colombo', 'Kandy', 'Galle'],
+    'Sudan': ['Khartoum', 'Omdurman'],
+    'Suriname': ['Paramaribo'],
+    'Sweden': ['Stockholm', 'Gothenburg', 'Malmö'],
+    'Switzerland': ['Zurich', 'Geneva', 'Basel', 'Bern'],
+    'Syria': ['Damascus', 'Aleppo', 'Homs'],
+    'Taiwan': ['Taipei', 'Kaohsiung', 'Taichung'],
+    'Tajikistan': ['Dushanbe', 'Khujand'],
+    'Tanzania': ['Dar es Salaam', 'Dodoma', 'Arusha'],
+    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Krabi'],
+    'Togo': ['Lomé', 'Sokodé'],
+    'Tonga': ['Nuku\'alofa'],
+    'Trinidad and Tobago': ['Port of Spain', 'San Fernando'],
+    'Tunisia': ['Tunis', 'Sfax', 'Sousse'],
+    'Turkey': ['Istanbul', 'Ankara', 'Izmir', 'Antalya'],
+    'Turkmenistan': ['Ashgabat', 'Türkmenabat'],
+    'Tuvalu': ['Funafuti'],
+    'Uganda': ['Kampala', 'Entebbe'],
+    'Ukraine': ['Kyiv', 'Kharkiv', 'Odesa', 'Lviv'],
+    'United Arab Emirates': ['Dubai', 'Abu Dhabi', 'Sharjah'],
+    'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Liverpool', 'Edinburgh'],
+    'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'],
+    'Uruguay': ['Montevideo', 'Salto'],
+    'Uzbekistan': ['Tashkent', 'Samarkand', 'Bukhara'],
+    'Vanuatu': ['Port Vila'],
+    'Vatican City': ['Vatican City'],
+    'Venezuela': ['Caracas', 'Maracaibo', 'Valencia'],
+    'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Hai Phong'],
+    'Yemen': ['Sana\'a', 'Aden'],
+    'Zambia': ['Lusaka', 'Kitwe'],
+    'Zimbabwe': ['Harare', 'Bulawayo']
+  }), []);
+
+  const handleAddCity = useCallback(async () => {
+    const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
+    if (!selectedCountry || !nameToAdd || !selectedNumberOfDays) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    const numberOfDays = parseInt(selectedNumberOfDays);
+    if (isNaN(numberOfDays) || numberOfDays < 1) {
+      setError('Please enter a valid number of days');
+      return;
+    }
+
+    if (!draftTrip) {
+      setError('Draft trip not loaded');
+      return;
+    }
+
+    try {
+      setError(null);
+      // Prepare the new city data
+      const newCityData = {
+        name: nameToAdd,
+        country: selectedCountry,
+        numberOfDays: numberOfDays,
+        hotels: [],
+        restaurants: [],
+        activities: [],
+        days: Array.from({ length: numberOfDays }, (_, index) => ({
+          dayNumber: index + 1,
+          restaurants: [],
+          activities: []
+        }))
+      };
+
+      // Get existing cities data
+      const existingCitiesData = draftTrip.citiesData.map(city => {
+        const allRestaurants: any[] = [];
+        const allActivities: any[] = [];
+        
+        city.days.forEach(day => {
+          allRestaurants.push(...(day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''));
+          allActivities.push(...(day.activities || []).filter((a: any) => a.name && a.name.trim() !== ''));
+        });
+
+        return {
+          name: city.name,
+          country: city.country,
+          numberOfDays: city.numberOfDays,
+          hotels: city.hotel && city.hotel.name && city.hotel.name.trim() ? [city.hotel] : [],
+          restaurants: allRestaurants,
+          activities: allActivities,
+          days: city.days.map(day => ({
+            dayNumber: day.dayNumber,
+            restaurants: (day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''),
+            activities: (day.activities || []).filter((a: any) => a.name && a.name.trim() !== '')
+          }))
+        };
+      });
+
+      // Add the new city
+      const updatedCitiesData = [...existingCitiesData, newCityData];
+
+      // Update countries list
+      const existingCountries = typeof draftTrip.countries === 'string' 
+        ? JSON.parse(draftTrip.countries) 
+        : (Array.isArray(draftTrip.countries) ? draftTrip.countries : []);
+      const uniqueCountries = Array.from(new Set([...existingCountries, selectedCountry]));
+
+      // Update the trip via API
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: draftTrip.title,
+          description: draftTrip.description,
+          countries: JSON.stringify(uniqueCountries),
+          cities: JSON.stringify([...draftTrip.citiesData.map(c => c.name), nameToAdd]),
+          citiesData: updatedCitiesData,
+          isDraft: true,
+          isPublic: false,
+          userId: user.id
+        })
+      });
+
+      if (response.ok) {
+        setSuccess('City added successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+        // Reset form
+        setSelectedCountry('');
+        setSelectedCity('');
+        setCustomCityName('');
+        setSelectedNumberOfDays('');
+        // Reload the draft trip
+        loadDraftTrip();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to add city');
+      }
+    } catch (err) {
+      console.error('Error adding city:', err);
+      setError('An error occurred while adding the city');
+    }
+  }, [selectedCountry, selectedCity, customCityName, selectedNumberOfDays, draftTrip, draftId, user, loadDraftTrip]);
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!draftTrip) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Draft trip not found</p>
+          <Link href="/trips/build" className="text-blue-600 hover:text-blue-800">
+            Back to Build Trip
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link
+            href="/trips/build"
+            className="inline-flex items-center text-[#0160D6] hover:text-[#0160D6]/80 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Build Trip
+          </Link>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{draftTrip.title}</h1>
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
+                  📝 DRAFT
+                </span>
+              </div>
+              <p className="text-gray-600">{draftTrip.countries.join(', ')}</p>
+              <p className="text-sm text-gray-500 mt-2">
+                💡 This is your draft trip. Add items from shared trips, then click "Share Trip" when ready to publish.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleSaveDraft}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center font-semibold shadow-md"
+              >
+                <Save className="w-5 h-5 mr-2" />
+                Save Draft
+              </button>
+              <button
+                onClick={handleShareTrip}
+                className="px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors flex items-center justify-center font-semibold shadow-md text-lg"
+              >
+                <Share2 className="w-6 h-6 mr-2" />
+                Share Trip Now
+              </button>
+              <p className="text-xs text-gray-500 text-center mt-1">
+                You can share this trip anytime later
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+            <button onClick={() => setError(null)} className="ml-4 text-red-500 hover:text-red-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            {success}
+            <button onClick={() => setSuccess(null)} className="ml-4 text-green-500 hover:text-green-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Trip Details Form (same as share trip) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg shadow-lg p-6 mb-8 border-2 border-blue-200"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Trip Details</h2>
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+              Optional - Fill anytime
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 mb-6">
+            Add dates, ratings, and comments to your draft. You can fill these in now or later before sharing.
+          </p>
+
+          <div className="space-y-6">
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={draftData.startDate}
+                  onChange={(e) => setDraftData({ ...draftData, startDate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={draftData.endDate}
+                  onChange={(e) => setDraftData({ ...draftData, endDate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+            </div>
+
+            {/* Trip Rating */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Overall Trip Rating
+              </label>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setDraftData({ ...draftData, tripRating: rating })}
+                    className={`p-2 rounded-lg transition-colors ${
+                      draftData.tripRating >= rating
+                        ? 'text-yellow-400 bg-yellow-50'
+                        : 'text-gray-300 hover:text-yellow-400'
+                    }`}
+                  >
+                    <Star className="w-6 h-6 fill-current" />
+                  </button>
+                ))}
+                {draftData.tripRating > 0 && (
+                  <span className="text-gray-600 ml-2">{draftData.tripRating} / 5</span>
+                )}
+              </div>
+            </div>
+
+            {/* Trip Review */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Trip Review / Comments
+              </label>
+              <textarea
+                value={draftData.tripReview}
+                onChange={(e) => setDraftData({ ...draftData, tripReview: e.target.value })}
+                rows={6}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                placeholder="Share your experience, highlights, tips, and any recommendations..."
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Browse Shared Trips Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowBrowseTrips(!showBrowseTrips)}
+            className="flex items-center px-6 py-3 bg-[#0160D6] text-white rounded-lg hover:bg-[#0160D6]/90 transition-colors font-semibold"
+          >
+            <Eye className="w-5 h-5 mr-2" />
+            {showBrowseTrips ? 'Hide' : 'Browse'} Shared Trips
+          </button>
+        </div>
+
+        {/* Browse Shared Trips */}
+        {showBrowseTrips && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-lg shadow-lg p-6 mb-8"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse Shared Trips</h2>
+            {sharedTrips.length === 0 ? (
+              <p className="text-gray-600 text-center py-8">No shared trips available yet.</p>
+            ) : (
+              <div className="space-y-6">
+                {sharedTrips.map((trip) => (
+                  <SharedTripCard
+                    key={trip.id}
+                    trip={trip}
+                    draftTrip={draftTrip}
+                    onCopyItem={handleCopyItem}
+                    expandedSections={expandedSections}
+                    toggleSection={toggleSection}
+                  />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Draft Trip Details */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Draft Trip</h2>
+          
+          {/* Select Your Destination Section - Add More Cities */}
+          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-8 mb-8 border border-blue-200">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">🌍</div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">Add More Destinations</h3>
+              <p className="text-gray-600 text-lg">Add more countries and cities to your trip!</p>
+            </div>
+
+            <div className="max-w-2xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🌍 Country *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                    value={selectedCountry}
+                    onChange={(e) => {
+                      setSelectedCountry(e.target.value);
+                      setSelectedCity('');
+                    }}
+                  >
+                    <option value="">Select a country...</option>
+                    {Object.keys(countriesData).map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🏙️ City *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                    value={selectedCity}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSelectedCity(value);
+                      if (value !== 'custom') {
+                        setCustomCityName('');
+                      }
+                    }}
+                    disabled={!selectedCountry}
+                  >
+                    <option value="">Select a city...</option>
+                    {selectedCountry && countriesData[selectedCountry as keyof typeof countriesData]?.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                    {selectedCountry && (
+                      <option value="custom">+ Add custom city</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              {/* Custom city input */}
+              {selectedCity === 'custom' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-bold mb-2 text-gray-900">
+                    🏙️ Custom City Name *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter custom city name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                    value={customCityName}
+                    onChange={(e) => setCustomCityName(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Number of Days for this city */}
+              {(selectedCity || (selectedCity === 'custom' && customCityName.trim())) && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📅 Number of Days *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                    value={selectedNumberOfDays}
+                    onChange={(e) => setSelectedNumberOfDays(e.target.value)}
+                  >
+                    <option value="">Select days...</option>
+                    {Array.from({ length: 30 }, (_, i) => i + 1).map(num => (
+                      <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleAddCity}
+                  disabled={
+                    !selectedCountry ||
+                    !selectedCity ||
+                    (selectedCity === 'custom' && customCityName.trim() === '') ||
+                    !selectedNumberOfDays
+                  }
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Add City ✨
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {draftTrip.citiesData.map((city) => (
+            <div key={city.id} className="mb-8 border-b border-gray-200 pb-8 last:border-b-0">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                {city.name}, {city.country} ({city.numberOfDays} days)
+              </h3>
+
+              {/* Hotel Section */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-semibold text-gray-800">🏨 Hotels</h4>
+                  {addingHotel === city.id ? null : (
+                    <button
+                      onClick={() => handleAddHotel(city.id)}
+                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Hotel
+                    </button>
+                  )}
+                </div>
+                {addingHotel === city.id ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-2">
+                    <input
+                      type="text"
+                      value={newHotelName}
+                      onChange={(e) => setNewHotelName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveHotel();
+                        } else if (e.key === 'Escape') {
+                          handleCancelHotel();
+                        }
+                      }}
+                      placeholder="Enter hotel name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 mb-2"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveHotel}
+                        disabled={!newHotelName.trim()}
+                        className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelHotel}
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {city.hotels.length === 0 && addingHotel !== city.id ? (
+                  <p className="text-gray-500 text-sm">No hotels added yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {city.hotels.map((hotel) => (
+                      <div key={hotel.id} className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg">🏨</span>
+                            <h6 className="font-semibold text-gray-800">Hotel</h6>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteHotel(city.id, hotel.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                              type="text"
+                              value={hotel.name || ''}
+                              onChange={(e) => handleUpdateHotel(hotel.id, 'name', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                              placeholder="Hotel name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                            <input
+                              type="text"
+                              value={hotel.location || ''}
+                              onChange={(e) => handleUpdateHotel(hotel.id, 'location', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                              placeholder="Address"
+                            />
+                          </div>
+                        </div>
+                        <div className="mb-3">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                          <div className="flex items-center space-x-1">
+                            {[1, 2, 3, 4, 5].map((rating) => (
+                              <button
+                                key={rating}
+                                type="button"
+                                onClick={() => handleUpdateHotel(hotel.id, 'rating', rating)}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                  (hotel.rating || 0) >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                }`}
+                              >
+                                <Star className="w-4 h-4 fill-current" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
+                          <textarea
+                            value={hotel.review || ''}
+                            onChange={(e) => handleUpdateHotel(hotel.id, 'review', e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="What did you think about this hotel?"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Days with Restaurants and Activities */}
+              {city.days.map((day) => (
+                <div key={day.id} className="mb-6 border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Day {day.dayNumber}</h4>
+
+                  {/* Restaurants */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-md font-medium text-gray-700">🍽️ Restaurants</h5>
+                      {addingRestaurant?.cityId === city.id && addingRestaurant?.dayId === day.id ? null : (
+                        <button
+                          onClick={() => handleAddRestaurant(city.id, day.id)}
+                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </button>
+                      )}
+                    </div>
+                    {addingRestaurant?.cityId === city.id && addingRestaurant?.dayId === day.id ? (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+                        <input
+                          type="text"
+                          value={newRestaurantName}
+                          onChange={(e) => setNewRestaurantName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveRestaurant();
+                            } else if (e.key === 'Escape') {
+                              handleCancelRestaurant();
+                            }
+                          }}
+                          placeholder="Enter restaurant name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 mb-2"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleSaveRestaurant}
+                            disabled={!newRestaurantName.trim()}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleCancelRestaurant}
+                            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {day.restaurants.length === 0 && (!addingRestaurant || addingRestaurant.cityId !== city.id || addingRestaurant.dayId !== day.id) ? (
+                      <p className="text-gray-500 text-sm">No restaurants added yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {day.restaurants.map((restaurant, index) => (
+                          <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-lg">🍽️</span>
+                                <h6 className="font-semibold text-gray-800">Restaurant {index + 1}</h6>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteRestaurant(restaurant.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                <input
+                                  type="text"
+                                  value={restaurant.name || ''}
+                                  onChange={(e) => handleUpdateRestaurant(restaurant.id, 'name', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
+                                  placeholder="Restaurant name"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                                <input
+                                  type="text"
+                                  value={restaurant.location || ''}
+                                  onChange={(e) => handleUpdateRestaurant(restaurant.id, 'location', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
+                                  placeholder="Address"
+                                />
+                              </div>
+                            </div>
+                            <div className="mb-3">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                              <div className="flex items-center space-x-1">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <button
+                                    key={rating}
+                                    type="button"
+                                    onClick={() => handleUpdateRestaurant(restaurant.id, 'rating', rating)}
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                      (restaurant.rating || 0) >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                    }`}
+                                  >
+                                    <Star className="w-4 h-4 fill-current" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
+                              <textarea
+                                value={restaurant.review || ''}
+                                onChange={(e) => handleUpdateRestaurant(restaurant.id, 'review', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
+                                placeholder="What did you think about this restaurant?"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Activities */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-md font-medium text-gray-700">🎯 Activities</h5>
+                      {addingActivity?.cityId === city.id && addingActivity?.dayId === day.id ? null : (
+                        <button
+                          onClick={() => handleAddActivity(city.id, day.id)}
+                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </button>
+                      )}
+                    </div>
+                    {addingActivity?.cityId === city.id && addingActivity?.dayId === day.id ? (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-2">
+                        <input
+                          type="text"
+                          value={newActivityName}
+                          onChange={(e) => setNewActivityName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveActivity();
+                            } else if (e.key === 'Escape') {
+                              handleCancelActivity();
+                            }
+                          }}
+                          placeholder="Enter activity name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 mb-2"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleSaveActivity}
+                            disabled={!newActivityName.trim()}
+                            className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleCancelActivity}
+                            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {day.activities.length === 0 && (!addingActivity || addingActivity.cityId !== city.id || addingActivity.dayId !== day.id) ? (
+                      <p className="text-gray-500 text-sm">No activities added yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {day.activities.map((activity, index) => (
+                          <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-lg">🎯</span>
+                                <h6 className="font-semibold text-gray-800">Activity {index + 1}</h6>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteActivity(activity.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                <input
+                                  type="text"
+                                  value={activity.name || ''}
+                                  onChange={(e) => handleUpdateActivity(activity.id, 'name', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
+                                  placeholder="Activity name"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                                <input
+                                  type="text"
+                                  value={activity.location || ''}
+                                  onChange={(e) => handleUpdateActivity(activity.id, 'location', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
+                                  placeholder="Address"
+                                />
+                              </div>
+                            </div>
+                            <div className="mb-3">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                              <div className="flex items-center space-x-1">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <button
+                                    key={rating}
+                                    type="button"
+                                    onClick={() => handleUpdateActivity(activity.id, 'rating', rating)}
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                      (activity.rating || 0) >= rating ? 'text-yellow-400' : 'text-gray-300'
+                                    }`}
+                                  >
+                                    <Star className="w-4 h-4 fill-current" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
+                              <textarea
+                                value={activity.review || ''}
+                                onChange={(e) => handleUpdateActivity(activity.id, 'review', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
+                                placeholder="What did you think about this activity?"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Shared Trip Card Component (same as in build page)
+function SharedTripCard({ 
+  trip, 
+  draftTrip, 
+  onCopyItem, 
+  expandedSections, 
+  toggleSection 
+}: { 
+  trip: SharedTrip; 
+  draftTrip: DraftTrip;
+  onCopyItem: (itemType: 'hotel' | 'restaurant' | 'activity', item: any, targetCityId: string, targetDayId?: string) => void;
+  expandedSections: {[key: string]: boolean};
+  toggleSection: (key: string) => void;
+}) {
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const tripKey = `trip-${trip.id}`;
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">{trip.title}</h3>
+          <p className="text-gray-600 text-sm">by {trip.user.name}</p>
+        </div>
+        <button
+          onClick={() => toggleSection(tripKey)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          {expandedSections[tripKey] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {expandedSections[tripKey] && (
+        <div className="space-y-4">
+          {/* Select City and Day */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm font-medium text-gray-700 mb-2">Copy items to:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <select
+                value={selectedCity || ''}
+                onChange={(e) => {
+                  setSelectedCity(e.target.value);
+                  setSelectedDay(null);
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
+              >
+                <option value="">Select City</option>
+                {draftTrip.citiesData.map(city => (
+                  <option key={city.id} value={city.id}>{city.name}, {city.country}</option>
+                ))}
+              </select>
+              {selectedCity && (
+                <select
+                  value={selectedDay || ''}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
+                >
+                  <option value="">Select Day (for restaurants/activities)</option>
+                  {draftTrip.citiesData.find(c => c.id === selectedCity)?.days.map(day => (
+                    <option key={day.id} value={day.id}>Day {day.dayNumber}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* Cities with items */}
+          {trip.cities_data.map((city) => (
+            <div key={city.id} className="border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-3">{city.name}, {city.country}</h4>
+              
+              {/* Hotels */}
+              {city.hotels.length > 0 && (
+                <div className="mb-3">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">🏨 Hotels</h5>
+                  <div className="space-y-2">
+                    {city.hotels.map((hotel) => (
+                      <div 
+                        key={hotel.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          selectedCity 
+                            ? 'bg-blue-50 border-blue-300 hover:bg-blue-100 cursor-pointer' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                        onClick={() => {
+                          if (selectedCity) {
+                            onCopyItem('hotel', hotel, selectedCity);
+                          }
+                        }}
+                      >
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">{hotel.name}</span>
+                          {hotel.location && (
+                            <p className="text-xs text-gray-500 mt-1">{hotel.location}</p>
+                          )}
+                          {hotel.rating && hotel.rating > 0 && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= hotel.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {selectedCity ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCopyItem('hotel', hotel, selectedCity);
+                            }}
+                            className="ml-3 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center transition-colors shadow-sm"
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Save to Draft
+                          </button>
+                        ) : (
+                          <span className="ml-3 text-xs text-gray-400">Select city to save</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Restaurants */}
+              {city.restaurants.length > 0 && (
+                <div className="mb-3">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">🍽️ Restaurants</h5>
+                  <div className="space-y-2">
+                    {city.restaurants.map((restaurant) => (
+                      <div 
+                        key={restaurant.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          selectedCity && selectedDay
+                            ? 'bg-green-50 border-green-300 hover:bg-green-100 cursor-pointer' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                        onClick={() => {
+                          if (selectedCity && selectedDay) {
+                            onCopyItem('restaurant', restaurant, selectedCity, selectedDay);
+                          }
+                        }}
+                      >
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">{restaurant.name}</span>
+                          {restaurant.location && (
+                            <p className="text-xs text-gray-500 mt-1">{restaurant.location}</p>
+                          )}
+                          {restaurant.rating && restaurant.rating > 0 && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= restaurant.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {selectedCity && selectedDay ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCopyItem('restaurant', restaurant, selectedCity, selectedDay);
+                            }}
+                            className="ml-3 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center transition-colors shadow-sm"
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Save to Draft
+                          </button>
+                        ) : (
+                          <span className="ml-3 text-xs text-gray-400">Select city & day to save</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Activities */}
+              {city.activities.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">🎯 Activities</h5>
+                  <div className="space-y-2">
+                    {city.activities.map((activity) => (
+                      <div 
+                        key={activity.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          selectedCity && selectedDay
+                            ? 'bg-purple-50 border-purple-300 hover:bg-purple-100 cursor-pointer' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                        onClick={() => {
+                          if (selectedCity && selectedDay) {
+                            onCopyItem('activity', activity, selectedCity, selectedDay);
+                          }
+                        }}
+                      >
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">{activity.name}</span>
+                          {activity.location && (
+                            <p className="text-xs text-gray-500 mt-1">{activity.location}</p>
+                          )}
+                          {activity.rating && activity.rating > 0 && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= activity.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {selectedCity && selectedDay ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCopyItem('activity', activity, selectedCity, selectedDay);
+                            }}
+                            className="ml-3 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm flex items-center transition-colors shadow-sm"
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Save to Draft
+                          </button>
+                        ) : (
+                          <span className="ml-3 text-xs text-gray-400">Select city & day to save</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function DraftEditPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <DraftEditContent />
+    </Suspense>
+  );
+}
+

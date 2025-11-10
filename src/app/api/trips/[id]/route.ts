@@ -399,12 +399,26 @@ export async function GET(
       );
     }
 
-    // Only allow access to public trips
-    if (!trip.isPublic) {
-      return NextResponse.json(
-        { error: 'Trip not found' },
-        { status: 404 }
-      );
+    // Allow access to public trips or draft trips owned by the user
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    
+    // If it's a draft trip, user must own it
+    if (trip.isDraft) {
+      if (!userId || trip.userId !== userId) {
+        return NextResponse.json(
+          { error: 'Draft trip not found' },
+          { status: 404 }
+        );
+      }
+    } else if (!trip.isPublic) {
+      // Private (non-draft) trips also need ownership check
+      if (!userId || trip.userId !== userId) {
+        return NextResponse.json(
+          { error: 'Trip not found' },
+          { status: 404 }
+        );
+      }
     }
 
     return NextResponse.json({ trip });
@@ -434,16 +448,27 @@ export async function PUT(
       countries,
       cities,
       isPublic,
+      isDraft,
       citiesData,
       userId,
       userName,
-      userEmail
+      userEmail,
+      tripRating,
+      tripReview
     } = body;
 
-    // Validate required fields
-    if (!title || !startDate || !endDate || !countries) {
+    // Validate required fields - for shared trips, dates are required
+    if (!title || !countries) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Title and countries are required' },
+        { status: 400 }
+      );
+    }
+
+    // If converting from draft to shared, dates are required
+    if (isDraft === false && (!startDate || !endDate)) {
+      return NextResponse.json(
+        { error: 'Start date and end date are required for shared trips' },
         { status: 400 }
       );
     }
@@ -471,16 +496,41 @@ export async function PUT(
     // Update the trip using a transaction
     const updatedTrip = await prisma.$transaction(async (tx: any) => {
       // Update the main trip
+      // For tripReview, append to description if provided (same as share trip)
+      let updatedDescription = description || existingTrip.description;
+      if (tripReview) {
+        updatedDescription = updatedDescription 
+          ? `${updatedDescription}\n\nReview: ${tripReview}` 
+          : `Review: ${tripReview}`;
+      }
+      
+      // When converting from draft to shared, ensure it's public
+      // If isDraft is explicitly false, make it public
+      // If isPublic is explicitly true, use that
+      // Otherwise, keep existing value
+      let finalIsPublic: boolean;
+      if (isDraft === false) {
+        // Converting from draft to shared - always make it public
+        finalIsPublic = true;
+      } else if (isPublic !== undefined) {
+        // Explicitly set isPublic value
+        finalIsPublic = isPublic;
+      } else {
+        // Keep existing value
+        finalIsPublic = existingTrip.isPublic;
+      }
+
       const trip = await tx.trip.update({
         where: { id },
         data: {
-          title,
-          description,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-          countries,
-          cities: cities || JSON.stringify([]),
-          isPublic
+          title: title || existingTrip.title,
+          description: updatedDescription,
+          startDate: startDate ? new Date(startDate) : (existingTrip.startDate || undefined),
+          endDate: endDate ? new Date(endDate) : (existingTrip.endDate || undefined),
+          countries: countries || existingTrip.countries,
+          cities: cities || existingTrip.cities,
+          isPublic: finalIsPublic,
+          isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft
         }
       });
 
@@ -544,6 +594,160 @@ export async function PUT(
     console.error('Trip update error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const { itemType, item, cityId, dayId } = await request.json();
+
+    // Get the draft trip
+    const draftTrip = await prisma.trip.findUnique({
+      where: { id },
+      include: {
+        cities_data: {
+          include: {
+            hotels: true,
+            restaurants: true,
+            activities: true
+          }
+        }
+      }
+    });
+
+    if (!draftTrip) {
+      return NextResponse.json(
+        { error: 'Draft trip not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!draftTrip.isDraft) {
+      return NextResponse.json(
+        { error: 'Can only copy items to draft trips' },
+        { status: 400 }
+      );
+    }
+
+    // Find the target city
+    const targetCity = draftTrip.cities_data.find(c => c.id === cityId);
+    if (!targetCity) {
+      return NextResponse.json(
+        { error: 'Target city not found' },
+        { status: 404 }
+      );
+    }
+
+    // Copy the item based on type
+    if (itemType === 'hotel') {
+      if (!item || !item.name || !item.name.trim()) {
+        return NextResponse.json(
+          { error: 'Hotel name is required' },
+          { status: 400 }
+        );
+      }
+      // Copy hotel to city level
+      try {
+        await prisma.hotel.create({
+          data: {
+            name: item.name.trim(),
+            location: item.location || '',
+            rating: item.rating || null,
+            review: item.review || null,
+            liked: item.liked ?? null,
+            cityId: cityId
+          }
+        });
+      } catch (dbError) {
+        console.error('Database error creating hotel:', dbError);
+        return NextResponse.json(
+          { error: 'Failed to create hotel', details: dbError instanceof Error ? dbError.message : 'Unknown database error' },
+          { status: 500 }
+        );
+      }
+    } else if (itemType === 'restaurant' || itemType === 'activity') {
+      // For restaurants and activities, we need to find the day
+      // Since the current structure stores them at city level in DB,
+      // we'll add them to the first day or create a default structure
+      // For now, add to city level (we'll need to update this when we fully implement days in DB)
+      if (itemType === 'restaurant') {
+        if (!item || !item.name || !item.name.trim()) {
+          return NextResponse.json(
+            { error: 'Restaurant name is required' },
+            { status: 400 }
+          );
+        }
+        try {
+          await prisma.restaurant.create({
+            data: {
+              name: item.name.trim(),
+              location: item.location || '',
+              rating: item.rating || null,
+              review: item.review || null,
+              liked: item.liked ?? null,
+              cityId: cityId
+            }
+          });
+        } catch (dbError) {
+          console.error('Database error creating restaurant:', dbError);
+          return NextResponse.json(
+            { error: 'Failed to create restaurant', details: dbError instanceof Error ? dbError.message : 'Unknown database error' },
+            { status: 500 }
+          );
+        }
+      } else if (itemType === 'activity') {
+        if (!item || !item.name || !item.name.trim()) {
+          return NextResponse.json(
+            { error: 'Activity name is required' },
+            { status: 400 }
+          );
+        }
+        try {
+          await prisma.activity.create({
+            data: {
+              name: item.name.trim(),
+              location: item.location || '',
+              rating: item.rating || null,
+              review: item.review || null,
+              liked: item.liked ?? null,
+              cityId: cityId
+            }
+          });
+        } catch (dbError) {
+          console.error('Database error creating activity:', dbError);
+          return NextResponse.json(
+            { error: 'Failed to create activity', details: dbError instanceof Error ? dbError.message : 'Unknown database error' },
+            { status: 500 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid item type' },
+          { status: 400 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid item type. Must be hotel, restaurant, or activity' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Item copied successfully' },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Copy item error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

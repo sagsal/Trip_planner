@@ -373,12 +373,20 @@ const mockTrips = [
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail } = await request.json();
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft } = await request.json();
 
-    // Validate required fields
-    if (!title || !startDate || !endDate || !countries) {
+    // Validate required fields - drafts don't need dates
+    if (!title || !countries) {
       return NextResponse.json(
-        { error: 'Title, start date, end date, and country are required' },
+        { error: 'Title and country are required' },
+        { status: 400 }
+      );
+    }
+
+    // For non-draft trips, dates are required
+    if (!isDraft && (!startDate || !endDate)) {
+      return NextResponse.json(
+        { error: 'Start date and end date are required for shared trips' },
         { status: 400 }
       );
     }
@@ -416,11 +424,12 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description: description || null,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
         countries: JSON.stringify(countries),
         cities: cities ? JSON.stringify(cities) : JSON.stringify([]),
-        isPublic: true,
+        isPublic: isDraft ? false : true, // Drafts are always private
+        isDraft: isDraft || false,
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {
@@ -529,10 +538,32 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
+    const drafts = searchParams.get('drafts') === 'true';
+    const publicOnly = searchParams.get('public') === 'true';
+    const userId = searchParams.get('userId');
+
+    // Build where clause
+    let where: any = {};
+    
+    if (drafts) {
+      // Get user's draft trips
+      where.isDraft = true;
+      if (userId) {
+        where.userId = userId;
+      }
+    } else if (publicOnly) {
+      // Get only public shared trips (not drafts)
+      where.isPublic = true;
+      where.isDraft = false;
+    } else {
+      // Default: public trips only
+      where.isPublic = true;
+      where.isDraft = false;
+    }
 
     // Fetch trips from database
     const trips = await prisma.trip.findMany({
-      where: { isPublic: true },
+      where,
       include: {
         user: true,
         cities_data: {
@@ -548,7 +579,7 @@ export async function GET(request: NextRequest) {
       take: limit
     });
 
-    const total = await prisma.trip.count({ where: { isPublic: true } });
+    const total = await prisma.trip.count({ where });
 
     return NextResponse.json({
       trips,
@@ -562,8 +593,22 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Trips fetch error:', error);
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      // Log Prisma errors in detail
+      if (error.message.includes('Prisma') || error.message.includes('prisma')) {
+        console.error('Prisma error detected:', error);
+      }
+    }
+    // Return more detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }

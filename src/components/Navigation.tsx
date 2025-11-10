@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plane, Menu, X, User, MapPin, LogOut } from 'lucide-react';
+import { Plane, Menu, X, User, MapPin, LogOut, Plus } from 'lucide-react';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -126,11 +126,18 @@ export default function Navigation() {
                       Dashboard
                     </Link>
                     <Link
+                      href="/trips/build"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      Build a Trip
+                    </Link>
+                    <Link
                       href="/trips/new"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      Create Trip
+                      Share Your Trip
                     </Link>
                     <hr className="my-1" />
                     <button
@@ -206,6 +213,20 @@ export default function Navigation() {
                   >
                     <User className="w-4 h-4 mr-2" />
                     {user?.name || 'Profile'}
+                  </Link>
+                  <Link
+                    href="/trips/build"
+                    className="block text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Build a Trip
+                  </Link>
+                  <Link
+                    href="/trips/new"
+                    className="block text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Share Your Trip
                   </Link>
                   <button
                     onClick={() => {

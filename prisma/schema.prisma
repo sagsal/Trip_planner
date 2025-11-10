@@ -28,11 +28,12 @@ model Trip {
   id          String   @id @default(cuid())
   title       String
   description String?
-  startDate   DateTime
-  endDate     DateTime
+  startDate   DateTime?
+  endDate     DateTime?
   countries   String   // JSON string of countries visited
   cities      String   // JSON string of cities visited
   isPublic    Boolean  @default(true)
+  isDraft     Boolean  @default(false) // true for draft trips, false for completed/shared trips
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

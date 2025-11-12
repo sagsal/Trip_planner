@@ -2,9 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -62,13 +62,42 @@ interface Activity {
   liked?: boolean;
 }
 
+interface DraftTrip {
+  id: string;
+  title: string;
+  countries: string[];
+  citiesData: {
+    id: string;
+    name: string;
+    country: string;
+    numberOfDays: number;
+    days: {
+      id: string;
+      dayNumber: number;
+    }[];
+  }[];
+}
+
 function TripDetailContent() {
   const params = useParams();
+  const router = useRouter();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [draftTrips, setDraftTrips] = useState<DraftTrip[]>([]);
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
+  const [selectedDraft, setSelectedDraft] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+      loadDraftTrips();
+    }
     if (params.id) {
       fetchTripData(params.id as string);
     }
@@ -157,6 +186,88 @@ function TripDetailContent() {
     return null;
   };
 
+  const loadDraftTrips = async () => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) return;
+      
+      const user = JSON.parse(userData);
+      const response = await fetch(`/api/trips?drafts=true&userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const transformed: DraftTrip[] = (data.trips || []).map((trip: any) => {
+          let countries: string[] = [];
+          try {
+            if (typeof trip.countries === 'string') {
+              const parsed = JSON.parse(trip.countries);
+              countries = Array.isArray(parsed) ? parsed : (typeof parsed === 'string' ? JSON.parse(parsed) : []);
+            } else if (Array.isArray(trip.countries)) {
+              countries = trip.countries;
+            }
+          } catch (e) {
+            countries = [];
+          }
+
+          return {
+            id: trip.id,
+            title: trip.title,
+            countries,
+            citiesData: trip.cities_data.map((city: any) => {
+              const numberOfDays = city.numberOfDays || 1;
+              const days = Array.from({ length: numberOfDays }, (_, index) => ({
+                id: `day-${index + 1}`,
+                dayNumber: index + 1
+              }));
+              return {
+                id: city.id,
+                name: city.name,
+                country: city.country,
+                numberOfDays,
+                days
+              };
+            })
+          };
+        });
+        setDraftTrips(transformed);
+      }
+    } catch (err) {
+      console.error('Error loading draft trips:', err);
+    }
+  };
+
+  const handleCopyItem = async (itemType: 'hotel' | 'restaurant' | 'activity', item: any, targetCityId: string, targetDayId?: string) => {
+    if (!selectedDraft) {
+      setError('Please select a draft trip first');
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch(`/api/trips/${selectedDraft}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemType,
+          item,
+          cityId: targetCityId,
+          dayId: targetDayId
+        })
+      });
+
+      if (response.ok) {
+        setSuccess(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} "${item.name}" saved to your draft!`);
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to save item to draft');
+        setTimeout(() => setError(null), 5000);
+      }
+    } catch (err) {
+      setError('An error occurred while saving the item');
+      setTimeout(() => setError(null), 5000);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
@@ -205,6 +316,136 @@ function TripDetailContent() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to All Trips
         </Link>
+
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+            <span>{success}</span>
+            <button onClick={() => setSuccess(null)} className="text-green-500 hover:text-green-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Save to Draft Options */}
+        {user && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">💡 Save Items to Your Draft Trip</h3>
+                <p className="text-sm text-gray-600">
+                  Select a draft trip, city, and day (for restaurants/activities) to save items from this trip to your draft.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSaveOptions(!showSaveOptions);
+                  if (!showSaveOptions) {
+                    loadDraftTrips();
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                {showSaveOptions ? 'Hide' : 'Show'} Options
+              </button>
+            </div>
+
+            {showSaveOptions && (
+              <div className="space-y-4 mt-4">
+                {draftTrips.length === 0 ? (
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-600 text-sm mb-3">You don't have any draft trips yet.</p>
+                    <Link
+                      href="/trips/build"
+                      className="inline-flex items-center px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors text-sm font-medium"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Draft Trip
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Draft Trip *
+                        </label>
+                        <select
+                          value={selectedDraft || ''}
+                          onChange={(e) => {
+                            setSelectedDraft(e.target.value);
+                            setSelectedCity(null);
+                            setSelectedDay(null);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                        >
+                          <option value="">Choose a draft trip...</option>
+                          {draftTrips.map(draft => (
+                            <option key={draft.id} value={draft.id}>{draft.title}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {selectedDraft && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select City *
+                          </label>
+                          <select
+                            value={selectedCity || ''}
+                            onChange={(e) => {
+                              setSelectedCity(e.target.value);
+                              setSelectedDay(null);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="">Choose a city...</option>
+                            {draftTrips.find(d => d.id === selectedDraft)?.citiesData.map(city => (
+                              <option key={city.id} value={city.id}>{city.name}, {city.country}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {selectedCity && selectedDraft && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Day (for restaurants/activities)
+                          </label>
+                          <select
+                            value={selectedDay || ''}
+                            onChange={(e) => setSelectedDay(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="">Choose a day...</option>
+                            {draftTrips.find(d => d.id === selectedDraft)?.citiesData.find(c => c.id === selectedCity)?.days.map(day => (
+                              <option key={day.id} value={day.id}>Day {day.dayNumber}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    {selectedDraft && (
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <p className="text-sm text-gray-600">
+                          ✅ <strong>Ready to save!</strong> Click on any hotel, restaurant, or activity below to save it to your draft trip.
+                          {selectedCity && selectedDay && ' (Restaurants and activities will be saved to the selected day.)'}
+                          {selectedCity && !selectedDay && ' (Select a day to save restaurants and activities.)'}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -265,12 +506,24 @@ function TripDetailContent() {
                   {/* Hotels for this city */}
                   {city.hotels.length > 0 && (
                     <div className="mb-8">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Hotels</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">🏨 Hotels</h3>
                       <div className="space-y-4">
                         {city.hotels.map((hotel) => (
-                          <div key={hotel.id} className="border border-gray-200 rounded-lg p-4">
+                          <div 
+                            key={hotel.id} 
+                            className={`border rounded-lg p-4 transition-all ${
+                              selectedDraft && selectedCity
+                                ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 cursor-pointer'
+                                : 'border-gray-200'
+                            }`}
+                            onClick={() => {
+                              if (selectedDraft && selectedCity) {
+                                handleCopyItem('hotel', hotel, selectedCity);
+                              }
+                            }}
+                          >
                             <div className="flex items-start justify-between mb-3">
-                              <div>
+                              <div className="flex-1">
                                 <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
                                 {hotel.location && (
                                   <p className="text-gray-600 text-sm">{hotel.location}</p>
@@ -279,6 +532,18 @@ function TripDetailContent() {
                               <div className="flex items-center space-x-3">
                                 {hotel.rating && hotel.rating > 0 && renderStars(hotel.rating)}
                                 {renderLikeButton(hotel.liked ?? null)}
+                                {selectedDraft && selectedCity && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyItem('hotel', hotel, selectedCity);
+                                    }}
+                                    className="ml-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center transition-colors shadow-sm"
+                                  >
+                                    <Copy className="w-4 h-4 mr-1" />
+                                    Save to Draft
+                                  </button>
+                                )}
                               </div>
                             </div>
                             {hotel.review && (
@@ -293,12 +558,24 @@ function TripDetailContent() {
                   {/* Restaurants for this city */}
                   {city.restaurants.length > 0 && (
                     <div className="mb-8">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Restaurants</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">🍽️ Restaurants</h3>
                       <div className="space-y-4">
                         {city.restaurants.map((restaurant) => (
-                          <div key={restaurant.id} className="border border-gray-200 rounded-lg p-4">
+                          <div 
+                            key={restaurant.id} 
+                            className={`border rounded-lg p-4 transition-all ${
+                              selectedDraft && selectedCity && selectedDay
+                                ? 'border-green-300 bg-green-50 hover:bg-green-100 cursor-pointer'
+                                : 'border-gray-200'
+                            }`}
+                            onClick={() => {
+                              if (selectedDraft && selectedCity && selectedDay) {
+                                handleCopyItem('restaurant', restaurant, selectedCity, selectedDay);
+                              }
+                            }}
+                          >
                             <div className="flex items-start justify-between mb-3">
-                              <div>
+                              <div className="flex-1">
                                 <h4 className="text-lg font-semibold text-gray-900">{restaurant.name}</h4>
                                 {restaurant.location && (
                                   <p className="text-gray-600 text-sm">{restaurant.location}</p>
@@ -307,6 +584,18 @@ function TripDetailContent() {
                               <div className="flex items-center space-x-3">
                                 {restaurant.rating && restaurant.rating > 0 && renderStars(restaurant.rating)}
                                 {renderLikeButton(restaurant.liked ?? null)}
+                                {selectedDraft && selectedCity && selectedDay && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyItem('restaurant', restaurant, selectedCity, selectedDay);
+                                    }}
+                                    className="ml-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center transition-colors shadow-sm"
+                                  >
+                                    <Copy className="w-4 h-4 mr-1" />
+                                    Save to Draft
+                                  </button>
+                                )}
                               </div>
                             </div>
                             {restaurant.review && (
@@ -321,12 +610,24 @@ function TripDetailContent() {
                   {/* Activities for this city */}
                   {city.activities.length > 0 && (
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Activities</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">🎯 Activities</h3>
                       <div className="space-y-4">
                         {city.activities.map((activity) => (
-                          <div key={activity.id} className="border border-gray-200 rounded-lg p-4">
+                          <div 
+                            key={activity.id} 
+                            className={`border rounded-lg p-4 transition-all ${
+                              selectedDraft && selectedCity && selectedDay
+                                ? 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer'
+                                : 'border-gray-200'
+                            }`}
+                            onClick={() => {
+                              if (selectedDraft && selectedCity && selectedDay) {
+                                handleCopyItem('activity', activity, selectedCity, selectedDay);
+                              }
+                            }}
+                          >
                             <div className="flex items-start justify-between mb-3">
-                              <div>
+                              <div className="flex-1">
                                 <h4 className="text-lg font-semibold text-gray-900">{activity.name}</h4>
                                 {activity.location && (
                                   <p className="text-gray-600 text-sm">{activity.location}</p>
@@ -335,6 +636,18 @@ function TripDetailContent() {
                               <div className="flex items-center space-x-3">
                                 {activity.rating && activity.rating > 0 && renderStars(activity.rating)}
                                 {renderLikeButton(activity.liked ?? null)}
+                                {selectedDraft && selectedCity && selectedDay && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyItem('activity', activity, selectedCity, selectedDay);
+                                    }}
+                                    className="ml-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm flex items-center transition-colors shadow-sm"
+                                  >
+                                    <Copy className="w-4 h-4 mr-1" />
+                                    Save to Draft
+                                  </button>
+                                )}
                               </div>
                             </div>
                             {activity.review && (
@@ -354,15 +667,24 @@ function TripDetailContent() {
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Inspired by this trip?</h2>
             <p className="text-gray-600 mb-6">
-              Share your own travel experiences and help other travelers discover amazing destinations.
+              Build your own trip using ideas from this one, or share your own travel experiences with the community.
             </p>
-            <Link
-              href="/trips/new"
-              className="inline-flex items-center px-8 py-4 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors text-lg font-semibold"
-            >
-              <Heart className="w-5 h-5 mr-2" />
-              Share Your Trip
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/trips/build"
+                className="inline-flex items-center px-8 py-4 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors text-lg font-semibold"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Build Your Trip
+              </Link>
+              <Link
+                href="/trips/new"
+                className="inline-flex items-center px-8 py-4 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors text-lg font-semibold"
+              >
+                <Heart className="w-5 h-5 mr-2" />
+                Share Your Trip
+              </Link>
+            </div>
           </div>
         </motion.div>
       </div>

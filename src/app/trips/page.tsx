@@ -154,99 +154,13 @@ function TripsContent() {
       <div className="relative min-h-screen overflow-hidden pt-16">
         {/* Background Image */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-pulse"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: 'url(/sea-side-beach-0e.jpg)',
-            animation: 'kenBurns 20s ease-in-out infinite alternate',
           }}
         >
           {/* Overlay for better text readability */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
-        </div>
-
-        {/* Floating elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-20 left-10 w-4 h-4 bg-white rounded-full opacity-30"
-            style={{
-              animation: 'float 6s ease-in-out infinite',
-              animationDelay: '0s'
-            }}
-          />
-          <div
-            className="absolute top-40 right-20 w-3 h-3 bg-white rounded-full opacity-20"
-            style={{
-              animation: 'float 8s ease-in-out infinite',
-              animationDelay: '1s'
-            }}
-          />
-          <div
-            className="absolute top-60 left-1/4 w-2 h-2 bg-white rounded-full opacity-25"
-            style={{
-              animation: 'float 7s ease-in-out infinite',
-              animationDelay: '2s'
-            }}
-          />
-          <div
-            className="absolute top-80 right-1/3 w-5 h-5 bg-white rounded-full opacity-20"
-            style={{
-              animation: 'float 9s ease-in-out infinite',
-              animationDelay: '3s'
-            }}
-          />
-          <div
-            className="absolute top-32 right-1/4 w-3 h-3 bg-white rounded-full opacity-15"
-            style={{
-              animation: 'sway 10s ease-in-out infinite',
-              animationDelay: '4s'
-            }}
-          />
-          <div
-            className="absolute top-72 left-1/3 w-2 h-2 bg-white rounded-full opacity-20"
-            style={{
-              animation: 'sway 12s ease-in-out infinite',
-              animationDelay: '5s'
-            }}
-          />
-
-          {/* Animated sparkles */}
-          <div
-            className="absolute top-16 right-16 w-1 h-1 bg-white rounded-full opacity-40"
-            style={{
-              animation: 'float 4s ease-in-out infinite',
-              animationDelay: '0.5s'
-            }}
-          />
-          <div
-            className="absolute top-48 left-16 w-1 h-1 bg-white rounded-full opacity-30"
-            style={{
-              animation: 'float 5s ease-in-out infinite',
-              animationDelay: '1.5s'
-            }}
-          />
-          <div
-            className="absolute top-64 right-8 w-1 h-1 bg-white rounded-full opacity-35"
-            style={{
-              animation: 'float 6s ease-in-out infinite',
-              animationDelay: '2.5s'
-            }}
-          />
-
-          {/* Gentle moving clouds effect */}
-          <div
-            className="absolute top-10 left-0 w-32 h-16 bg-white/5 rounded-full blur-sm"
-            style={{
-              animation: 'sway 15s ease-in-out infinite',
-              animationDelay: '0s'
-            }}
-          />
-          <div
-            className="absolute top-24 right-0 w-24 h-12 bg-white/5 rounded-full blur-sm"
-            style={{
-              animation: 'sway 18s ease-in-out infinite',
-              animationDelay: '3s'
-            }}
-          />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -271,99 +185,13 @@ function TripsContent() {
     <div className="relative min-h-screen overflow-hidden pt-16">
       {/* Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-pulse"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: 'url(/sea-side-beach-0e.jpg)',
-          animation: 'kenBurns 20s ease-in-out infinite alternate',
         }}
       >
         {/* Overlay for better text readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
-      </div>
-
-      {/* Floating elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 left-10 w-4 h-4 bg-white rounded-full opacity-30"
-          style={{
-            animation: 'float 6s ease-in-out infinite',
-            animationDelay: '0s'
-          }}
-        />
-        <div
-          className="absolute top-40 right-20 w-3 h-3 bg-white rounded-full opacity-20"
-          style={{
-            animation: 'float 8s ease-in-out infinite',
-            animationDelay: '1s'
-          }}
-        />
-        <div
-          className="absolute top-60 left-1/4 w-2 h-2 bg-white rounded-full opacity-25"
-          style={{
-            animation: 'float 7s ease-in-out infinite',
-            animationDelay: '2s'
-          }}
-        />
-        <div
-          className="absolute top-80 right-1/3 w-5 h-5 bg-white rounded-full opacity-20"
-          style={{
-            animation: 'float 9s ease-in-out infinite',
-            animationDelay: '3s'
-          }}
-        />
-        <div
-          className="absolute top-32 right-1/4 w-3 h-3 bg-white rounded-full opacity-15"
-          style={{
-            animation: 'sway 10s ease-in-out infinite',
-            animationDelay: '4s'
-          }}
-        />
-        <div
-          className="absolute top-72 left-1/3 w-2 h-2 bg-white rounded-full opacity-20"
-          style={{
-            animation: 'sway 12s ease-in-out infinite',
-            animationDelay: '5s'
-          }}
-        />
-
-        {/* Animated sparkles */}
-        <div
-          className="absolute top-16 right-16 w-1 h-1 bg-white rounded-full opacity-40"
-          style={{
-            animation: 'float 4s ease-in-out infinite',
-            animationDelay: '0.5s'
-          }}
-        />
-        <div
-          className="absolute top-48 left-16 w-1 h-1 bg-white rounded-full opacity-30"
-          style={{
-            animation: 'float 5s ease-in-out infinite',
-            animationDelay: '1.5s'
-          }}
-        />
-        <div
-          className="absolute top-64 right-8 w-1 h-1 bg-white rounded-full opacity-35"
-          style={{
-            animation: 'float 6s ease-in-out infinite',
-            animationDelay: '2.5s'
-          }}
-        />
-
-        {/* Gentle moving clouds effect */}
-        <div
-          className="absolute top-10 left-0 w-32 h-16 bg-white/5 rounded-full blur-sm"
-          style={{
-            animation: 'sway 15s ease-in-out infinite',
-            animationDelay: '0s'
-          }}
-        />
-        <div
-          className="absolute top-24 right-0 w-24 h-12 bg-white/5 rounded-full blur-sm"
-          style={{
-            animation: 'sway 18s ease-in-out infinite',
-            animationDelay: '3s'
-          }}
-        />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

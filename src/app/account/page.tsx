@@ -61,6 +61,7 @@ interface Activity {
 function AccountContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [draftTrips, setDraftTrips] = useState<Trip[]>([]);
+  const [privateTrips, setPrivateTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,16 +89,21 @@ function AccountContent() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       
-      // Fetch user's trips from API (both shared and drafts)
+      // Fetch user's trips from API (shared/public, drafts, and private finalized trips)
       try {
-        const [sharedResult, draftsResult] = await Promise.all([
+        const [sharedResult, draftsResult, privateResult] = await Promise.all([
           fetchTrips(), // Shared/public trips
-          fetch(`/api/trips?drafts=true&userId=${parsedUser.id}`).then(r => r.json()).catch(() => ({ trips: [] })) // Draft trips
+          fetch(`/api/trips?drafts=true&userId=${parsedUser.id}`).then(r => r.json()).catch(() => ({ trips: [] })), // Draft trips
+          fetch(`/api/trips?private=true&userId=${parsedUser.id}`).then(r => r.json()).catch(() => ({ trips: [] })) // Private finalized trips
         ]);
         
         if (sharedResult.data) {
-          // Filter shared trips to show only the current user's trips
-          const userSharedTrips = sharedResult.data.trips.filter((trip: any) => trip.user.id === parsedUser.id && (!trip.isDraft || trip.isDraft === false));
+          // Filter shared trips to show only the current user's public trips
+          const userSharedTrips = sharedResult.data.trips.filter((trip: any) => 
+            trip.user.id === parsedUser.id && 
+            (!trip.isDraft || trip.isDraft === false) && 
+            trip.isPublic === true
+          );
           setTrips(userSharedTrips);
         } else if (sharedResult.error) {
           setError(sharedResult.error);
@@ -108,14 +114,19 @@ function AccountContent() {
           setDraftTrips(draftsResult.trips);
         }
         
+        // Set private finalized trips
+        if (privateResult.trips) {
+          setPrivateTrips(privateResult.trips);
+        }
+        
         setError(null);
       } catch (fetchError) {
-        // If both fail, try to at least get shared trips
+        // If all fail, try to at least get shared trips
         const result = await fetchTrips();
         if (result.data) {
           const userTrips = result.data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
           const drafts = userTrips.filter((trip: any) => trip.isDraft === true);
-          const shared = userTrips.filter((trip: any) => !trip.isDraft || trip.isDraft === false);
+          const shared = userTrips.filter((trip: any) => (!trip.isDraft || trip.isDraft === false) && trip.isPublic === true);
           setDraftTrips(drafts);
           setTrips(shared);
         } else if (result.error) {
@@ -486,6 +497,69 @@ function AccountContent() {
             </div>
           )}
         </div>
+
+        {/* Private Finalized Trips */}
+        {privateTrips.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">🔒 Private Trips</h2>
+            </div>
+            <p className="text-gray-600 mb-4 text-sm">
+              These are your finalized private trips (not published).
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {privateTrips.map((trip, index) => (
+                <motion.div
+                  key={trip.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{trip.title}</h3>
+                      {trip.description && (
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{trip.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center text-gray-600 text-sm mb-4 space-x-4">
+                    {trip.startDate && trip.endDate && (
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        <span>
+                          {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/trips/${trip.id}`}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteTrip(trip.id, trip.title)}
+                      disabled={deletingTrip === trip.id}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center text-sm font-medium disabled:opacity-50"
+                    >
+                      {deletingTrip === trip.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      Delete
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* My Shared Trips */}
         <div className="mb-8">

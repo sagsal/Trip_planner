@@ -16,6 +16,7 @@ interface Trip {
   countries: string;
   cities: string;
   isPublic: boolean;
+  isDraft?: boolean; // Add isDraft to interface
   createdAt: string;
   cities_data: CityData[];
   user: {
@@ -74,14 +75,23 @@ function TripsContent() {
 
   const fetchTripsData = async () => {
     try {
+      // Fetch public trips (non-drafts)
       const result = await fetchTrips();
       
       if (result.data) {
-        setTrips(result.data.trips);
+        // Filter to only show public, non-draft trips
+        // Handle cases where isDraft might be undefined/null
+        const publicTrips = result.data.trips.filter((trip: any) => {
+          const isPublic = trip.isPublic === true;
+          const isNotDraft = trip.isDraft === false || trip.isDraft === undefined || trip.isDraft === null;
+          return isPublic && isNotDraft;
+        });
+        
+        setTrips(publicTrips);
         
         // Extract unique countries for filter
         const uniqueCountries = new Set<string>();
-        result.data.trips.forEach((trip: Trip) => {
+        publicTrips.forEach((trip: Trip) => {
           try {
             const tripCountries = JSON.parse(trip.countries);
             tripCountries.forEach((country: string) => uniqueCountries.add(country));

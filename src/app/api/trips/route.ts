@@ -376,27 +376,54 @@ export async function POST(request: NextRequest) {
     const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft } = await request.json();
 
     // Validate required fields - drafts don't need dates
-    if (!title || !countries) {
-      return NextResponse.json(
-        { error: 'Title and country are required' },
-        { status: 400 }
-      );
+    // Countries can be a string (JSON) or array - check both cases
+    let hasCountries = false;
+    if (countries) {
+      if (Array.isArray(countries)) {
+        hasCountries = countries.length > 0 && countries.some(c => c && c.trim() !== '');
+      } else if (typeof countries === 'string') {
+        const trimmed = countries.trim();
+        if (trimmed && trimmed !== '[]' && trimmed !== '""') {
+          // Try to parse as JSON to check if it's a valid array with content
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              hasCountries = parsed.length > 0 && parsed.some((c: any) => c && String(c).trim() !== '');
+            } else if (typeof parsed === 'string') {
+              hasCountries = parsed.trim() !== '';
+            }
+          } catch {
+            // Not JSON, treat as plain string
+            hasCountries = trimmed !== '';
+          }
+        }
+      }
+    }
+    
+    if (!title || !title.trim()) {
+      const errorResponse = { error: 'Title is required' };
+      console.error('Validation error:', errorResponse);
+      return NextResponse.json(errorResponse, { status: 400 });
+    }
+    
+    if (!hasCountries) {
+      const errorResponse = { error: 'At least one country is required', received: countries };
+      console.error('Validation error:', errorResponse);
+      return NextResponse.json(errorResponse, { status: 400 });
     }
 
     // For non-draft trips, dates are required
     if (!isDraft && (!startDate || !endDate)) {
-      return NextResponse.json(
-        { error: 'Start date and end date are required for shared trips' },
-        { status: 400 }
-      );
+      const errorResponse = { error: 'Start date and end date are required for shared trips' };
+      console.error('Validation error:', errorResponse);
+      return NextResponse.json(errorResponse, { status: 400 });
     }
 
     // Validate user data
     if (!userId || !userName || !userEmail) {
-      return NextResponse.json(
-        { error: 'User authentication required' },
-        { status: 401 }
-      );
+      const errorResponse = { error: 'User authentication required', received: { userId: !!userId, userName: !!userName, userEmail: !!userEmail } };
+      console.error('Validation error:', errorResponse);
+      return NextResponse.json(errorResponse, { status: 401 });
     }
 
     // Ensure user exists to satisfy FK constraint
@@ -416,7 +443,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Log received data for debugging
-    console.log('Received citiesData:', JSON.stringify(citiesData, null, 2));
+    console.log('Received trip data:', {
+      title,
+      countries,
+      cities,
+      citiesDataLength: citiesData?.length || 0,
+      isDraft,
+      userId,
+      userName
+    });
+
+    // Normalize countries - if it's already a JSON string, use it; otherwise stringify
+    let countriesString: string;
+    if (typeof countries === 'string') {
+      // Already a string, use it directly (might be JSON string or plain string)
+      try {
+        // Try to parse to validate it's valid JSON
+        JSON.parse(countries);
+        countriesString = countries;
+      } catch {
+        // Not valid JSON, treat as plain string and wrap in array
+        countriesString = JSON.stringify([countries]);
+      }
+    } else if (Array.isArray(countries)) {
+      countriesString = JSON.stringify(countries);
+    } else {
+      countriesString = JSON.stringify([]);
+    }
+
+    // Normalize cities similarly
+    let citiesString: string;
+    if (typeof cities === 'string') {
+      try {
+        JSON.parse(cities);
+        citiesString = cities;
+      } catch {
+        citiesString = JSON.stringify([cities]);
+      }
+    } else if (Array.isArray(cities)) {
+      citiesString = JSON.stringify(cities);
+    } else {
+      citiesString = JSON.stringify([]);
+    }
 
     // Create trip in database with hierarchical structure
     // Handle both old structure (hotels/restaurants/activities arrays) and new structure (days array)
@@ -426,8 +494,8 @@ export async function POST(request: NextRequest) {
         description: description || null,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
-        countries: JSON.stringify(countries),
-        cities: cities ? JSON.stringify(cities) : JSON.stringify([]),
+        countries: countriesString,
+        cities: citiesString,
         isPublic: isDraft ? false : true, // Drafts are always private
         isDraft: isDraft || false,
         userId: userRecord.id,
@@ -521,12 +589,14 @@ export async function POST(request: NextRequest) {
     }
     // Return more detailed error for debugging
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = {
+      error: 'Internal server error',
+      details: errorMessage,
+      message: process.env.NODE_ENV === 'development' ? errorMessage : 'Failed to create trip. Please try again.'
+    };
+    console.error('Returning error response:', errorDetails);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: errorMessage,
-        message: process.env.NODE_ENV === 'development' ? errorMessage : 'Failed to create trip. Please try again.'
-      },
+      errorDetails,
       { status: 500 }
     );
   }
@@ -540,6 +610,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
     const drafts = searchParams.get('drafts') === 'true';
     const publicOnly = searchParams.get('public') === 'true';
+    const privateOnly = searchParams.get('private') === 'true';
     const userId = searchParams.get('userId');
 
     // Build where clause
@@ -548,6 +619,13 @@ export async function GET(request: NextRequest) {
     if (drafts) {
       // Get user's draft trips
       where.isDraft = true;
+      if (userId) {
+        where.userId = userId;
+      }
+    } else if (privateOnly) {
+      // Get user's private finalized trips (isDraft: false, isPublic: false)
+      where.isDraft = false;
+      where.isPublic = false;
       if (userId) {
         where.userId = userId;
       }

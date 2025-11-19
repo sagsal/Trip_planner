@@ -706,6 +706,92 @@ function DraftEditContent() {
     }
   };
 
+  const handleFinalize = async () => {
+    if (!draftTrip) {
+      setError('Draft trip not loaded');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to finalize this draft trip? It will become a private trip in your profile (not published).')) {
+      return;
+    }
+
+    try {
+      setError(null);
+      
+      // Prepare countries - ensure it's always an array
+      let countries: string[] = [];
+      if (typeof draftTrip.countries === 'string') {
+        try {
+          const parsed = JSON.parse(draftTrip.countries);
+          countries = Array.isArray(parsed) ? parsed : (typeof parsed === 'string' ? JSON.parse(parsed) : []);
+        } catch (e) {
+          countries = [];
+        }
+      } else if (Array.isArray(draftTrip.countries)) {
+        countries = draftTrip.countries;
+      }
+
+      // Prepare cities data for the update
+      const citiesData = draftTrip.citiesData.map(city => {
+        const allRestaurants: any[] = [];
+        const allActivities: any[] = [];
+        
+        city.days.forEach(day => {
+          allRestaurants.push(...(day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''));
+          allActivities.push(...(day.activities || []).filter((a: any) => a.name && a.name.trim() !== ''));
+        });
+
+        return {
+          name: city.name,
+          country: city.country,
+          numberOfDays: city.numberOfDays,
+          hotels: city.hotel && city.hotel.name && city.hotel.name.trim() ? [city.hotel] : [],
+          restaurants: allRestaurants,
+          activities: allActivities,
+          days: city.days.map(day => ({
+            dayNumber: day.dayNumber,
+            restaurants: (day.restaurants || []).filter((r: any) => r.name && r.name.trim() !== ''),
+            activities: (day.activities || []).filter((a: any) => a.name && a.name.trim() !== '')
+          }))
+        };
+      });
+
+      // Finalize the trip - set isDraft to false and isPublic to false (private)
+      const response = await fetch(`/api/trips/${draftId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: draftTrip.title,
+          description: draftTrip.description || '',
+          countries: JSON.stringify(countries),
+          cities: JSON.stringify(draftTrip.citiesData.map(c => c.name)),
+          citiesData: citiesData,
+          startDate: draftData.startDate || null,
+          endDate: draftData.endDate || null,
+          isDraft: false, // Convert from draft to finalized
+          isPublic: false, // Keep it private (not published)
+          tripRating: draftData.tripRating,
+          tripReview: draftData.tripReview,
+          userId: user.id
+        })
+      });
+
+      if (response.ok) {
+        setSuccess('Trip finalized successfully! It is now a private trip in your profile.');
+        setTimeout(() => {
+          router.push('/account');
+        }, 2000);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to finalize trip');
+      }
+    } catch (err) {
+      console.error('Error finalizing trip:', err);
+      setError('An error occurred while finalizing the trip');
+    }
+  };
+
   const handleShareTrip = async () => {
     if (!draftTrip) {
       setError('Draft trip not loaded');
@@ -1156,6 +1242,16 @@ function DraftEditContent() {
                 Save Draft
               </button>
               <button
+                onClick={handleFinalize}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center font-semibold shadow-md"
+              >
+                <Eye className="w-5 h-5 mr-2" />
+                Finalize Trip
+              </button>
+              <p className="text-xs text-gray-500 text-center">
+                Finalize to save as private trip in your profile
+              </p>
+              <button
                 onClick={handleShareTrip}
                 className="px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors flex items-center justify-center font-semibold shadow-md text-lg"
               >
@@ -1163,7 +1259,7 @@ function DraftEditContent() {
                 Share Trip Now
               </button>
               <p className="text-xs text-gray-500 text-center mt-1">
-                You can share this trip anytime later
+                Share to publish for all users to see
               </p>
             </div>
           </div>

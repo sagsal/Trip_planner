@@ -91,6 +91,20 @@ function TripDetailContent() {
   const [selectedDraft, setSelectedDraft] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<{
+    hotels: Set<string>;
+    restaurants: Set<string>;
+    activities: Set<string>;
+  }>({
+    hotels: new Set(),
+    restaurants: new Set(),
+    activities: new Set()
+  });
+
+  // Debug: Track state changes
+  useEffect(() => {
+    console.log('📊 State updated - Draft:', selectedDraft, 'City:', selectedCity, 'Day:', selectedDay);
+  }, [selectedDraft, selectedCity, selectedDay]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -212,12 +226,20 @@ function TripDetailContent() {
             id: trip.id,
             title: trip.title,
             countries,
-            citiesData: trip.cities_data.map((city: any) => {
-              const numberOfDays = city.numberOfDays || 1;
+            citiesData: (trip.cities_data || []).map((city: any) => {
+              // Calculate numberOfDays from items or use default
+              // If we have restaurants/activities, estimate days (roughly 3-5 items per day)
+              const totalItems = (city.restaurants?.length || 0) + (city.activities?.length || 0);
+              const estimatedDays = totalItems > 0 ? Math.max(1, Math.ceil(totalItems / 4)) : 1;
+              // Default to at least 3 days if no items, so users can always select a day
+              const numberOfDays = city.numberOfDays || (totalItems > 0 ? estimatedDays : 3);
+              
+              // Create days array
               const days = Array.from({ length: numberOfDays }, (_, index) => ({
                 id: `day-${index + 1}`,
                 dayNumber: index + 1
               }));
+              
               return {
                 id: city.id,
                 name: city.name,
@@ -229,15 +251,135 @@ function TripDetailContent() {
           };
         });
         setDraftTrips(transformed);
+        console.log('✅ Loaded draft trips:', transformed.length, transformed);
+        console.log('✅ Draft trips data structure:', JSON.stringify(transformed, null, 2));
+      } else {
+        console.error('❌ Failed to load draft trips:', response.status, response.statusText);
       }
     } catch (err) {
-      console.error('Error loading draft trips:', err);
+      console.error('❌ Error loading draft trips:', err);
+    }
+  };
+
+  const toggleItemSelection = (itemType: 'hotel' | 'restaurant' | 'activity', itemId: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev[`${itemType}s` as keyof typeof prev]);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return {
+        ...prev,
+        [`${itemType}s`]: newSet
+      };
+    });
+  };
+
+  const handleCopySelected = async () => {
+    if (!selectedDraft) {
+      alert('Please select a draft trip first');
+      return;
+    }
+
+    if (!selectedCity) {
+      alert('Please select a target city first');
+      return;
+    }
+
+    // Check if restaurants or activities are selected but no day is selected
+    const hasRestaurants = selectedItems.restaurants.size > 0;
+    const hasActivities = selectedItems.activities.size > 0;
+    if ((hasRestaurants || hasActivities) && !selectedDay) {
+      alert('Please select a day for restaurants and activities');
+      return;
+    }
+
+    if (!trip) {
+      alert('Trip data not loaded');
+      return;
+    }
+
+    const copyPromises: Promise<void>[] = [];
+    const errors: string[] = [];
+
+    // Copy selected hotels
+    trip.cities_data.forEach(city => {
+      city.hotels.forEach(hotel => {
+        const hotelId = hotel.id || `${city.id}-hotel-${hotel.name || 'unnamed'}`;
+        if (selectedItems.hotels.has(hotelId)) {
+          copyPromises.push(
+            handleCopyItem('hotel', hotel, selectedCity).catch(err => {
+              errors.push(`Failed to copy hotel ${hotel.name}`);
+            })
+          );
+        }
+      });
+
+      // Copy selected restaurants
+      if (selectedDay) {
+        city.restaurants.forEach(restaurant => {
+          const restaurantId = restaurant.id || `${city.id}-restaurant-${restaurant.name || 'unnamed'}`;
+          if (selectedItems.restaurants.has(restaurantId)) {
+            copyPromises.push(
+              handleCopyItem('restaurant', restaurant, selectedCity, selectedDay).catch(err => {
+                errors.push(`Failed to copy restaurant ${restaurant.name}`);
+              })
+            );
+          }
+        });
+      }
+
+      // Copy selected activities
+      if (selectedDay) {
+        city.activities.forEach((activity, activityIndex) => {
+          const activityId = activity.id || `${city.id || 'city'}-activity-${activityIndex}-${activity.name || 'unnamed'}`;
+          if (selectedItems.activities.has(activityId)) {
+            copyPromises.push(
+              handleCopyItem('activity', activity, selectedCity, selectedDay).catch(err => {
+                errors.push(`Failed to copy activity ${activity.name}`);
+              })
+            );
+          }
+        });
+      }
+    });
+
+    if (copyPromises.length === 0) {
+      alert('Please select at least one item to copy');
+      return;
+    }
+
+    try {
+      await Promise.all(copyPromises);
+      setSelectedItems({ hotels: new Set(), restaurants: new Set(), activities: new Set() });
+      if (errors.length > 0) {
+        setError(`Some items copied successfully. Errors: ${errors.join(', ')}`);
+        setTimeout(() => setError(''), 5000);
+      } else {
+        setSuccess(`Successfully copied ${copyPromises.length} item${copyPromises.length !== 1 ? 's' : ''}!`);
+        setTimeout(() => setSuccess(null), 5000);
+      }
+    } catch (err) {
+      setError('An error occurred while copying items');
+      setTimeout(() => setError(''), 5000);
     }
   };
 
   const handleCopyItem = async (itemType: 'hotel' | 'restaurant' | 'activity', item: any, targetCityId: string, targetDayId?: string) => {
     if (!selectedDraft) {
       setError('Please select a draft trip first');
+      return;
+    }
+
+    if (!targetCityId) {
+      setError('Please select a city in your draft trip');
+      return;
+    }
+
+    // For restaurants and activities, day selection is required
+    if ((itemType === 'restaurant' || itemType === 'activity') && !targetDayId) {
+      setError('Please select a day for restaurants and activities');
       return;
     }
 
@@ -258,16 +400,22 @@ function TripDetailContent() {
         const successMsg = `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} "${item.name}" saved to your draft!`;
         setSuccess(successMsg);
         setTimeout(() => setSuccess(null), 5000);
+        // Reload draft trips to get updated data
+        loadDraftTrips();
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to save item to draft');
+        const errorMsg = data.error || data.details || 'Failed to save item to draft';
+        setError(errorMsg);
         setTimeout(() => setError(null), 5000);
       }
     } catch (err) {
+      console.error('Error copying item:', err);
       setError('An error occurred while saving the item');
       setTimeout(() => setError(null), 5000);
     }
   };
+
+  const totalSelected = selectedItems.hotels.size + selectedItems.restaurants.size + selectedItems.activities.size;
 
   if (isLoading) {
     return (
@@ -371,36 +519,23 @@ function TripDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 mb-8 shadow-md"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">💡</span>
-                  <h3 className="text-xl font-bold text-gray-900">Save Items to Your Draft Trip</h3>
-                </div>
-                <p className="text-sm text-gray-700 ml-8">
-                  Select a draft trip, city, and day (for restaurants/activities) to save items from this trip to your draft. This is your sandbox to collect ideas!
-                </p>
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">💡</span>
+                <h3 className="text-xl font-bold text-gray-900">Save Items to Your Draft Trip</h3>
               </div>
-              <button
-                onClick={() => {
-                  setShowSaveOptions(!showSaveOptions);
-                  if (!showSaveOptions) {
-                    loadDraftTrips();
-                  }
-                }}
-                className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-              >
-                {showSaveOptions ? 'Hide' : 'Show'} Options
-              </button>
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <p className="text-sm text-gray-800 font-semibold mb-2">📌 How to save items:</p>
+                <ol className="text-sm text-gray-700 list-decimal list-inside space-y-1 ml-2">
+                  <li>Select your <strong>draft trip</strong> from the first dropdown below</li>
+                  <li>Select a <strong>city</strong> from the second dropdown (appears after selecting draft)</li>
+                  <li>For restaurants/activities: Select a <strong>day</strong> from the third dropdown</li>
+                  <li>Then click on any hotel, restaurant, or activity below to save it!</li>
+                </ol>
+              </div>
             </div>
 
-            {showSaveOptions && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-4 mt-4"
-              >
+            <div className="space-y-4">
                 {draftTrips.length === 0 ? (
                   <div className="bg-white rounded-lg p-6 border-2 border-yellow-300 shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
@@ -420,44 +555,97 @@ function TripDetailContent() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                    <div className="bg-white rounded-lg p-6 border-2 border-blue-300 shadow-lg">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                        <span className="text-2xl mr-2">📋</span>
+                        Select Your Draft Trip & City
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-semibold text-gray-800 mb-2">
                             📋 Select Draft Trip *
+                            {selectedDraft && <span className="ml-2 text-green-600">✓ Selected</span>}
                           </label>
                           <select
                             value={selectedDraft || ''}
                             onChange={(e) => {
-                              setSelectedDraft(e.target.value);
-                              setSelectedCity(null);
-                              setSelectedDay(null);
+                              const draftId = e.target.value || null;
+                              console.log('🔄 Draft dropdown changed:', draftId, 'Total drafts:', draftTrips.length);
+                              console.log('🔄 Available drafts:', draftTrips.map(d => ({ id: d.id, title: d.title })));
+                              if (draftId) {
+                                console.log('✅ Setting selected draft to:', draftId);
+                                setSelectedDraft(draftId);
+                                setSelectedCity(null);
+                                setSelectedDay(null);
+                                setSelectedItems({ hotels: new Set(), restaurants: new Set(), activities: new Set() });
+                              } else {
+                                console.log('❌ Clearing draft selection');
+                                setSelectedDraft(null);
+                                setSelectedCity(null);
+                                setSelectedDay(null);
+                                setSelectedItems({ hotels: new Set(), restaurants: new Set(), activities: new Set() });
+                              }
                             }}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium cursor-pointer hover:border-blue-400 transition-colors"
+                            style={{ pointerEvents: 'auto', zIndex: 10 }}
                           >
                             <option value="">Choose a draft trip...</option>
-                            {draftTrips.map(draft => (
-                              <option key={draft.id} value={draft.id}>{draft.title}</option>
-                            ))}
+                            {draftTrips.length > 0 ? (
+                              draftTrips.map(draft => (
+                                <option key={draft.id} value={draft.id}>{draft.title}</option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No draft trips available</option>
+                            )}
                           </select>
                         </div>
                         {selectedDraft && (
                           <div>
                             <label className="block text-sm font-semibold text-gray-800 mb-2">
                               🏙️ Select City *
+                              {selectedCity && <span className="ml-2 text-green-600">✓ Selected</span>}
                             </label>
                             <select
                               value={selectedCity || ''}
                               onChange={(e) => {
-                                setSelectedCity(e.target.value);
-                                setSelectedDay(null);
+                                const cityId = e.target.value || null;
+                                console.log('🔄 City dropdown changed:', cityId);
+                                const selectedDraftData = draftTrips.find(d => d.id === selectedDraft);
+                                console.log('🔄 Available cities for selected draft:', selectedDraftData?.citiesData);
+                                if (cityId) {
+                                  console.log('✅ Setting selected city to:', cityId);
+                                  setSelectedCity(cityId);
+                                  setSelectedDay(null);
+                                  setSelectedItems({ hotels: new Set(), restaurants: new Set(), activities: new Set() });
+                                } else {
+                                  console.log('❌ Clearing city selection');
+                                  setSelectedCity(null);
+                                  setSelectedDay(null);
+                                  setSelectedItems({ hotels: new Set(), restaurants: new Set(), activities: new Set() });
+                                }
                               }}
-                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium cursor-pointer hover:border-blue-400 transition-colors"
+                              style={{ pointerEvents: 'auto', zIndex: 10 }}
                             >
                               <option value="">Choose a city...</option>
-                              {draftTrips.find(d => d.id === selectedDraft)?.citiesData.map(city => (
-                                <option key={city.id} value={city.id}>{city.name}, {city.country}</option>
-                              ))}
+                              {(() => {
+                                const selectedDraftData = draftTrips.find(d => d.id === selectedDraft);
+                                const cities = selectedDraftData?.citiesData || [];
+                                console.log('Available cities for draft:', cities.length);
+                                return cities.length > 0 ? (
+                                  cities.map(city => (
+                                    <option key={city.id} value={city.id}>{city.name}, {city.country}</option>
+                                  ))
+                                ) : (
+                                  <option value="" disabled>No cities in this draft</option>
+                                );
+                              })()}
                             </select>
                           </div>
                         )}
@@ -465,40 +653,98 @@ function TripDetailContent() {
                           <div>
                             <label className="block text-sm font-semibold text-gray-800 mb-2">
                               📅 Select Day (for restaurants/activities)
+                              {selectedDay && <span className="ml-2 text-green-600">✓ Selected</span>}
                             </label>
                             <select
                               value={selectedDay || ''}
-                              onChange={(e) => setSelectedDay(e.target.value)}
-                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
+                              onChange={(e) => {
+                                const dayId = e.target.value || null;
+                                console.log('Day dropdown changed:', dayId);
+                                setSelectedDay(dayId);
+                                setSelectedItems({ hotels: new Set(), restaurants: new Set(), activities: new Set() });
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium cursor-pointer hover:border-blue-400 transition-colors"
+                              style={{ pointerEvents: 'auto', zIndex: 10 }}
                             >
                               <option value="">Choose a day...</option>
-                              {draftTrips.find(d => d.id === selectedDraft)?.citiesData.find(c => c.id === selectedCity)?.days.map(day => (
-                                <option key={day.id} value={day.id}>Day {day.dayNumber}</option>
-                              ))}
+                              {(() => {
+                                const selectedDraftData = draftTrips.find(d => d.id === selectedDraft);
+                                const selectedCityData = selectedDraftData?.citiesData.find(c => c.id === selectedCity);
+                                const days = selectedCityData?.days || [];
+                                console.log('Available days for city:', days.length);
+                                return days.length > 0 ? (
+                                  days.map(day => (
+                                    <option key={day.id} value={day.id}>Day {day.dayNumber}</option>
+                                  ))
+                                ) : (
+                                  <option value="" disabled>No days available</option>
+                                );
+                              })()}
                             </select>
                           </div>
                         )}
                       </div>
-                    </div>
-                    {selectedDraft && (
-                      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 shadow-sm">
-                        <div className="flex items-start gap-3">
-                          <span className="text-2xl">✅</span>
-                          <div>
-                            <p className="text-sm font-semibold text-green-800 mb-1">Ready to save!</p>
-                            <p className="text-sm text-green-700">
-                              Click on any hotel, restaurant, or activity below to save it to your draft trip.
-                              {selectedCity && selectedDay && ' Restaurants and activities will be saved to the selected day.'}
-                              {selectedCity && !selectedDay && ' Select a day to save restaurants and activities.'}
+                      {/* Status indicator */}
+                      {(selectedDraft || selectedCity || selectedDay) && (
+                        <div className="mt-4 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
+                          <p className="text-sm font-semibold text-green-800 mb-2">✓ Selection Status:</p>
+                          <ul className="text-sm text-green-700 space-y-1">
+                            <li>{selectedDraft ? '✓ Draft trip selected' : '✗ No draft trip selected'}</li>
+                            <li>{selectedCity ? '✓ City selected' : '✗ No city selected'}</li>
+                            <li>{selectedDay ? '✓ Day selected (ready for restaurants/activities)' : '✗ No day selected (needed for restaurants/activities)'}</li>
+                          </ul>
+                          {selectedDraft && selectedCity && (
+                            <p className="mt-3 text-sm font-bold text-green-800">
+                              🎉 Ready to save! Click on any hotel, restaurant, or activity below to save it to your draft.
                             </p>
+                          )}
+                        </div>
+                      )}
+                      {/* Debug info - remove in production */}
+                      <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                        <p><strong>Debug:</strong> Drafts loaded: {draftTrips.length} | Selected Draft: {selectedDraft || 'none'} | Selected City: {selectedCity || 'none'} | Selected Day: {selectedDay || 'none'}</p>
+                        {selectedDraft && (
+                          <p className="mt-1">Draft cities: {draftTrips.find(d => d.id === selectedDraft)?.citiesData.length || 0}</p>
+                        )}
+                        {selectedCity && selectedDraft && (
+                          <p className="mt-1">City days: {draftTrips.find(d => d.id === selectedDraft)?.citiesData.find(c => c.id === selectedCity)?.days.length || 0}</p>
+                        )}
+                      </div>
+                    </div>
+                      {selectedDraft && selectedCity && (
+                      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">✅</span>
+                            <div>
+                              <p className="text-sm font-semibold text-green-800 mb-1">Ready to save!</p>
+                              <p className="text-sm text-green-700">
+                                {totalSelected > 0 
+                                  ? `${totalSelected} item${totalSelected !== 1 ? 's' : ''} selected. Click "Copy Selected" to save all, or click individual items.`
+                                  : 'Select items below using checkboxes, or click individual items to save them.'}
+                                {selectedCity && selectedDay && ' Restaurants and activities will be saved to the selected day.'}
+                                {selectedCity && !selectedDay && ' Select a day to save restaurants and activities.'}
+                              </p>
+                            </div>
                           </div>
+                          {totalSelected > 0 && (
+                            <button
+                              onClick={handleCopySelected}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors flex items-center shadow-md"
+                            >
+                              <Copy className="w-4 h-4 mr-1" />
+                              Copy {totalSelected} Selected
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
                   </>
                 )}
-              </motion.div>
-            )}
+            </div>
           </motion.div>
         )}
 
@@ -563,31 +809,47 @@ function TripDetailContent() {
                     <div className="mb-8">
                       <h3 className="text-xl font-semibold text-gray-900 mb-4">🏨 Hotels</h3>
                       <div className="space-y-4">
-                        {city.hotels.map((hotel) => (
+                        {city.hotels.map((hotel) => {
+                          const hotelId = hotel.id || `${city.id}-hotel-${hotel.name || 'unnamed'}`;
+                          const isSelected = selectedItems.hotels.has(hotelId);
+                          return (
                           <div 
                             key={hotel.id} 
                             className={`border rounded-lg p-4 transition-all ${
                               selectedDraft && selectedCity
-                                ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 cursor-pointer'
+                                ? isSelected
+                                  ? 'border-blue-500 bg-blue-100'
+                                  : 'border-blue-300 bg-blue-50 hover:bg-blue-100 cursor-pointer'
                                 : 'border-gray-200'
                             }`}
                             onClick={() => {
                               if (selectedDraft && selectedCity) {
-                                handleCopyItem('hotel', hotel, selectedCity);
+                                toggleItemSelection('hotel', hotelId);
                               }
                             }}
                           >
                             <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
-                                {hotel.location && (
-                                  <p className="text-gray-600 text-sm">{hotel.location}</p>
+                              <div className="flex items-center flex-1">
+                                {selectedDraft && selectedCity && (
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleItemSelection('hotel', hotelId)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="mr-3 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  />
                                 )}
+                                <div className="flex-1">
+                                  <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
+                                  {hotel.location && (
+                                    <p className="text-gray-600 text-sm">{hotel.location}</p>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center space-x-3">
                                 {hotel.rating && hotel.rating > 0 && renderStars(hotel.rating)}
                                 {renderLikeButton(hotel.liked ?? null)}
-                                {selectedDraft && selectedCity && (
+                                {selectedDraft && selectedCity && !isSelected ? (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -596,16 +858,21 @@ function TripDetailContent() {
                                     className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold flex items-center transition-all shadow-md hover:shadow-lg transform hover:scale-105"
                                   >
                                     <Copy className="w-4 h-4 mr-2" />
-                                    Save to Draft
+                                    Save Now
                                   </button>
-                                )}
+                                ) : !selectedDraft || !selectedCity ? (
+                                  <span className="ml-2 text-xs text-gray-400 italic">
+                                    Select draft & city above to save
+                                  </span>
+                                ) : null}
                               </div>
                             </div>
                             {hotel.review && (
                               <p className="text-gray-700 text-sm leading-relaxed">{hotel.review}</p>
                             )}
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     </div>
                   )}
@@ -615,31 +882,47 @@ function TripDetailContent() {
                     <div className="mb-8">
                       <h3 className="text-xl font-semibold text-gray-900 mb-4">🍽️ Restaurants</h3>
                       <div className="space-y-4">
-                        {city.restaurants.map((restaurant) => (
+                        {city.restaurants.map((restaurant) => {
+                          const restaurantId = restaurant.id || `${city.id}-restaurant-${restaurant.name || 'unnamed'}`;
+                          const isSelected = selectedItems.restaurants.has(restaurantId);
+                          return (
                           <div 
                             key={restaurant.id} 
                             className={`border rounded-lg p-4 transition-all ${
                               selectedDraft && selectedCity && selectedDay
-                                ? 'border-green-300 bg-green-50 hover:bg-green-100 cursor-pointer'
+                                ? isSelected
+                                  ? 'border-green-500 bg-green-100'
+                                  : 'border-green-300 bg-green-50 hover:bg-green-100 cursor-pointer'
                                 : 'border-gray-200'
                             }`}
                             onClick={() => {
                               if (selectedDraft && selectedCity && selectedDay) {
-                                handleCopyItem('restaurant', restaurant, selectedCity, selectedDay);
+                                toggleItemSelection('restaurant', restaurantId);
                               }
                             }}
                           >
                             <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h4 className="text-lg font-semibold text-gray-900">{restaurant.name}</h4>
-                                {restaurant.location && (
-                                  <p className="text-gray-600 text-sm">{restaurant.location}</p>
+                              <div className="flex items-center flex-1">
+                                {selectedDraft && selectedCity && selectedDay && (
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleItemSelection('restaurant', restaurantId)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="mr-3 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                  />
                                 )}
+                                <div className="flex-1">
+                                  <h4 className="text-lg font-semibold text-gray-900">{restaurant.name}</h4>
+                                  {restaurant.location && (
+                                    <p className="text-gray-600 text-sm">{restaurant.location}</p>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center space-x-3">
                                 {restaurant.rating && restaurant.rating > 0 && renderStars(restaurant.rating)}
                                 {renderLikeButton(restaurant.liked ?? null)}
-                                {selectedDraft && selectedCity && selectedDay && (
+                                {selectedDraft && selectedCity && selectedDay && !isSelected ? (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -648,16 +931,21 @@ function TripDetailContent() {
                                     className="ml-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-semibold flex items-center transition-all shadow-md hover:shadow-lg transform hover:scale-105"
                                   >
                                     <Copy className="w-4 h-4 mr-2" />
-                                    Save to Draft
+                                    Save Now
                                   </button>
-                                )}
+                                ) : !selectedDraft || !selectedCity || !selectedDay ? (
+                                  <span className="ml-2 text-xs text-gray-400 italic">
+                                    {!selectedDraft ? 'Select draft above' : !selectedCity ? 'Select city above' : 'Select day above'}
+                                  </span>
+                                ) : null}
                               </div>
                             </div>
                             {restaurant.review && (
                               <p className="text-gray-700 text-sm leading-relaxed">{restaurant.review}</p>
                             )}
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     </div>
                   )}
@@ -667,31 +955,47 @@ function TripDetailContent() {
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-4">🎯 Activities</h3>
                       <div className="space-y-4">
-                        {city.activities.map((activity) => (
+                        {city.activities.map((activity, activityIndex) => {
+                          const activityId = activity.id || `${city.id || 'city'}-activity-${activityIndex}-${activity.name || 'unnamed'}`;
+                          const isSelected = selectedItems.activities.has(activityId);
+                          return (
                           <div 
                             key={activity.id} 
                             className={`border rounded-lg p-4 transition-all ${
                               selectedDraft && selectedCity && selectedDay
-                                ? 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer'
+                                ? isSelected
+                                  ? 'border-purple-500 bg-purple-100'
+                                  : 'border-purple-300 bg-purple-50 hover:bg-purple-100 cursor-pointer'
                                 : 'border-gray-200'
                             }`}
                             onClick={() => {
                               if (selectedDraft && selectedCity && selectedDay) {
-                                handleCopyItem('activity', activity, selectedCity, selectedDay);
+                                toggleItemSelection('activity', activityId);
                               }
                             }}
                           >
                             <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h4 className="text-lg font-semibold text-gray-900">{activity.name}</h4>
-                                {activity.location && (
-                                  <p className="text-gray-600 text-sm">{activity.location}</p>
+                              <div className="flex items-center flex-1">
+                                {selectedDraft && selectedCity && selectedDay && (
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleItemSelection('activity', activityId)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="mr-3 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                  />
                                 )}
+                                <div className="flex-1">
+                                  <h4 className="text-lg font-semibold text-gray-900">{activity.name}</h4>
+                                  {activity.location && (
+                                    <p className="text-gray-600 text-sm">{activity.location}</p>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center space-x-3">
                                 {activity.rating && activity.rating > 0 && renderStars(activity.rating)}
                                 {renderLikeButton(activity.liked ?? null)}
-                                {selectedDraft && selectedCity && selectedDay && (
+                                {selectedDraft && selectedCity && selectedDay && !isSelected ? (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -700,16 +1004,21 @@ function TripDetailContent() {
                                     className="ml-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold flex items-center transition-all shadow-md hover:shadow-lg transform hover:scale-105"
                                   >
                                     <Copy className="w-4 h-4 mr-2" />
-                                    Save to Draft
+                                    Save Now
                                   </button>
-                                )}
+                                ) : !selectedDraft || !selectedCity || !selectedDay ? (
+                                  <span className="ml-2 text-xs text-gray-400 italic">
+                                    {!selectedDraft ? 'Select draft above' : !selectedCity ? 'Select city above' : 'Select day above'}
+                                  </span>
+                                ) : null}
                               </div>
                             </div>
                             {activity.review && (
                               <p className="text-gray-700 text-sm leading-relaxed">{activity.review}</p>
                             )}
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     </div>
                   )}

@@ -509,6 +509,20 @@ function NewTripContent() {
       // Debug: Log what we're sending
       console.log('Cities Data being sent:', citiesData);
 
+      // Collect unique countries from cities (filter out empty strings)
+      const uniqueCountries = Array.from(new Set(
+        citiesData
+          .map(city => city.country)
+          .filter(country => country && country.trim() !== '')
+      ));
+      
+      // Validate that we have at least one country
+      if (uniqueCountries.length === 0) {
+        setError('Please ensure at least one city has a valid country');
+        setIsLoading(false);
+        return;
+      }
+
       // Transform new structure to API format
       // Flatten days: collect all restaurants and activities from all days
       // Hotels are already at city level
@@ -551,11 +565,13 @@ function NewTripContent() {
           },
           body: JSON.stringify({
             ...formData,
-            countries: formData.countries.filter(c => c.trim() !== ''),
+            countries: uniqueCountries, // Use countries from cities
+            cities: JSON.stringify(citiesData.map(c => c.name)),
             citiesData: transformedCitiesData,
             userId: user.id,
             userName: user.name,
-            userEmail: user.email
+            userEmail: user.email,
+            isDraft: false // This is a shared trip, not a draft
           }),
           signal: controller.signal,
         });
@@ -573,10 +589,23 @@ function NewTripContent() {
       if (response.ok) {
         router.push('/account');
       } else {
-        const data = await response.json();
-        const errorMessage = data.details ? `${data.error}: ${data.details}` : (data.error || 'Failed to create trip');
+        let errorMessage = 'Failed to create trip';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            errorMessage = data.details ? `${data.error}: ${data.details}` : (data.error || errorMessage);
+            console.error('Trip creation failed:', data);
+          } else {
+            const text = await response.text();
+            errorMessage = text || `HTTP ${response.status}: ${response.statusText}`;
+            console.error('Trip creation failed - non-JSON response:', text);
+          }
+        } catch (parseError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText || 'Unknown error'}`;
+          console.error('Error parsing response:', parseError);
+        }
         setError(errorMessage);
-        console.error('Trip creation failed:', data);
       }
     } catch (error) {
       setError('An error occurred while creating the trip');

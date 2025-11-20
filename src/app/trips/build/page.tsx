@@ -112,18 +112,6 @@ function BuildTripContent() {
   const [customCityName, setCustomCityName] = useState('');
   const [selectedNumberOfDays, setSelectedNumberOfDays] = useState('');
 
-  // State for multi-select dropdowns
-  const [openDropdowns, setOpenDropdowns] = useState<{[key: string]: boolean}>({});
-  const [selectedHotels, setSelectedHotels] = useState<Set<string>>(new Set());
-  const [selectedRestaurants, setSelectedRestaurants] = useState<{[key: string]: Set<string>}>({});
-  const [selectedActivities, setSelectedActivities] = useState<{[key: string]: Set<string>}>({});
-  
-  // Combined selection state for all items at once (hotels, restaurants, activities)
-  const [combinedSelections, setCombinedSelections] = useState<{[key: string]: {
-    hotels: Set<string>;
-    restaurants: Set<string>;
-    activities: Set<string>;
-  }}>({});
 
   // All countries of the world with selected cities - memoized for performance
   const countriesData = useMemo(() => ({
@@ -511,20 +499,6 @@ function BuildTripContent() {
     }));
   }, []);
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-container') && !target.closest('[class*="z-20"]')) {
-        setOpenDropdowns({});
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Load user and data
   useEffect(() => {
@@ -801,14 +775,27 @@ function BuildTripContent() {
   };
 
   const handleCreateDraft = async () => {
-    if (!user) return;
+    console.log('Save Draft button clicked');
+    console.log('User:', user);
+    console.log('Form data:', formData);
+    console.log('Cities data:', citiesData);
+    
+    if (!user) {
+      console.error('No user found');
+      setError('Please log in to save drafts');
+      return;
+    }
+    
     if (!formData.title || citiesData.length === 0) {
+      console.error('Validation failed:', { title: formData.title, citiesCount: citiesData.length });
       setError('Please fill in trip title and add at least one city');
       return;
     }
 
     try {
       setError(null);
+      setIsLoadingDraft(true);
+      console.log('Starting draft save...');
       
       // Collect unique countries from cities (filter out empty strings)
       const uniqueCountries = Array.from(new Set(
@@ -872,7 +859,13 @@ function BuildTripContent() {
         })
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
+        console.log('Draft saved successfully!');
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+        
         setShowCreateDraft(false);
         setFormData({ title: '', description: '', startDate: '', endDate: '', numberOfDays: '', countries: [''] });
         setCitiesData([]);
@@ -906,134 +899,11 @@ function BuildTripContent() {
     } catch (err) {
       console.error('Error saving draft trip:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while saving the draft trip');
+    } finally {
+      setIsLoadingDraft(false);
     }
   };
 
-  // Helper functions to collect items from previous trips for dropdowns
-  const getAllHotels = useMemo(() => {
-    const hotels: Array<{ id: string; name: string; location: string; rating?: number; review?: string; liked?: boolean; source: string }> = [];
-    
-    // From draft trips
-    draftTrips.forEach(trip => {
-      trip.citiesData.forEach(city => {
-        if (city.hotel && city.hotel.name.trim()) {
-          hotels.push({
-            ...city.hotel,
-            source: `${trip.title} - ${city.name}`
-          });
-        }
-      });
-    });
-    
-    // From shared trips
-    sharedTrips.forEach(trip => {
-      trip.cities_data.forEach(city => {
-        if (city.hotels && city.hotels.length > 0) {
-          city.hotels.forEach(hotel => {
-            if (hotel.name && hotel.name.trim()) {
-              hotels.push({
-                id: hotel.id || `hotel-${Date.now()}-${Math.random()}`,
-                name: hotel.name,
-                location: hotel.location || '',
-                rating: hotel.rating || 0,
-                review: hotel.review || '',
-                liked: hotel.liked ?? null,
-                source: `${trip.title} - ${city.name}`
-              });
-            }
-          });
-        }
-      });
-    });
-    
-    return hotels;
-  }, [draftTrips, sharedTrips]);
-
-  const getAllRestaurants = useMemo(() => {
-    const restaurants: Array<{ id: string; name: string; location: string; rating?: number; review?: string; liked?: boolean; source: string }> = [];
-    
-    // From draft trips
-    draftTrips.forEach(trip => {
-      trip.citiesData.forEach(city => {
-        city.days.forEach(day => {
-          day.restaurants.forEach(restaurant => {
-            if (restaurant.name && restaurant.name.trim()) {
-              restaurants.push({
-                ...restaurant,
-                source: `${trip.title} - ${city.name} - Day ${day.dayNumber}`
-              });
-            }
-          });
-        });
-      });
-    });
-    
-    // From shared trips
-    sharedTrips.forEach(trip => {
-      trip.cities_data.forEach(city => {
-        if (city.restaurants && city.restaurants.length > 0) {
-          city.restaurants.forEach(restaurant => {
-            if (restaurant.name && restaurant.name.trim()) {
-              restaurants.push({
-                id: restaurant.id || `restaurant-${Date.now()}-${Math.random()}`,
-                name: restaurant.name,
-                location: restaurant.location || '',
-                rating: restaurant.rating || 0,
-                review: restaurant.review || '',
-                liked: restaurant.liked ?? null,
-                source: `${trip.title} - ${city.name}`
-              });
-            }
-          });
-        }
-      });
-    });
-    
-    return restaurants;
-  }, [draftTrips, sharedTrips]);
-
-  const getAllActivities = useMemo(() => {
-    const activities: Array<{ id: string; name: string; location: string; rating?: number; review?: string; liked?: boolean; source: string }> = [];
-    
-    // From draft trips
-    draftTrips.forEach(trip => {
-      trip.citiesData.forEach(city => {
-        city.days.forEach(day => {
-          day.activities.forEach(activity => {
-            if (activity.name && activity.name.trim()) {
-              activities.push({
-                ...activity,
-                source: `${trip.title} - ${city.name} - Day ${day.dayNumber}`
-              });
-            }
-          });
-        });
-      });
-    });
-    
-    // From shared trips
-    sharedTrips.forEach(trip => {
-      trip.cities_data.forEach(city => {
-        if (city.activities && city.activities.length > 0) {
-          city.activities.forEach(activity => {
-            if (activity.name && activity.name.trim()) {
-              activities.push({
-                id: activity.id || `activity-${Date.now()}-${Math.random()}`,
-                name: activity.name,
-                location: activity.location || '',
-                rating: activity.rating || 0,
-                review: activity.review || '',
-                liked: activity.liked ?? null,
-                source: `${trip.title} - ${city.name}`
-              });
-            }
-          });
-        }
-      });
-    });
-    
-    return activities;
-  }, [draftTrips, sharedTrips]);
 
   const handleCopyItemToForm = (itemType: 'hotel' | 'restaurant' | 'activity', item: any, targetCityId: string, targetDayId?: string) => {
     console.log('handleCopyItemToForm called:', { itemType, itemName: item?.name, targetCityId, targetDayId });
@@ -1684,7 +1554,26 @@ function BuildTripContent() {
 
             {/* Trip Information Section */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Trip Information</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Trip Information</h2>
+                {/* Prominent Save Draft Button */}
+                {user && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCreateDraft();
+                    }}
+                    disabled={isLoadingDraft || !formData.title || citiesData.length === 0}
+                    className="px-6 py-3 bg-gradient-to-r from-[#AAB624] to-[#8B9A1E] text-white rounded-lg hover:from-[#8B9A1E] hover:to-[#6B7A15] transition-all font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    {isLoadingDraft ? 'Saving...' : editingDraftId ? 'Update Draft' : 'Save Draft'}
+                    {user && <span className="text-sm opacity-90">({user.name})</span>}
+                  </button>
+                )}
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -1964,75 +1853,17 @@ function BuildTripContent() {
                             </div>
                           ) : (
                             <div className="space-y-3">
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <button
-                                  type="button"
-                                  onClick={() => updateHotel(city.id, 'name', '')}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                >
-                                  <Plus className="w-4 h-4 inline mr-2" />
-                                  Add Hotel
-                                </button>
-                                {getAllHotels.length > 0 && (
-                                  <div className="relative dropdown-container">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const key = `hotel-${city.id}`;
-                                        setOpenDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
-                                      }}
-                                      className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px] text-left flex items-center justify-between"
-                                    >
-                                      <span>📋 Select from previous trips {selectedHotels.size > 0 && `(${selectedHotels.size} selected)`}</span>
-                                      <ChevronDown className={`w-4 h-4 transition-transform ${openDropdowns[`hotel-${city.id}`] ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    {openDropdowns[`hotel-${city.id}`] && (
-                                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                        <div className="p-2 space-y-1">
-                                          {getAllHotels.map((hotel) => (
-                                            <label key={hotel.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                              <input
-                                                type="checkbox"
-                                                checked={selectedHotels.has(hotel.id)}
-                                                onChange={(e) => {
-                                                  const newSet = new Set(selectedHotels);
-                                                  if (e.target.checked) {
-                                                    newSet.add(hotel.id);
-                                                  } else {
-                                                    newSet.delete(hotel.id);
-                                                  }
-                                                  setSelectedHotels(newSet);
-                                                }}
-                                                className="mr-2"
-                                              />
-                                              <span className="text-sm text-gray-900">{hotel.name} ({hotel.source})</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                        <div className="p-2 border-t border-gray-200">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              selectedHotels.forEach(hotelId => {
-                                                const hotel = getAllHotels.find(h => h.id === hotelId);
-                                                if (hotel) {
-                                                  handleCopyItemToForm('hotel', hotel, city.id);
-                                                }
-                                              });
-                                              setSelectedHotels(new Set());
-                                              setOpenDropdowns(prev => ({ ...prev, [`hotel-${city.id}`]: false }));
-                                            }}
-                                            disabled={selectedHotels.size === 0}
-                                            className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                          >
-                                            Add {selectedHotels.size > 0 ? `${selectedHotels.size} Selected` : 'Selected'}
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => updateHotel(city.id, 'name', '')}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                              >
+                                <Plus className="w-4 h-4 inline mr-2" />
+                                Add Hotel
+                              </button>
+                              <p className="text-sm text-gray-600 italic">
+                                💡 Tip: Visit existing trips to copy hotels, restaurants, and activities to this draft.
+                              </p>
                             </div>
                           )}
                         </div>
@@ -2068,219 +1899,6 @@ function BuildTripContent() {
                                 {/* Restaurants for this day */}
                                 <div className="mb-6">
                                   <div className="mb-4">
-                                    {/* Combined Select All Items Button */}
-                                    <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <h5 className="font-semibold text-gray-900 flex items-center">
-                                          <span className="text-xl mr-2">📦</span>
-                                          Select All Items from Previous Trips
-                                        </h5>
-                                        {(() => {
-                                          const key = `${city.id}-${day.id}`;
-                                          const selection = combinedSelections[key] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                          const totalSelected = selection.hotels.size + selection.restaurants.size + selection.activities.size;
-                                          return totalSelected > 0 && (
-                                            <span className="text-sm text-blue-600 font-medium">
-                                              {totalSelected} item{totalSelected !== 1 ? 's' : ''} selected
-                                            </span>
-                                          );
-                                        })()}
-                                      </div>
-                                      <div className="relative">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const key = `combined-${city.id}-${day.id}`;
-                                            setOpenDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
-                                          }}
-                                          className="w-full px-4 py-2 border border-blue-300 rounded-lg bg-white text-gray-900 text-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left flex items-center justify-between"
-                                        >
-                                          <span>📋 Select Hotels, Restaurants & Activities</span>
-                                          <ChevronDown className={`w-4 h-4 transition-transform ${openDropdowns[`combined-${city.id}-${day.id}`] ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        {openDropdowns[`combined-${city.id}-${day.id}`] && (
-                                          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-                                            <div className="p-3 space-y-4">
-                                              {/* Hotels Section */}
-                                              {getAllHotels.length > 0 && (
-                                                <div>
-                                                  <h6 className="font-semibold text-gray-900 mb-2 flex items-center">
-                                                    <span className="text-lg mr-2">🏨</span>
-                                                    Hotels
-                                                  </h6>
-                                                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                                                    {getAllHotels.map((hotel) => {
-                                                      const key = `${city.id}-${day.id}`;
-                                                      const isSelected = combinedSelections[key]?.hotels.has(hotel.id) || false;
-                                                      return (
-                                                        <label key={hotel.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                              const selectionKey = `${city.id}-${day.id}`;
-                                                              const current = combinedSelections[selectionKey] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                                              const newHotels = new Set(current.hotels);
-                                                              if (e.target.checked) {
-                                                                newHotels.add(hotel.id);
-                                                              } else {
-                                                                newHotels.delete(hotel.id);
-                                                              }
-                                                              setCombinedSelections(prev => ({
-                                                                ...prev,
-                                                                [selectionKey]: { ...current, hotels: newHotels }
-                                                              }));
-                                                            }}
-                                                            className="mr-2"
-                                                          />
-                                                          <span className="text-sm text-gray-900">{hotel.name} ({hotel.source})</span>
-                                                        </label>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Restaurants Section */}
-                                              {getAllRestaurants.length > 0 && (
-                                                <div>
-                                                  <h6 className="font-semibold text-gray-900 mb-2 flex items-center">
-                                                    <span className="text-lg mr-2">🍽️</span>
-                                                    Restaurants
-                                                  </h6>
-                                                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                                                    {getAllRestaurants.map((restaurant) => {
-                                                      const key = `${city.id}-${day.id}`;
-                                                      const isSelected = combinedSelections[key]?.restaurants.has(restaurant.id) || false;
-                                                      return (
-                                                        <label key={restaurant.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                              const selectionKey = `${city.id}-${day.id}`;
-                                                              const current = combinedSelections[selectionKey] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                                              const newRestaurants = new Set(current.restaurants);
-                                                              if (e.target.checked) {
-                                                                newRestaurants.add(restaurant.id);
-                                                              } else {
-                                                                newRestaurants.delete(restaurant.id);
-                                                              }
-                                                              setCombinedSelections(prev => ({
-                                                                ...prev,
-                                                                [selectionKey]: { ...current, restaurants: newRestaurants }
-                                                              }));
-                                                            }}
-                                                            className="mr-2"
-                                                          />
-                                                          <span className="text-sm text-gray-900">{restaurant.name} ({restaurant.source})</span>
-                                                        </label>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Activities Section */}
-                                              {getAllActivities.length > 0 && (
-                                                <div>
-                                                  <h6 className="font-semibold text-gray-900 mb-2 flex items-center">
-                                                    <span className="text-lg mr-2">🎯</span>
-                                                    Activities
-                                                  </h6>
-                                                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                                                    {getAllActivities.map((activity) => {
-                                                      const key = `${city.id}-${day.id}`;
-                                                      const isSelected = combinedSelections[key]?.activities.has(activity.id) || false;
-                                                      return (
-                                                        <label key={activity.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                              const selectionKey = `${city.id}-${day.id}`;
-                                                              const current = combinedSelections[selectionKey] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                                              const newActivities = new Set(current.activities);
-                                                              if (e.target.checked) {
-                                                                newActivities.add(activity.id);
-                                                              } else {
-                                                                newActivities.delete(activity.id);
-                                                              }
-                                                              setCombinedSelections(prev => ({
-                                                                ...prev,
-                                                                [selectionKey]: { ...current, activities: newActivities }
-                                                              }));
-                                                            }}
-                                                            className="mr-2"
-                                                          />
-                                                          <span className="text-sm text-gray-900">{activity.name} ({activity.source})</span>
-                                                        </label>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="p-3 border-t border-gray-200 bg-gray-50">
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  const key = `${city.id}-${day.id}`;
-                                                  const selection = combinedSelections[key] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                                  
-                                                  // Add selected hotels
-                                                  selection.hotels.forEach(hotelId => {
-                                                    const hotel = getAllHotels.find(h => h.id === hotelId);
-                                                    if (hotel) {
-                                                      handleCopyItemToForm('hotel', hotel, city.id);
-                                                    }
-                                                  });
-                                                  
-                                                  // Add selected restaurants
-                                                  selection.restaurants.forEach(restaurantId => {
-                                                    const restaurant = getAllRestaurants.find(r => r.id === restaurantId);
-                                                    if (restaurant) {
-                                                      handleCopyItemToForm('restaurant', restaurant, city.id, day.id);
-                                                    }
-                                                  });
-                                                  
-                                                  // Add selected activities
-                                                  selection.activities.forEach(activityId => {
-                                                    const activity = getAllActivities.find(a => a.id === activityId);
-                                                    if (activity) {
-                                                      handleCopyItemToForm('activity', activity, city.id, day.id);
-                                                    }
-                                                  });
-                                                  
-                                                  // Clear selections and close dropdown
-                                                  setCombinedSelections(prev => {
-                                                    const newState = { ...prev };
-                                                    delete newState[key];
-                                                    return newState;
-                                                  });
-                                                  setOpenDropdowns(prev => ({ ...prev, [`combined-${city.id}-${day.id}`]: false }));
-                                                }}
-                                                disabled={(() => {
-                                                  const key = `${city.id}-${day.id}`;
-                                                  const selection = combinedSelections[key] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                                  return selection.hotels.size === 0 && selection.restaurants.size === 0 && selection.activities.size === 0;
-                                                })()}
-                                                className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                              >
-                                                Add All Selected (
-                                                  {(() => {
-                                                    const key = `${city.id}-${day.id}`;
-                                                    const selection = combinedSelections[key] || { hotels: new Set(), restaurants: new Set(), activities: new Set() };
-                                                    return selection.hotels.size + selection.restaurants.size + selection.activities.size;
-                                                  })()}
-                                                  )
-                                              </button>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
                                     <h5 className="font-semibold text-gray-900 flex items-center mb-3">
                                       <span className="text-xl mr-2">🍽️</span>
                                       Restaurants
@@ -2294,72 +1912,10 @@ function BuildTripContent() {
                                         <Plus className="w-3 h-3 mr-1" />
                                         Add Restaurant
                                       </button>
-                                      {getAllRestaurants.length > 0 && (
-                                        <div className="relative dropdown-container">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const key = `restaurant-${city.id}-${day.id}`;
-                                              setOpenDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
-                                            }}
-                                            className="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm hover:bg-gray-50 focus:ring-2 focus:ring-green-500 focus:border-transparent min-w-[200px] text-left flex items-center justify-between"
-                                          >
-                                            <span>📋 Select restaurants only {(selectedRestaurants[`${city.id}-${day.id}`]?.size || 0) > 0 && `(${selectedRestaurants[`${city.id}-${day.id}`]?.size} selected)`}</span>
-                                            <ChevronDown className={`w-4 h-4 transition-transform ${openDropdowns[`restaurant-${city.id}-${day.id}`] ? 'rotate-180' : ''}`} />
-                                          </button>
-                                          {openDropdowns[`restaurant-${city.id}-${day.id}`] && (
-                                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                              <div className="p-2 space-y-1">
-                                                {getAllRestaurants.map((restaurant) => {
-                                                  const key = `${city.id}-${day.id}`;
-                                                  const isSelected = selectedRestaurants[key]?.has(restaurant.id) || false;
-                                                  return (
-                                                    <label key={restaurant.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                                      <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={(e) => {
-                                                          const newSet = new Set(selectedRestaurants[key] || []);
-                                                          if (e.target.checked) {
-                                                            newSet.add(restaurant.id);
-                                                          } else {
-                                                            newSet.delete(restaurant.id);
-                                                          }
-                                                          setSelectedRestaurants(prev => ({ ...prev, [key]: newSet }));
-                                                        }}
-                                                        className="mr-2"
-                                                      />
-                                                      <span className="text-sm text-gray-900">{restaurant.name} ({restaurant.source})</span>
-                                                    </label>
-                                                  );
-                                                })}
-                                              </div>
-                                              <div className="p-2 border-t border-gray-200">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const key = `${city.id}-${day.id}`;
-                                                    const selected = selectedRestaurants[key] || new Set();
-                                                    selected.forEach(restaurantId => {
-                                                      const restaurant = getAllRestaurants.find(r => r.id === restaurantId);
-                                                      if (restaurant) {
-                                                        handleCopyItemToForm('restaurant', restaurant, city.id, day.id);
-                                                      }
-                                                    });
-                                                    setSelectedRestaurants(prev => ({ ...prev, [key]: new Set() }));
-                                                    setOpenDropdowns(prev => ({ ...prev, [`restaurant-${city.id}-${day.id}`]: false }));
-                                                  }}
-                                                  disabled={(selectedRestaurants[`${city.id}-${day.id}`]?.size || 0) === 0}
-                                                  className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                >
-                                                  Add {(selectedRestaurants[`${city.id}-${day.id}`]?.size || 0) > 0 ? `${selectedRestaurants[`${city.id}-${day.id}`]?.size} Selected` : 'Selected'}
-                                                </button>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
                                     </div>
+                                    <p className="text-sm text-gray-600 italic mt-2">
+                                      💡 Tip: Visit existing trips to copy restaurants to this draft.
+                                    </p>
                                   </div>
                                   {day.restaurants.length === 0 ? (
                                     <p className="text-gray-500 text-sm text-center py-4">No restaurants added for this day</p>
@@ -2449,72 +2005,10 @@ function BuildTripContent() {
                                         <Plus className="w-3 h-3 mr-1" />
                                         Add Activity
                                       </button>
-                                      {getAllActivities.length > 0 && (
-                                        <div className="relative dropdown-container">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const key = `activity-${city.id}-${day.id}`;
-                                              setOpenDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
-                                            }}
-                                            className="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[200px] text-left flex items-center justify-between"
-                                          >
-                                            <span>📋 Select activities only {(selectedActivities[`${city.id}-${day.id}`]?.size || 0) > 0 && `(${selectedActivities[`${city.id}-${day.id}`]?.size} selected)`}</span>
-                                            <ChevronDown className={`w-4 h-4 transition-transform ${openDropdowns[`activity-${city.id}-${day.id}`] ? 'rotate-180' : ''}`} />
-                                          </button>
-                                          {openDropdowns[`activity-${city.id}-${day.id}`] && (
-                                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                              <div className="p-2 space-y-1">
-                                                {getAllActivities.map((activity) => {
-                                                  const key = `${city.id}-${day.id}`;
-                                                  const isSelected = selectedActivities[key]?.has(activity.id) || false;
-                                                  return (
-                                                    <label key={activity.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                                      <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={(e) => {
-                                                          const newSet = new Set(selectedActivities[key] || []);
-                                                          if (e.target.checked) {
-                                                            newSet.add(activity.id);
-                                                          } else {
-                                                            newSet.delete(activity.id);
-                                                          }
-                                                          setSelectedActivities(prev => ({ ...prev, [key]: newSet }));
-                                                        }}
-                                                        className="mr-2"
-                                                      />
-                                                      <span className="text-sm text-gray-900">{activity.name} ({activity.source})</span>
-                                                    </label>
-                                                  );
-                                                })}
-                                              </div>
-                                              <div className="p-2 border-t border-gray-200">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const key = `${city.id}-${day.id}`;
-                                                    const selected = selectedActivities[key] || new Set();
-                                                    selected.forEach(activityId => {
-                                                      const activity = getAllActivities.find(a => a.id === activityId);
-                                                      if (activity) {
-                                                        handleCopyItemToForm('activity', activity, city.id, day.id);
-                                                      }
-                                                    });
-                                                    setSelectedActivities(prev => ({ ...prev, [key]: new Set() }));
-                                                    setOpenDropdowns(prev => ({ ...prev, [`activity-${city.id}-${day.id}`]: false }));
-                                                  }}
-                                                  disabled={(selectedActivities[`${city.id}-${day.id}`]?.size || 0) === 0}
-                                                  className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                >
-                                                  Add {(selectedActivities[`${city.id}-${day.id}`]?.size || 0) > 0 ? `${selectedActivities[`${city.id}-${day.id}`]?.size} Selected` : 'Selected'}
-                                                </button>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
                                     </div>
+                                    <p className="text-sm text-gray-600 italic mt-2">
+                                      💡 Tip: Visit existing trips to copy activities to this draft.
+                                    </p>
                                   </div>
                                   {(!day.activities || day.activities.length === 0) ? (
                                     <p className="text-gray-500 text-sm text-center py-4">No activities added for this day</p>

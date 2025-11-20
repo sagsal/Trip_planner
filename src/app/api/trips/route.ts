@@ -10,7 +10,7 @@ const mockTrips = [
     id: '1',
     title: 'Singapore Adventure',
     description: 'Amazing trip to Singapore with family',
-    startDate: '2024-01-15T00:00:00.000Z',
+    startDate: '2024-01-15T00:00:00.000Zr',
     endDate: '2024-01-22T00:00:00.000Z',
     countries: '["Singapore"]',
     cities: '["Singapore"]',

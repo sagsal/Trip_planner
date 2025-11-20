@@ -524,14 +524,20 @@ function TripDetailContent() {
                 <span className="text-2xl">💡</span>
                 <h3 className="text-xl font-bold text-gray-900">Save Items to Your Draft Trip</h3>
               </div>
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                <p className="text-sm text-gray-800 font-semibold mb-2">📌 How to save items:</p>
-                <ol className="text-sm text-gray-700 list-decimal list-inside space-y-1 ml-2">
-                  <li>Select your <strong>draft trip</strong> from the first dropdown below</li>
-                  <li>Select a <strong>city</strong> from the second dropdown (appears after selecting draft)</li>
-                  <li>For restaurants/activities: Select a <strong>day</strong> from the third dropdown</li>
-                  <li>Then click on any hotel, restaurant, or activity below to save it!</li>
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-400 p-5 mb-4 rounded-lg">
+                <p className="text-base text-gray-900 font-bold mb-3 flex items-center">
+                  <span className="text-2xl mr-2">💡</span>
+                  How to Save Items to Your Draft Trip:
+                </p>
+                <ol className="text-sm text-gray-800 list-decimal list-inside space-y-2 ml-2">
+                  <li>Select your <strong className="text-blue-700">draft trip</strong> from the first dropdown below</li>
+                  <li>Select a <strong className="text-blue-700">city</strong> from the second dropdown (appears after selecting draft)</li>
+                  <li>For restaurants/activities: Select a <strong className="text-blue-700">day</strong> from the third dropdown</li>
+                  <li>Then <strong className="text-green-700">click on any hotel, restaurant, or activity below</strong> to save it to your draft!</li>
                 </ol>
+                <p className="text-sm text-gray-700 mt-3 italic">
+                  ✨ <strong>Tip:</strong> You can select multiple items using checkboxes and click "Copy X Selected" to save them all at once!
+                </p>
               </div>
             </div>
 

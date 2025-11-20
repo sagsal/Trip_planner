@@ -605,7 +605,41 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { itemType, item, cityId, dayId } = await request.json();
+    const body = await request.json();
+    const { itemType, item, cityId, dayId } = body;
+
+    console.log('POST /api/trips/[id] - Request received:', {
+      id,
+      itemType,
+      itemName: item?.name,
+      cityId,
+      dayId
+    });
+
+    // Validate required fields
+    if (!itemType) {
+      console.error('Missing itemType');
+      return NextResponse.json(
+        { error: 'Item type is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!item) {
+      console.error('Missing item');
+      return NextResponse.json(
+        { error: 'Item data is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!cityId) {
+      console.error('Missing cityId');
+      return NextResponse.json(
+        { error: 'City ID is required' },
+        { status: 400 }
+      );
+    }
 
     // Get the draft trip
     const draftTrip = await prisma.trip.findUnique({
@@ -622,6 +656,7 @@ export async function POST(
     });
 
     if (!draftTrip) {
+      console.error('Draft trip not found:', id);
       return NextResponse.json(
         { error: 'Draft trip not found' },
         { status: 404 }
@@ -629,6 +664,7 @@ export async function POST(
     }
 
     if (!draftTrip.isDraft) {
+      console.error('Trip is not a draft:', id);
       return NextResponse.json(
         { error: 'Can only copy items to draft trips' },
         { status: 400 }
@@ -638,9 +674,41 @@ export async function POST(
     // Find the target city
     const targetCity = draftTrip.cities_data.find(c => c.id === cityId);
     if (!targetCity) {
+      console.error('Target city not found:', {
+        cityId,
+        tripId: id,
+        availableCities: draftTrip.cities_data.map(c => ({ id: c.id, name: c.name }))
+      });
       return NextResponse.json(
-        { error: 'Target city not found' },
+        { error: 'Target city not found', details: `City ${cityId} not found in draft trip. Available cities: ${draftTrip.cities_data.map(c => `${c.name} (${c.id})`).join(', ')}` },
         { status: 404 }
+      );
+    }
+
+    console.log('Target city found:', { cityId: targetCity.id, cityName: targetCity.name, tripId: id });
+
+    // Verify the city exists in the database (double-check)
+    const dbCity = await prisma.city.findUnique({
+      where: { id: cityId }
+    });
+
+    if (!dbCity) {
+      console.error('City not found in database:', cityId);
+      return NextResponse.json(
+        { error: 'City not found in database', details: `City with ID ${cityId} does not exist` },
+        { status: 404 }
+      );
+    }
+
+    if (dbCity.tripId !== id) {
+      console.error('City belongs to different trip:', {
+        cityId,
+        cityTripId: dbCity.tripId,
+        requestedTripId: id
+      });
+      return NextResponse.json(
+        { error: 'City does not belong to this trip' },
+        { status: 400 }
       );
     }
 
@@ -654,7 +722,8 @@ export async function POST(
       }
       // Copy hotel to city level
       try {
-        await prisma.hotel.create({
+        console.log('Creating hotel:', { name: item.name, cityId });
+        const newHotel = await prisma.hotel.create({
           data: {
             name: item.name.trim(),
             location: item.location || '',
@@ -664,10 +733,17 @@ export async function POST(
             cityId: cityId
           }
         });
+        console.log('Hotel created successfully:', newHotel.id);
       } catch (dbError) {
         console.error('Database error creating hotel:', dbError);
+        const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
+        console.error('Error details:', {
+          error: errorMessage,
+          cityId,
+          item: item.name
+        });
         return NextResponse.json(
-          { error: 'Failed to create hotel', details: dbError instanceof Error ? dbError.message : 'Unknown database error' },
+          { error: 'Failed to create hotel', details: errorMessage },
           { status: 500 }
         );
       }
@@ -684,7 +760,8 @@ export async function POST(
           );
         }
         try {
-          await prisma.restaurant.create({
+          console.log('Creating restaurant:', { name: item.name, cityId, dayId });
+          const newRestaurant = await prisma.restaurant.create({
             data: {
               name: item.name.trim(),
               location: item.location || '',
@@ -694,10 +771,18 @@ export async function POST(
               cityId: cityId
             }
           });
+          console.log('Restaurant created successfully:', newRestaurant.id);
         } catch (dbError) {
           console.error('Database error creating restaurant:', dbError);
+          const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
+          console.error('Error details:', {
+            error: errorMessage,
+            cityId,
+            dayId,
+            item: item.name
+          });
           return NextResponse.json(
-            { error: 'Failed to create restaurant', details: dbError instanceof Error ? dbError.message : 'Unknown database error' },
+            { error: 'Failed to create restaurant', details: errorMessage },
             { status: 500 }
           );
         }
@@ -709,7 +794,8 @@ export async function POST(
           );
         }
         try {
-          await prisma.activity.create({
+          console.log('Creating activity:', { name: item.name, cityId, dayId });
+          const newActivity = await prisma.activity.create({
             data: {
               name: item.name.trim(),
               location: item.location || '',
@@ -719,10 +805,18 @@ export async function POST(
               cityId: cityId
             }
           });
+          console.log('Activity created successfully:', newActivity.id);
         } catch (dbError) {
           console.error('Database error creating activity:', dbError);
+          const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
+          console.error('Error details:', {
+            error: errorMessage,
+            cityId,
+            dayId,
+            item: item.name
+          });
           return NextResponse.json(
-            { error: 'Failed to create activity', details: dbError instanceof Error ? dbError.message : 'Unknown database error' },
+            { error: 'Failed to create activity', details: errorMessage },
             { status: 500 }
           );
         }
@@ -746,6 +840,12 @@ export async function POST(
 
   } catch (error) {
     console.error('Copy item error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error type:', error?.constructor?.name);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error name:', error.name);
+    }
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

@@ -523,6 +523,7 @@ export async function POST(request: NextRequest) {
             return {
               name: cityData.name,
               country: cityData.country,
+              numberOfDays: cityData.numberOfDays || 1,
               hotels: {
                 create: hotels.map((hotel: any) => ({
                   name: hotel.name || '',

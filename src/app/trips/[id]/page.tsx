@@ -367,24 +367,43 @@ function TripDetailContent() {
   };
 
   const handleCopyItem = async (itemType: 'hotel' | 'restaurant' | 'activity', item: any, targetCityId: string, targetDayId?: string) => {
+    console.log('handleCopyItem called:', { itemType, item, targetCityId, targetDayId, selectedDraft });
+    
     if (!selectedDraft) {
+      console.error('No draft selected');
       setError('Please select a draft trip first');
       return;
     }
 
     if (!targetCityId) {
+      console.error('No city selected');
       setError('Please select a city in your draft trip');
       return;
     }
 
     // For restaurants and activities, day selection is required
     if ((itemType === 'restaurant' || itemType === 'activity') && !targetDayId) {
+      console.error('No day selected for', itemType);
       setError('Please select a day for restaurants and activities');
+      return;
+    }
+
+    if (!item || !item.name) {
+      console.error('Invalid item:', item);
+      setError('Invalid item data');
       return;
     }
 
     try {
       setError(null);
+      console.log('Sending request to save item:', {
+        url: `/api/trips/${selectedDraft}`,
+        itemType,
+        itemName: item.name,
+        cityId: targetCityId,
+        dayId: targetDayId
+      });
+      
       const response = await fetch(`/api/trips/${selectedDraft}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -396,7 +415,11 @@ function TripDetailContent() {
         })
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
+        const data = await response.json();
+        console.log('Item saved successfully:', data);
         const successMsg = `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} "${item.name}" saved to your draft!`;
         setSuccess(successMsg);
         setTimeout(() => setSuccess(null), 5000);
@@ -404,6 +427,7 @@ function TripDetailContent() {
         loadDraftTrips();
       } else {
         const data = await response.json();
+        console.error('Failed to save item:', data);
         const errorMsg = data.error || data.details || 'Failed to save item to draft';
         setError(errorMsg);
         setTimeout(() => setError(null), 5000);

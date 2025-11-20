@@ -807,6 +807,7 @@ function BuildTripContent() {
       // Validate that we have at least one country
       if (uniqueCountries.length === 0) {
         setError('Please ensure at least one city has a valid country');
+        setIsLoadingDraft(false);
         return;
       }
       
@@ -863,20 +864,28 @@ function BuildTripContent() {
       
       if (response.ok) {
         console.log('Draft saved successfully!');
-        const responseData = await response.json();
-        console.log('Response data:', responseData);
+        let responseData;
+        try {
+          responseData = await response.json();
+          console.log('Response data:', responseData);
+        } catch (parseError) {
+          console.error('Error parsing success response:', parseError);
+        }
         
-        setShowCreateDraft(false);
-        setFormData({ title: '', description: '', startDate: '', endDate: '', numberOfDays: '', countries: [''] });
-        setCitiesData([]);
-        setSelectedCountry('');
-        setSelectedCity('');
-        setCustomCityName('');
-        setSelectedNumberOfDays('');
+        // Don't clear the form if we're editing - keep the data visible
+        if (!isUpdate) {
+          setShowCreateDraft(false);
+          setFormData({ title: '', description: '', startDate: '', endDate: '', numberOfDays: '', countries: [''] });
+          setCitiesData([]);
+          setSelectedCountry('');
+          setSelectedCity('');
+          setCustomCityName('');
+          setSelectedNumberOfDays('');
+        }
         setEditingDraftId(null);
-        loadDraftTrips();
+        await loadDraftTrips();
         setSuccess(isUpdate ? 'Draft trip updated successfully!' : 'Draft trip created successfully!');
-        setTimeout(() => setSuccess(null), 3000);
+        setTimeout(() => setSuccess(null), 5000);
       } else {
         let errorMessage = isUpdate ? 'Failed to update draft trip' : 'Failed to create draft trip';
         try {
@@ -895,6 +904,7 @@ function BuildTripContent() {
           console.error('Error parsing response:', parseError);
         }
         setError(errorMessage);
+        setTimeout(() => setError(null), 10000);
       }
     } catch (err) {
       console.error('Error saving draft trip:', err);

@@ -112,6 +112,18 @@ function BuildTripContent() {
   const [customCityName, setCustomCityName] = useState('');
   const [selectedNumberOfDays, setSelectedNumberOfDays] = useState('');
 
+  // State for hotel suggestions
+  const [availableHotels, setAvailableHotels] = useState<{[cityId: string]: Hotel[]}>({});
+  const [loadingHotels, setLoadingHotels] = useState<{[cityId: string]: boolean}>({});
+  
+  // State for restaurant suggestions
+  const [availableRestaurants, setAvailableRestaurants] = useState<{[cityId: string]: Restaurant[]}>({});
+  const [loadingRestaurants, setLoadingRestaurants] = useState<{[cityId: string]: boolean}>({});
+  
+  // State for activity suggestions
+  const [availableActivities, setAvailableActivities] = useState<{[cityId: string]: Activity[]}>({});
+  const [loadingActivities, setLoadingActivities] = useState<{[cityId: string]: boolean}>({});
+
 
   // All countries of the world with selected cities - memoized for performance
   const countriesData = useMemo(() => ({
@@ -311,6 +323,77 @@ function BuildTripContent() {
     'Zambia': ['Lusaka', 'Kitwe'],
     'Zimbabwe': ['Harare', 'Bulawayo']
   }), []);
+
+  // Fetch hotels for a city
+  const fetchHotelsForCity = useCallback(async (cityName: string, country: string, cityId: string) => {
+    if (!cityName || !country) return;
+    
+    setLoadingHotels(prev => ({ ...prev, [cityId]: true }));
+    try {
+      const response = await fetch(`/api/hotels?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(country)}&limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableHotels(prev => ({ ...prev, [cityId]: data.hotels || [] }));
+      }
+    } catch (error) {
+      console.error('Error fetching hotels:', error);
+    } finally {
+      setLoadingHotels(prev => ({ ...prev, [cityId]: false }));
+    }
+  }, []);
+
+  // Fetch restaurants for a city
+  const fetchRestaurantsForCity = useCallback(async (cityName: string, country: string, cityId: string) => {
+    if (!cityName || !country) return;
+    
+    setLoadingRestaurants(prev => ({ ...prev, [cityId]: true }));
+    try {
+      const response = await fetch(`/api/restaurants?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(country)}&limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableRestaurants(prev => ({ ...prev, [cityId]: data.restaurants || [] }));
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+    } finally {
+      setLoadingRestaurants(prev => ({ ...prev, [cityId]: false }));
+    }
+  }, []);
+
+  // Fetch activities for a city
+  const fetchActivitiesForCity = useCallback(async (cityName: string, country: string, cityId: string) => {
+    if (!cityName || !country) return;
+    
+    setLoadingActivities(prev => ({ ...prev, [cityId]: true }));
+    try {
+      const response = await fetch(`/api/activities?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(country)}&limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableActivities(prev => ({ ...prev, [cityId]: data.activities || [] }));
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+    } finally {
+      setLoadingActivities(prev => ({ ...prev, [cityId]: false }));
+    }
+  }, []);
+
+  // Load hotels, restaurants, and activities when city is added or when viewing city
+  useEffect(() => {
+    citiesData.forEach(city => {
+      if (city.name && city.country) {
+        if (!availableHotels[city.id] && !loadingHotels[city.id]) {
+          fetchHotelsForCity(city.name, city.country, city.id);
+        }
+        if (!availableRestaurants[city.id] && !loadingRestaurants[city.id]) {
+          fetchRestaurantsForCity(city.name, city.country, city.id);
+        }
+        if (!availableActivities[city.id] && !loadingActivities[city.id]) {
+          fetchActivitiesForCity(city.name, city.country, city.id);
+        }
+      }
+    });
+  }, [citiesData, fetchHotelsForCity, fetchRestaurantsForCity, fetchActivitiesForCity, availableHotels, loadingHotels, availableRestaurants, loadingRestaurants, availableActivities, loadingActivities]);
 
   const addCity = useCallback(() => {
     const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
@@ -640,7 +723,11 @@ function BuildTripContent() {
       const response = await fetch('/api/trips?public=true');
       if (response.ok) {
         const data = await response.json();
-        setSharedTrips(data.trips || []);
+        // Filter out database trips (used for suggestions only, not for browsing)
+        const filteredTrips = (data.trips || []).filter((trip: any) => 
+          !trip.title?.includes('DATABASE:') && !trip.title?.includes('TEMPLATE')
+        );
+        setSharedTrips(filteredTrips);
       }
     } catch (err) {
       console.error('Error loading shared trips:', err);
@@ -1863,17 +1950,57 @@ function BuildTripContent() {
                             </div>
                           ) : (
                             <div className="space-y-3">
-                              <button
-                                type="button"
-                                onClick={() => updateHotel(city.id, 'name', '')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                              >
-                                <Plus className="w-4 h-4 inline mr-2" />
-                                Add Hotel
-                              </button>
-                              <p className="text-sm text-gray-600 italic">
-                                💡 Tip: Visit existing trips to copy hotels, restaurants, and activities to this draft.
-                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {availableHotels[city.id] && availableHotels[city.id].length > 0 ? (
+                                  <>
+                                    <select
+                                      onChange={(e) => {
+                                        const selectedHotel = availableHotels[city.id].find(h => h.id === e.target.value);
+                                        if (selectedHotel) {
+                                          setHotelForCity(city.id, {
+                                            id: `hotel-${Date.now()}`,
+                                            name: selectedHotel.name,
+                                            location: selectedHotel.location || '',
+                                            rating: selectedHotel.rating || 0,
+                                            review: selectedHotel.review || '',
+                                            liked: selectedHotel.liked ?? null
+                                          });
+                                        }
+                                      }}
+                                      className="flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      defaultValue=""
+                                    >
+                                      <option value="">Select a hotel from {city.name}...</option>
+                                      {availableHotels[city.id].map((hotel) => (
+                                        <option key={hotel.id} value={hotel.id}>
+                                          {hotel.name} {hotel.rating ? `(${hotel.rating}⭐)` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <span className="text-sm text-gray-500">or</span>
+                                  </>
+                                ) : loadingHotels[city.id] ? (
+                                  <span className="text-sm text-gray-500">Loading hotels...</span>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() => updateHotel(city.id, 'name', '')}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                >
+                                  <Plus className="w-4 h-4 inline mr-2" />
+                                  {availableHotels[city.id] && availableHotels[city.id].length > 0 ? 'Add Custom Hotel' : 'Add Hotel'}
+                                </button>
+                              </div>
+                              {availableHotels[city.id] && availableHotels[city.id].length > 0 && (
+                                <p className="text-sm text-gray-600 italic">
+                                  💡 Select a hotel from the dropdown above, or add a custom hotel.
+                                </p>
+                              )}
+                              {(!availableHotels[city.id] || availableHotels[city.id].length === 0) && !loadingHotels[city.id] && (
+                                <p className="text-sm text-gray-600 italic">
+                                  💡 Tip: Visit existing trips to copy hotels, restaurants, and activities to this draft.
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1914,18 +2041,68 @@ function BuildTripContent() {
                                       Restaurants
                                     </h5>
                                     <div className="flex items-center gap-2 flex-wrap">
+                                      {availableRestaurants[city.id] && availableRestaurants[city.id].length > 0 ? (
+                                        <>
+                                          <select
+                                            onChange={(e) => {
+                                              const selectedRestaurant = availableRestaurants[city.id].find(r => r.id === e.target.value);
+                                              if (selectedRestaurant) {
+                                                const newRestaurant: Restaurant = {
+                                                  id: `restaurant-${Date.now()}`,
+                                                  name: selectedRestaurant.name,
+                                                  location: selectedRestaurant.location || '',
+                                                  rating: selectedRestaurant.rating || 0,
+                                                  review: selectedRestaurant.review || '',
+                                                  liked: selectedRestaurant.liked ?? null
+                                                };
+                                                setCitiesData(prev => prev.map(c => 
+                                                  c.id === city.id 
+                                                    ? { 
+                                                        ...c, 
+                                                        days: c.days.map(d => 
+                                                          d.id === day.id 
+                                                            ? { ...d, restaurants: [...d.restaurants, newRestaurant] }
+                                                            : d
+                                                        )
+                                                      }
+                                                    : c
+                                                ));
+                                              }
+                                            }}
+                                            className="flex-1 min-w-[200px] px-3 py-1.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                                            defaultValue=""
+                                          >
+                                            <option value="">Select a restaurant from {city.name}...</option>
+                                            {availableRestaurants[city.id].map((restaurant) => (
+                                              <option key={restaurant.id} value={restaurant.id}>
+                                                {restaurant.name} {restaurant.rating ? `(${restaurant.rating}⭐)` : ''}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <span className="text-sm text-gray-500">or</span>
+                                        </>
+                                      ) : loadingRestaurants[city.id] ? (
+                                        <span className="text-sm text-gray-500">Loading restaurants...</span>
+                                      ) : null}
                                       <button
                                         type="button"
                                         onClick={() => addRestaurant(city.id, day.id)}
                                         className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                                       >
                                         <Plus className="w-3 h-3 mr-1" />
-                                        Add Restaurant
+                                        {availableRestaurants[city.id] && availableRestaurants[city.id].length > 0 ? 'Add Custom Restaurant' : 'Add Restaurant'}
                                       </button>
                                     </div>
-                                    <p className="text-sm text-gray-600 italic mt-2">
-                                      💡 Tip: Visit existing trips to copy restaurants to this draft.
-                                    </p>
+                                    {availableRestaurants[city.id] && availableRestaurants[city.id].length > 0 && (
+                                      <p className="text-sm text-gray-600 italic mt-2">
+                                        💡 Select a restaurant from the dropdown above, or add a custom restaurant.
+                                      </p>
+                                    )}
+                                    {(!availableRestaurants[city.id] || availableRestaurants[city.id].length === 0) && !loadingRestaurants[city.id] && (
+                                      <p className="text-sm text-gray-600 italic mt-2">
+                                        💡 Tip: Visit existing trips to copy restaurants to this draft.
+                                      </p>
+                                    )}
                                   </div>
                                   {day.restaurants.length === 0 ? (
                                     <p className="text-gray-500 text-sm text-center py-4">No restaurants added for this day</p>
@@ -2007,18 +2184,68 @@ function BuildTripContent() {
                                       Activities
                                     </h5>
                                     <div className="flex items-center gap-2 flex-wrap">
+                                      {availableActivities[city.id] && availableActivities[city.id].length > 0 ? (
+                                        <>
+                                          <select
+                                            onChange={(e) => {
+                                              const selectedActivity = availableActivities[city.id].find(a => a.id === e.target.value);
+                                              if (selectedActivity) {
+                                                const newActivity: Activity = {
+                                                  id: `activity-${Date.now()}`,
+                                                  name: selectedActivity.name,
+                                                  location: selectedActivity.location || '',
+                                                  rating: selectedActivity.rating || 0,
+                                                  review: selectedActivity.review || '',
+                                                  liked: selectedActivity.liked ?? null
+                                                };
+                                                setCitiesData(prev => prev.map(c => 
+                                                  c.id === city.id 
+                                                    ? { 
+                                                        ...c, 
+                                                        days: c.days.map(d => 
+                                                          d.id === day.id 
+                                                            ? { ...d, activities: [...d.activities, newActivity] }
+                                                            : d
+                                                        )
+                                                      }
+                                                    : c
+                                                ));
+                                              }
+                                            }}
+                                            className="flex-1 min-w-[200px] px-3 py-1.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                                            defaultValue=""
+                                          >
+                                            <option value="">Select an activity from {city.name}...</option>
+                                            {availableActivities[city.id].map((activity) => (
+                                              <option key={activity.id} value={activity.id}>
+                                                {activity.name} {activity.rating ? `(${activity.rating}⭐)` : ''}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <span className="text-sm text-gray-500">or</span>
+                                        </>
+                                      ) : loadingActivities[city.id] ? (
+                                        <span className="text-sm text-gray-500">Loading activities...</span>
+                                      ) : null}
                                       <button
                                         type="button"
                                         onClick={() => addActivity(city.id, day.id)}
                                         className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                                       >
                                         <Plus className="w-3 h-3 mr-1" />
-                                        Add Activity
+                                        {availableActivities[city.id] && availableActivities[city.id].length > 0 ? 'Add Custom Activity' : 'Add Activity'}
                                       </button>
                                     </div>
-                                    <p className="text-sm text-gray-600 italic mt-2">
-                                      💡 Tip: Visit existing trips to copy activities to this draft.
-                                    </p>
+                                    {availableActivities[city.id] && availableActivities[city.id].length > 0 && (
+                                      <p className="text-sm text-gray-600 italic mt-2">
+                                        💡 Select an activity from the dropdown above, or add a custom activity.
+                                      </p>
+                                    )}
+                                    {(!availableActivities[city.id] || availableActivities[city.id].length === 0) && !loadingActivities[city.id] && (
+                                      <p className="text-sm text-gray-600 italic mt-2">
+                                        💡 Tip: Visit existing trips to copy activities to this draft.
+                                      </p>
+                                    )}
                                   </div>
                                   {(!day.activities || day.activities.length === 0) ? (
                                     <p className="text-gray-500 text-sm text-center py-4">No activities added for this day</p>

@@ -99,10 +99,13 @@ function AccountContent() {
         
         if (sharedResult.data) {
           // Filter shared trips to show only the current user's public trips
+          // Exclude database trips (used for suggestions only)
           const userSharedTrips = sharedResult.data.trips.filter((trip: any) => 
             trip.user.id === parsedUser.id && 
             (!trip.isDraft || trip.isDraft === false) && 
-            trip.isPublic === true
+            trip.isPublic === true &&
+            !trip.title?.includes('DATABASE:') &&
+            !trip.title?.includes('TEMPLATE')
           );
           setTrips(userSharedTrips);
         } else if (sharedResult.error) {
@@ -124,7 +127,11 @@ function AccountContent() {
         // If all fail, try to at least get shared trips
         const result = await fetchTrips();
         if (result.data) {
-          const userTrips = result.data.trips.filter((trip: any) => trip.user.id === parsedUser.id);
+          const userTrips = result.data.trips.filter((trip: any) => 
+            trip.user.id === parsedUser.id &&
+            !trip.title?.includes('DATABASE:') &&
+            !trip.title?.includes('TEMPLATE')
+          );
           const drafts = userTrips.filter((trip: any) => trip.isDraft === true);
           const shared = userTrips.filter((trip: any) => (!trip.isDraft || trip.isDraft === false) && trip.isPublic === true);
           setDraftTrips(drafts);

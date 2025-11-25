@@ -81,10 +81,12 @@ function TripsContent() {
       if (result.data) {
         // Filter to only show public, non-draft trips
         // Handle cases where isDraft might be undefined/null
+        // Exclude template trips and database trips (used for suggestions only)
         const publicTrips = result.data.trips.filter((trip: any) => {
           const isPublic = trip.isPublic === true;
           const isNotDraft = trip.isDraft === false || trip.isDraft === undefined || trip.isDraft === null;
-          return isPublic && isNotDraft;
+          const isNotTemplate = !trip.title?.includes('TEMPLATE') && !trip.title?.includes('DATABASE:');
+          return isPublic && isNotDraft && isNotTemplate;
         });
         
         setTrips(publicTrips);

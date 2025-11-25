@@ -246,7 +246,11 @@ function DraftEditContent() {
       const response = await fetch('/api/trips?public=true');
       if (response.ok) {
         const data = await response.json();
-        setSharedTrips(data.trips || []);
+        // Filter out database trips (used for suggestions only, not for browsing)
+        const filteredTrips = (data.trips || []).filter((trip: any) => 
+          !trip.title?.includes('DATABASE:') && !trip.title?.includes('TEMPLATE')
+        );
+        setSharedTrips(filteredTrips);
       }
     } catch (err) {
       console.error('Error loading shared trips:', err);

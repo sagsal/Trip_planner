@@ -373,7 +373,24 @@ const mockTrips = [
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft } = await request.json();
+    const body = await request.json();
+    console.log('POST /api/trips - Received request body:', JSON.stringify(body, null, 2));
+    
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft } = body;
+    
+    console.log('Extracted values:', {
+      title: title ? `${title.substring(0, 50)}...` : 'missing',
+      hasDescription: !!description,
+      startDate,
+      endDate,
+      countries: typeof countries === 'string' ? countries.substring(0, 100) : countries,
+      cities: typeof cities === 'string' ? cities.substring(0, 100) : cities,
+      citiesDataLength: citiesData?.length || 0,
+      userId: userId ? 'present' : 'missing',
+      userName: userName ? 'present' : 'missing',
+      userEmail: userEmail ? 'present' : 'missing',
+      isDraft
+    });
 
     // Validate required fields - drafts don't need dates
     // Countries can be a string (JSON) or array - check both cases
@@ -640,35 +657,68 @@ export async function GET(request: NextRequest) {
       where.isDraft = false;
     }
 
-    // Fetch trips from database
-    const trips = await prisma.trip.findMany({
-      where,
-      include: {
-        user: true,
-        cities_data: {
+    // Fetch trips from database with timeout protection
+    const startTime = Date.now();
+    
+    try {
+      const trips = await Promise.race([
+        prisma.trip.findMany({
+          where,
           include: {
-            hotels: true,
-            restaurants: true,
-            activities: true
-          }
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            cities_data: {
+              include: {
+                hotels: true,
+                restaurants: true,
+                activities: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 25000)
+        )
+      ]);
+
+      const queryTime = Date.now() - startTime;
+      console.log(`Trips query completed in ${queryTime}ms`);
+
+      const total = await Promise.race([
+        prisma.trip.count({ where }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Count query timeout')), 5000)
+        )
+      ]);
+
+      return NextResponse.json({
+        trips,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
         }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit
-    });
-
-    const total = await prisma.trip.count({ where });
-
-    return NextResponse.json({
-      trips,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+      });
+    } catch (queryError) {
+      const queryTime = Date.now() - startTime;
+      console.error(`Trips query failed after ${queryTime}ms:`, queryError);
+      if (queryError instanceof Error && queryError.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Request timeout. The database query took too long.', trips: [] },
+          { status: 408 }
+        );
       }
-    });
+      throw queryError;
+    }
 
   } catch (error) {
     console.error('Trips fetch error:', error);

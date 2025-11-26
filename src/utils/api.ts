@@ -99,7 +99,8 @@ export async function fetchTrips() {
 }
 
 export async function fetchTrip(id: string) {
-  return apiCall<any>(`/api/trips/${id}`);
+  // Increase timeout for trip fetching as it may include large amounts of data
+  return apiCall<any>(`/api/trips/${id}`, {}, 3, 30000); // 30 second timeout to match server maxDuration
 }
 
 export async function createTrip(tripData: any) {

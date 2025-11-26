@@ -378,21 +378,60 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const trip = await prisma.trip.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        cities_data: {
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Trip ID is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Fetching trip with ID:', id);
+    const startTime = Date.now();
+
+    // Add timeout protection to prevent hanging queries
+    let trip;
+    try {
+      trip = await Promise.race([
+        prisma.trip.findUnique({
+          where: { id },
           include: {
-            hotels: true,
-            restaurants: true,
-            activities: true
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            cities_data: {
+              include: {
+                hotels: true,
+                restaurants: true,
+                activities: true
+              }
+            }
           }
-        }
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 25000)
+        )
+      ]);
+
+      const queryTime = Date.now() - startTime;
+      console.log(`Trip query completed in ${queryTime}ms`);
+    } catch (queryError) {
+      const queryTime = Date.now() - startTime;
+      console.error(`Trip query failed after ${queryTime}ms:`, queryError);
+      if (queryError instanceof Error && queryError.message === 'Database query timeout') {
+        return NextResponse.json(
+          { error: 'Request timeout. The database query took too long.' },
+          { status: 408 }
+        );
       }
-    });
+      throw queryError;
+    }
 
     if (!trip) {
+      console.log('Trip not found:', id);
       return NextResponse.json(
         { error: 'Trip not found' },
         { status: 404 }
@@ -406,6 +445,7 @@ export async function GET(
     // If it's a draft trip, user must own it
     if (trip.isDraft) {
       if (!userId || trip.userId !== userId) {
+        console.log('Access denied to draft trip:', id, 'userId:', userId);
         return NextResponse.json(
           { error: 'Draft trip not found' },
           { status: 404 }
@@ -414,6 +454,7 @@ export async function GET(
     } else if (!trip.isPublic) {
       // Private (non-draft) trips also need ownership check
       if (!userId || trip.userId !== userId) {
+        console.log('Access denied to private trip:', id, 'userId:', userId);
         return NextResponse.json(
           { error: 'Trip not found' },
           { status: 404 }
@@ -421,12 +462,24 @@ export async function GET(
       }
     }
 
+    console.log('Trip found and access granted:', id);
     return NextResponse.json({ trip });
 
   } catch (error) {
     console.error('Trip fetch error:', error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Don't expose internal error details in production
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? (error instanceof Error ? error.message : 'Unknown error')
+      : 'Internal server error';
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' && { details: errorMessage })
+      },
       { status: 500 }
     );
   }
@@ -605,7 +658,25 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Trip ID is required' },
+        { status: 400 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body', details: 'Request body must be valid JSON' },
+        { status: 400 }
+      );
+    }
+
     const { itemType, item, cityId, dayId } = body;
 
     console.log('POST /api/trips/[id] - Request received:', {
@@ -845,9 +916,19 @@ export async function POST(
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error name:', error.name);
+      // Log Prisma-specific errors
+      if (error.message.includes('Prisma') || error.message.includes('prisma')) {
+        console.error('Prisma error detected:', error);
+      }
     }
+    
+    // Ensure we always return JSON, even if there's an error
+    const errorDetails = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Internal server error', 
+        details: process.env.NODE_ENV === 'development' ? errorDetails : 'An error occurred while saving the item'
+      },
       { status: 500 }
     );
   }

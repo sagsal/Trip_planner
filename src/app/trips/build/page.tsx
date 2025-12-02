@@ -613,16 +613,16 @@ function BuildTripContent() {
                 });
               }
 
-              return {
-                id: city.id,
-                name: city.name,
-                country: city.country,
+            return {
+              id: city.id,
+              name: city.name,
+              country: city.country,
                 numberOfDays: city.numberOfDays || days.length,
                 hotel,
                 days
-              };
+            };
             }) : [],
-            createdAt: trip.createdAt
+          createdAt: trip.createdAt
           };
         });
         console.log('Transformed draft trips:', transformed);
@@ -854,18 +854,18 @@ function BuildTripContent() {
       const method = isUpdate ? 'PUT' : 'POST';
 
       const requestBody = {
-        title: formData.title,
-        description: formData.description,
-        startDate: formData.startDate || null,
-        endDate: formData.endDate || null,
-        countries: JSON.stringify(uniqueCountries),
-        cities: JSON.stringify(citiesData.map(c => c.name)),
-        citiesData: transformedCitiesData,
-        isDraft: true,
+          title: formData.title,
+          description: formData.description,
+          startDate: formData.startDate || null,
+          endDate: formData.endDate || null,
+          countries: JSON.stringify(uniqueCountries),
+          cities: JSON.stringify(citiesData.map(c => c.name)),
+          citiesData: transformedCitiesData,
+          isDraft: true,
         isPublic: false,
-        userId: user.id,
-        userName: user.name,
-        userEmail: user.email
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email
       };
       
       console.log('Sending request to:', url, 'Method:', method);
@@ -879,7 +879,7 @@ function BuildTripContent() {
 
       console.log('Response status:', response.status);
       console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
+
       if (response.ok) {
         console.log('Draft saved successfully!');
         let responseData;
@@ -892,13 +892,13 @@ function BuildTripContent() {
         
         // Don't clear the form if we're editing - keep the data visible
         if (!isUpdate) {
-          setShowCreateDraft(false);
-          setFormData({ title: '', description: '', startDate: '', endDate: '', numberOfDays: '', countries: [''] });
-          setCitiesData([]);
-          setSelectedCountry('');
-          setSelectedCity('');
-          setCustomCityName('');
-          setSelectedNumberOfDays('');
+        setShowCreateDraft(false);
+        setFormData({ title: '', description: '', startDate: '', endDate: '', numberOfDays: '', countries: [''] });
+        setCitiesData([]);
+        setSelectedCountry('');
+        setSelectedCity('');
+        setCustomCityName('');
+        setSelectedNumberOfDays('');
         }
         setEditingDraftId(null);
         await loadDraftTrips();
@@ -1939,14 +1939,14 @@ function BuildTripContent() {
                                       Restaurants
                                     </h5>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <button
-                                        type="button"
-                                        onClick={() => addRestaurant(city.id, day.id)}
-                                        className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Add Restaurant
-                                      </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => addRestaurant(city.id, day.id)}
+                                      className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      Add Restaurant
+                                    </button>
                                     </div>
                                     <p className="text-sm text-gray-600 italic mt-2">
                                       💡 Tip: Visit existing trips to copy restaurants to this draft.
@@ -2032,15 +2032,15 @@ function BuildTripContent() {
                                       Activities
                                     </h5>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <button
-                                        type="button"
-                                        onClick={() => addActivity(city.id, day.id)}
-                                        className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Add Activity
-                                      </button>
-                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => addActivity(city.id, day.id)}
+                                      className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      Add Activity
+                                    </button>
+                                  </div>
                                     <p className="text-sm text-gray-600 italic mt-2">
                                       💡 Tip: Visit existing trips to copy activities to this draft.
                                     </p>
@@ -2242,17 +2242,17 @@ function BuildTripContent() {
 
             {/* Shared Trips Section */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Browse Shared Trips</h2>
-                <p className="text-gray-600 text-sm">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Browse Shared Trips</h2>
+              <p className="text-gray-600 text-sm">
                   💡 <strong>How it works:</strong> Select "Current Draft" (if you're creating/editing a draft) or an existing saved draft, then select a city (and day for restaurants/activities) from the dropdowns below. Click on any item from shared trips to add it to your draft. This is your sandbox to collect ideas before finalizing your trip!
-                </p>
-              </div>
-              {sharedTrips.length === 0 ? (
-                <p className="text-gray-600 text-center py-8">No shared trips available yet.</p>
-              ) : (
-                <div className="space-y-6">
-                  {sharedTrips.map((trip) => (
+              </p>
+            </div>
+            {sharedTrips.length === 0 ? (
+              <p className="text-gray-600 text-center py-8">No shared trips available yet.</p>
+            ) : (
+              <div className="space-y-6">
+                {sharedTrips.map((trip) => (
                   <SharedTripCard
                     key={trip.id}
                     trip={trip}
@@ -2265,9 +2265,9 @@ function BuildTripContent() {
                     expandedSections={expandedSections}
                     toggleSection={toggleTripSection}
                   />
-                  ))}
-                </div>
-              )}
+                ))}
+              </div>
+            )}
             </div>
           </motion.div>
         )}
@@ -3019,8 +3019,8 @@ function SharedTripCard({
                               ? 'bg-blue-100 border-blue-500'
                               : 'bg-blue-50 border-blue-300 hover:bg-blue-100 cursor-pointer'
                             : selectedDraft && selectedCity
-                              ? 'bg-blue-50 border-blue-300 hover:bg-blue-100 cursor-pointer'
-                              : 'bg-gray-50 border-gray-200'
+                            ? 'bg-blue-50 border-blue-300 hover:bg-blue-100 cursor-pointer' 
+                            : 'bg-gray-50 border-gray-200'
                         }`}
                         onClick={() => {
                           if (isCurrentDraft && selectedCity) {
@@ -3040,24 +3040,24 @@ function SharedTripCard({
                               className="mr-3 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             />
                           )}
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-900">{hotel.name}</span>
-                            {hotel.location && (
-                              <p className="text-xs text-gray-500 mt-1">{hotel.location}</p>
-                            )}
-                            {hotel.rating && hotel.rating > 0 && (
-                              <div className="flex items-center mt-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`w-3 h-3 ${
-                                      star <= hotel.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">{hotel.name}</span>
+                          {hotel.location && (
+                            <p className="text-xs text-gray-500 mt-1">{hotel.location}</p>
+                          )}
+                          {hotel.rating && hotel.rating > 0 && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= hotel.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         </div>
                         {isCurrentDraft && selectedCity && !isSelected ? (
                           <span className="ml-3 text-xs text-gray-500">Click to select</span>
@@ -3098,8 +3098,8 @@ function SharedTripCard({
                               ? 'bg-green-100 border-green-500'
                               : 'bg-green-50 border-green-300 hover:bg-green-100 cursor-pointer'
                             : selectedDraft && selectedCity && selectedDay
-                              ? 'bg-green-50 border-green-300 hover:bg-green-100 cursor-pointer'
-                              : 'bg-gray-50 border-gray-200'
+                            ? 'bg-green-50 border-green-300 hover:bg-green-100 cursor-pointer' 
+                            : 'bg-gray-50 border-gray-200'
                         }`}
                         onClick={() => {
                           if (isCurrentDraft && selectedCity && selectedDay) {
@@ -3119,24 +3119,24 @@ function SharedTripCard({
                               className="mr-3 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                             />
                           )}
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-900">{restaurant.name}</span>
-                            {restaurant.location && (
-                              <p className="text-xs text-gray-500 mt-1">{restaurant.location}</p>
-                            )}
-                            {restaurant.rating && restaurant.rating > 0 && (
-                              <div className="flex items-center mt-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`w-3 h-3 ${
-                                      star <= restaurant.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">{restaurant.name}</span>
+                          {restaurant.location && (
+                            <p className="text-xs text-gray-500 mt-1">{restaurant.location}</p>
+                          )}
+                          {restaurant.rating && restaurant.rating > 0 && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= restaurant.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         </div>
                         {isCurrentDraft && selectedCity && selectedDay && !isSelected ? (
                           <span className="ml-3 text-xs text-gray-500">Click to select</span>
@@ -3181,8 +3181,8 @@ function SharedTripCard({
                               ? 'bg-purple-100 border-purple-500'
                               : 'bg-purple-50 border-purple-300 hover:bg-purple-100 cursor-pointer'
                             : selectedDraft && selectedCity && selectedDay
-                              ? 'bg-purple-50 border-purple-300 hover:bg-purple-100 cursor-pointer'
-                              : 'bg-gray-50 border-gray-200'
+                            ? 'bg-purple-50 border-purple-300 hover:bg-purple-100 cursor-pointer' 
+                            : 'bg-gray-50 border-gray-200'
                         }`}
                         onClick={(e) => {
                           // Don't toggle if clicking on the checkbox itself (it handles its own onChange)
@@ -3211,24 +3211,24 @@ function SharedTripCard({
                               className="mr-3 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
                             />
                           )}
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-900">{activity.name}</span>
-                            {activity.location && (
-                              <p className="text-xs text-gray-500 mt-1">{activity.location}</p>
-                            )}
-                            {activity.rating && activity.rating > 0 && (
-                              <div className="flex items-center mt-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`w-3 h-3 ${
-                                      star <= activity.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">{activity.name}</span>
+                          {activity.location && (
+                            <p className="text-xs text-gray-500 mt-1">{activity.location}</p>
+                          )}
+                          {activity.rating && activity.rating > 0 && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= activity.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         </div>
                         {isCurrentDraft && selectedCity && selectedDay && !isSelected ? (
                           <span className="ml-3 text-xs text-gray-500">Click to select</span>

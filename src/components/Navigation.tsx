@@ -1,16 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plane, Menu, X, User, MapPin, LogOut, Plus } from 'lucide-react';
+import { Plane, Menu, X, User, MapPin, LogOut } from 'lucide-react';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Check authentication status on component mount and when localStorage changes
   useEffect(() => {
@@ -55,22 +53,6 @@ export default function Navigation() {
     };
   }, []);
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-
-    if (showUserMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showUserMenu]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -101,58 +83,14 @@ export default function Navigation() {
             </Link>
             
             {isAuthenticated ? (
-              // Authenticated user menu with dropdown
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
-                >
-                  <User className="w-4 h-4 mr-1" />
-                  {user?.name || 'Profile'}
-                </button>
-                
-                {showUserMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
-                  >
-                    <Link
-                      href="/account"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/trips/build"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Build a Trip
-                    </Link>
-                    <Link
-                      href="/trips/new"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Share Your Trip
-                    </Link>
-                    <hr className="my-1" />
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setShowUserMenu(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </button>
-                  </motion.div>
-                )}
-              </div>
+              // Authenticated user - click name to go to dashboard
+              <Link
+                href="/account"
+                className="text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
+              >
+                <User className="w-4 h-4 mr-1" />
+                {user?.name || 'Profile'}
+              </Link>
             ) : (
               // Non-authenticated user menu
               <>

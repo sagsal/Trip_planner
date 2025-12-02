@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
-import { MapPin, Plane, Heart, Star, Plus, Share2 } from 'lucide-react';
+import { MapPin, Plane, Heart } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 function HomeContent() {
@@ -116,58 +116,6 @@ function HomeContent() {
                     </Link>
           </motion.div>
 
-          {/* Features Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4 sm:px-0"
-          >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
-              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Share Experiences</h3>
-              <p className="text-[#F0ECE9] text-sm text-center">
-                Rate hotels, restaurants, and activities. Share what you loved and what to avoid.
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
-              <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Build your next trip</h3>
-              <p className="text-[#F0ECE9] text-sm text-center">
-                Use other traveler itineraries to plan your next trip
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20">
-              <Share2 className="w-6 h-6 sm:w-8 sm:h-8 text-white mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Share Your Trip</h3>
-              <p className="text-[#F0ECE9] text-sm text-center">
-                Create and share your own detailed trip itineraries with the community.
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Additional Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1.0 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 px-4 sm:px-0"
-          >
-            <Link
-              href="/trips/build"
-              className="w-full sm:w-auto bg-[#AAB624] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Build your trip
-            </Link>
-            <Link
-              href="/trips/new"
-              className="w-full sm:w-auto bg-[#0160D6] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
-            >
-              <Share2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Share your trip
-            </Link>
-          </motion.div>
 
           {/* Success Message */}
           {successMessage && (

@@ -322,7 +322,7 @@ function AccountContent() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8">
+        <div className="mb-8 space-y-3">
           <Link
             href="/trips/new"
             className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors shadow-lg"
@@ -330,6 +330,15 @@ function AccountContent() {
             <Plus className="w-5 h-5 mr-2" />
             Add New Trip
           </Link>
+          <div>
+            <Link
+              href="/trips/build"
+              className="inline-flex items-center px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors shadow-lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Build a Trip
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}
@@ -400,13 +409,6 @@ function AccountContent() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">📝 Draft Trips</h2>
-            <Link
-              href="/trips/build"
-              className="px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors flex items-center font-semibold"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Build New Trip
-            </Link>
           </div>
           <p className="text-gray-600 text-sm mb-6">
             Create draft trips to collect ideas from other travelers. Add items from shared trips, then click "Share Trip" when ready to publish.

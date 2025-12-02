@@ -624,7 +624,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    // Increased default limit for better UX, but still paginated
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50); // Max 50 per page
     const skip = (page - 1) * limit;
     const drafts = searchParams.get('drafts') === 'true';
     const publicOnly = searchParams.get('public') === 'true';
@@ -658,6 +659,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch trips from database with timeout protection
+    // Performance: Loading nested data (hotels, restaurants, activities) for listing pages
+    // Consider optimizing by only loading counts for listing pages in the future
     const startTime = Date.now();
     
     try {

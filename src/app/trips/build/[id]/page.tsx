@@ -107,9 +107,7 @@ function DraftEditContent() {
   // Draft trip form state (same as share trip)
   const [draftData, setDraftData] = useState({
     startDate: '',
-    endDate: '',
-    tripRating: 0,
-    tripReview: ''
+    endDate: ''
   });
 
   useEffect(() => {
@@ -214,23 +212,9 @@ function DraftEditContent() {
         setDraftTrip(transformed);
         
         // Load existing draft data if available
-        // Extract tripReview from description if it exists (format: "Review: ...")
-        let tripReview = '';
-        let description = data.description || '';
-        if (description && description.includes('Review:')) {
-          const reviewMatch = description.match(/Review:\s*(.+)/s);
-          if (reviewMatch) {
-            tripReview = reviewMatch[1].trim();
-            // Remove review from description
-            description = description.replace(/\n\nReview:.*/s, '').trim();
-          }
-        }
-        
         setDraftData({
           startDate: data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : '',
-          endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : '',
-          tripRating: 0, // Rating is not stored separately, would need schema update
-          tripReview: tripReview
+          endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : ''
         });
         setError(null);
     } catch (err) {
@@ -829,8 +813,6 @@ function DraftEditContent() {
           endDate: draftData.endDate || null,
           isDraft: true,
           isPublic: false,
-          tripRating: draftData.tripRating,
-          tripReview: draftData.tripReview,
           userId: user.id
         })
       });
@@ -915,8 +897,6 @@ function DraftEditContent() {
           endDate: draftData.endDate || null,
           isDraft: false, // Convert from draft to finalized
           isPublic: false, // Keep it private (not published)
-          tripRating: draftData.tripRating,
-          tripReview: draftData.tripReview,
           userId: user.id
         })
       });
@@ -1003,8 +983,6 @@ function DraftEditContent() {
           endDate: draftData.endDate,
           isDraft: false, // Convert from draft to shared
           isPublic: true, // Make it public so all users can see it
-          tripRating: draftData.tripRating,
-          tripReview: draftData.tripReview,
           userId: user.id
         })
       });
@@ -1440,7 +1418,7 @@ function DraftEditContent() {
             </span>
           </div>
           <p className="text-sm text-gray-600 mb-6">
-            Add dates, ratings, and comments to your draft. You can fill these in now or later before sharing.
+            Add dates to your draft. You can fill these in now or later before sharing.
           </p>
 
           <div className="space-y-6">
@@ -1470,45 +1448,6 @@ function DraftEditContent() {
               </div>
             </div>
 
-            {/* Trip Rating */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Overall Trip Rating
-              </label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => setDraftData({ ...draftData, tripRating: rating })}
-                    className={`p-2 rounded-lg transition-colors ${
-                      draftData.tripRating >= rating
-                        ? 'text-yellow-400 bg-yellow-50'
-                        : 'text-gray-300 hover:text-yellow-400'
-                    }`}
-                  >
-                    <Star className="w-6 h-6 fill-current" />
-                  </button>
-                ))}
-                {draftData.tripRating > 0 && (
-                  <span className="text-gray-600 ml-2">{draftData.tripRating} / 5</span>
-                )}
-              </div>
-            </div>
-
-            {/* Trip Review */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trip Review / Comments
-              </label>
-              <textarea
-                value={draftData.tripReview}
-                onChange={(e) => setDraftData({ ...draftData, tripReview: e.target.value })}
-                rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                placeholder="Share your experience, highlights, tips, and any recommendations..."
-              />
-            </div>
           </div>
         </motion.div>
 
@@ -1788,33 +1727,6 @@ function DraftEditContent() {
                             />
                           </div>
                         </div>
-                        <div className="mb-3">
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                          <div className="flex items-center space-x-1">
-                            {[1, 2, 3, 4, 5].map((rating) => (
-                              <button
-                                key={rating}
-                                type="button"
-                                onClick={() => handleUpdateHotel(hotel.id, 'rating', rating)}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                  (hotel.rating || 0) >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                }`}
-                              >
-                                <Star className="w-4 h-4 fill-current" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
-                          <textarea
-                            value={hotel.review || ''}
-                            onChange={(e) => handleUpdateHotel(hotel.id, 'review', e.target.value)}
-                            rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
-                            placeholder="What did you think about this hotel?"
-                          />
-                        </div>
                       </div>
                     ))}
                   </div>
@@ -1914,33 +1826,6 @@ function DraftEditContent() {
                                 />
                               </div>
                             </div>
-                            <div className="mb-3">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                              <div className="flex items-center space-x-1">
-                                {[1, 2, 3, 4, 5].map((rating) => (
-                                  <button
-                                    key={rating}
-                                    type="button"
-                                    onClick={() => handleUpdateRestaurant(restaurant.id, 'rating', rating)}
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                      (restaurant.rating || 0) >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                    }`}
-                                  >
-                                    <Star className="w-4 h-4 fill-current" />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
-                              <textarea
-                                value={restaurant.review || ''}
-                                onChange={(e) => handleUpdateRestaurant(restaurant.id, 'review', e.target.value)}
-                                rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
-                                placeholder="What did you think about this restaurant?"
-                              />
-                            </div>
                           </div>
                         ))}
                       </div>
@@ -2034,33 +1919,6 @@ function DraftEditContent() {
                                   placeholder="Address"
                                 />
                               </div>
-                            </div>
-                            <div className="mb-3">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                              <div className="flex items-center space-x-1">
-                                {[1, 2, 3, 4, 5].map((rating) => (
-                                  <button
-                                    key={rating}
-                                    type="button"
-                                    onClick={() => handleUpdateActivity(activity.id, 'rating', rating)}
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                      (activity.rating || 0) >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                    }`}
-                                  >
-                                    <Star className="w-4 h-4 fill-current" />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
-                              <textarea
-                                value={activity.review || ''}
-                                onChange={(e) => handleUpdateActivity(activity.id, 'review', e.target.value)}
-                                rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
-                                placeholder="What did you think about this activity?"
-                              />
                             </div>
                           </div>
                         ))}

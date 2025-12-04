@@ -948,33 +948,6 @@ function NewTripContent() {
                               />
                             </div>
                           </div>
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                            <div className="flex items-center space-x-2">
-                              {[1, 2, 3, 4, 5].map((rating) => (
-                                <button
-                                  key={rating}
-                                  type="button"
-                                  onClick={() => updateHotel(city.id, 'rating', rating)}
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                    city.hotel!.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                  }`}
-                                >
-                                  <Star className="w-4 h-4 fill-current" />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                            <textarea
-                              value={city.hotel.review}
-                              onChange={(e) => updateHotel(city.id, 'review', e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                              placeholder="What did you think about this hotel?"
-                            />
-                          </div>
                           <button
                             type="button"
                             onClick={() => setHotelForCity(city.id, null)}

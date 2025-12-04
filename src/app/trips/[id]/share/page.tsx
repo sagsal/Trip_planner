@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Star, X } from 'lucide-react';
+import { ArrowLeft, Save, X } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Link from 'next/link';
 
@@ -37,9 +37,7 @@ function ShareTripContent() {
   // Share trip form state
   const [shareData, setShareData] = useState({
     startDate: '',
-    endDate: '',
-    tripRating: 0,
-    tripReview: ''
+    endDate: ''
   });
 
   useEffect(() => {
@@ -89,11 +87,7 @@ function ShareTripContent() {
       if (data.startDate) {
         setShareData({
           startDate: data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : '',
-          endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : '',
-          tripRating: 0, // Rating is not stored separately
-          tripReview: data.description?.includes('Review:') 
-            ? (data.description.match(/Review:\s*(.+)/s)?.[1]?.trim() || '')
-            : ''
+          endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : ''
         });
       }
       setError(null);
@@ -168,8 +162,6 @@ function ShareTripContent() {
           endDate: shareData.endDate,
           isDraft: false, // Convert from draft to shared
           isPublic: true, // Make it public so all users can see it
-          tripRating: shareData.tripRating,
-          tripReview: shareData.tripReview,
           userId: user.id
         })
       });
@@ -318,46 +310,6 @@ function ShareTripContent() {
                   required
                 />
               </div>
-            </div>
-
-            {/* Trip Rating */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Overall Trip Rating
-              </label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => setShareData({ ...shareData, tripRating: rating })}
-                    className={`p-2 rounded-lg transition-colors ${
-                      shareData.tripRating >= rating
-                        ? 'text-yellow-400 bg-yellow-50'
-                        : 'text-gray-300 hover:text-yellow-400'
-                    }`}
-                  >
-                    <Star className="w-6 h-6 fill-current" />
-                  </button>
-                ))}
-                {shareData.tripRating > 0 && (
-                  <span className="text-gray-600 ml-2">{shareData.tripRating} / 5</span>
-                )}
-              </div>
-            </div>
-
-            {/* Trip Review */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trip Review / Comments
-              </label>
-              <textarea
-                value={shareData.tripReview}
-                onChange={(e) => setShareData({ ...shareData, tripReview: e.target.value })}
-                rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                placeholder="Share your experience, highlights, tips, and any recommendations..."
-              />
             </div>
 
             {/* Submit Button */}

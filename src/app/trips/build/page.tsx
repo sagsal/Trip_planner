@@ -1851,33 +1851,6 @@ function BuildTripContent() {
                                   />
                                 </div>
                               </div>
-                              <div className="mb-3">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                                <div className="flex items-center space-x-2">
-                                  {[1, 2, 3, 4, 5].map((rating) => (
-                                    <button
-                                      key={rating}
-                                      type="button"
-                                      onClick={() => updateHotel(city.id, 'rating', rating)}
-                                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                        city.hotel!.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                      }`}
-                                    >
-                                      <Star className="w-4 h-4 fill-current" />
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                                <textarea
-                                  value={city.hotel.review}
-                                  onChange={(e) => updateHotel(city.id, 'review', e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                                  placeholder="What did you think about this hotel?"
-                                />
-                              </div>
                               <button
                                 type="button"
                                 onClick={() => setHotelForCity(city.id, null)}
@@ -1992,33 +1965,6 @@ function BuildTripContent() {
                                             />
                                           </div>
                                         </div>
-                                        <div className="mb-2">
-                                          <label className="block text-xs font-medium text-gray-700 mb-1">Rating</label>
-                                          <div className="flex items-center space-x-1">
-                                            {[1, 2, 3, 4, 5].map((rating) => (
-                                              <button
-                                                key={rating}
-                                                type="button"
-                                                onClick={() => updateRestaurant(city.id, day.id, restaurant.id, 'rating', rating)}
-                                                className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                                  restaurant.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                                }`}
-                                              >
-                                                <Star className="w-3 h-3 fill-current" />
-                                              </button>
-                                            ))}
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
-                                          <textarea
-                                            value={restaurant.review}
-                                            onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'review', e.target.value)}
-                                            rows={2}
-                                            className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
-                                            placeholder="Review"
-                                          />
-                                        </div>
                                       </div>
                                     ))
                                   )}
@@ -2086,33 +2032,6 @@ function BuildTripContent() {
                                               placeholder="Address"
                                             />
                                           </div>
-                                        </div>
-                                        <div className="mb-2">
-                                          <label className="block text-xs font-medium text-gray-700 mb-1">Rating</label>
-                                          <div className="flex items-center space-x-1">
-                                            {[1, 2, 3, 4, 5].map((rating) => (
-                                              <button
-                                                key={rating}
-                                                type="button"
-                                                onClick={() => updateActivity(city.id, day.id, activity.id, 'rating', rating)}
-                                                className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                                  activity.rating >= rating ? 'text-yellow-400' : 'text-gray-300'
-                                                }`}
-                                              >
-                                                <Star className="w-3 h-3 fill-current" />
-                                              </button>
-                                            ))}
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <label className="block text-xs font-medium text-gray-700 mb-1">Review</label>
-                                          <textarea
-                                            value={activity.review}
-                                            onChange={(e) => updateActivity(city.id, day.id, activity.id, 'review', e.target.value)}
-                                            rows={2}
-                                            className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
-                                            placeholder="Review"
-                                          />
                                         </div>
                                       </div>
                                       );

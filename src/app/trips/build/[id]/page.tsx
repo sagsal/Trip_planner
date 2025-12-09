@@ -418,6 +418,20 @@ function DraftEditContent() {
           rating = Math.round(parseFloat(selectedHotelData.rating));
         }
         
+        // Fetch full location details to get web_url if not already available
+        let webUrl = selectedHotelData.web_url || null;
+        if (selectedHotelData.location_id && !webUrl) {
+          try {
+            const detailsResponse = await fetch(`/api/tripadvisor/search?locationId=${selectedHotelData.location_id}`);
+            if (detailsResponse.ok) {
+              const detailsData = await detailsResponse.json();
+              webUrl = detailsData.location?.web_url || null;
+            }
+          } catch (e) {
+            console.log('Could not fetch full location details:', e);
+          }
+        }
+        
         // Store TripAdvisor data as JSON in review field (image URL, etc.)
         const tripadvisorData = {
           locationId: selectedHotelData.location_id,
@@ -425,7 +439,7 @@ function DraftEditContent() {
                    selectedHotelData.photos?.[0]?.images?.medium?.url || 
                    selectedHotelData.photos?.[0]?.images?.original?.url || null,
           numReviews: selectedHotelData.num_reviews,
-          webUrl: selectedHotelData.web_url || null
+          webUrl: webUrl
         };
         review = JSON.stringify(tripadvisorData);
       }
@@ -1838,10 +1852,14 @@ function DraftEditContent() {
                       // Parse TripAdvisor data from review field if available
                       let tripadvisorData: any = null;
                       let imageUrl: string | null = null;
+                      let tripadvisorWebUrl: string | null = null;
+                      let numReviews: string | null = null;
                       try {
                         if (hotel.review) {
                           tripadvisorData = JSON.parse(hotel.review);
                           imageUrl = tripadvisorData.imageUrl || null;
+                          tripadvisorWebUrl = tripadvisorData.webUrl || null;
+                          numReviews = tripadvisorData.numReviews || null;
                         }
                       } catch (e) {
                         // review is not JSON, treat as regular review text
@@ -1873,6 +1891,50 @@ function DraftEditContent() {
                               />
                             </div>
                           )}
+                          
+                          {/* TripAdvisor Information */}
+                          {(hotel.rating || numReviews || tripadvisorWebUrl) && (
+                            <div className="mb-3 p-3 bg-white rounded-lg border border-yellow-300">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                {hotel.rating && hotel.rating > 0 && (
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                          key={star}
+                                          className={`w-4 h-4 ${
+                                            star <= hotel.rating! 
+                                              ? 'text-yellow-400 fill-yellow-400' 
+                                              : 'text-gray-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700">
+                                      {hotel.rating}/5
+                                    </span>
+                                  </div>
+                                )}
+                                {numReviews && (
+                                  <span className="text-xs text-gray-600">
+                                    {numReviews} reviews on TripAdvisor
+                                  </span>
+                                )}
+                                {tripadvisorWebUrl && (
+                                  <a
+                                    href={tripadvisorWebUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+                                  >
+                                    View on TripAdvisor
+                                    <Eye className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>

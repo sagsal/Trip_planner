@@ -18,6 +18,7 @@ interface TripAdvisorResult {
   category?: {
     name: string;
   };
+  web_url?: string;
   photos?: Array<{
     images: {
       medium?: { url: string };

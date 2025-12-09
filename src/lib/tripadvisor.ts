@@ -3,7 +3,12 @@
  */
 
 // TripAdvisor API Key - Make sure this is activated in the TripAdvisor Developer Portal
+// The API key should be set in .env.local file as TRIPADVISOR_API_KEY
 export const TRIPADVISOR_API_KEY = process.env.TRIPADVISOR_API_KEY || '4BD8D2DC82B84E01965E1180DBADE6EC';
+
+if (!process.env.TRIPADVISOR_API_KEY) {
+  console.warn('⚠️  TRIPADVISOR_API_KEY not found in environment variables. Using fallback key.');
+}
 // Updated to use the correct Content API base URL from documentation
 const TRIPADVISOR_BASE_URL = 'https://api.content.tripadvisor.com/api/v1';
 
@@ -36,6 +41,11 @@ export interface TripAdvisorLocation {
       original?: { url: string; width: string; height: string };
     };
   };
+  // Additional fields that might help with filtering
+  subcategory?: Array<{
+    key: string;
+    name: string;
+  }>;
 }
 
 export interface TripAdvisorSearchResponse {
@@ -175,7 +185,43 @@ export async function searchTripAdvisor(
       };
     }
     
-    return data;
+    // Filter by category if specified (client-side filtering)
+    // TripAdvisor API doesn't support category parameter in search, so we filter results
+    let filteredData = data.data;
+    if (category) {
+      filteredData = data.data.filter((location: TripAdvisorLocation) => {
+        if (!location.category) return false;
+        const categoryKey = location.category.key?.toLowerCase() || '';
+        const categoryName = location.category.name?.toLowerCase() || '';
+        
+        if (category === 'hotels') {
+          return categoryKey.includes('hotel') || 
+                 categoryKey.includes('lodging') ||
+                 categoryName.includes('hotel') ||
+                 categoryName.includes('lodging');
+        } else if (category === 'restaurants') {
+          return categoryKey.includes('restaurant') || 
+                 categoryKey.includes('dining') ||
+                 categoryName.includes('restaurant') ||
+                 categoryName.includes('dining') ||
+                 categoryName.includes('food');
+        } else if (category === 'attractions') {
+          return categoryKey.includes('attraction') || 
+                 categoryKey.includes('sight') ||
+                 categoryName.includes('attraction') ||
+                 categoryName.includes('sight') ||
+                 categoryName.includes('landmark') ||
+                 categoryName.includes('museum') ||
+                 categoryName.includes('park');
+        }
+        return true;
+      });
+    }
+    
+    return {
+      ...data,
+      data: filteredData
+    };
   } catch (error) {
     console.error('Error searching TripAdvisor:', error);
     throw error;

@@ -55,6 +55,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    
+    console.log('DELETE /api/hotels/[id] - Hotel ID:', id);
 
     // Check if hotel exists
     const hotel = await prisma.hotel.findUnique({
@@ -62,26 +64,35 @@ export async function DELETE(
     });
 
     if (!hotel) {
+      console.log('Hotel not found:', id);
       return NextResponse.json(
-        { error: 'Hotel not found' },
+        { error: 'Hotel not found', hotelId: id },
         { status: 404 }
       );
     }
+
+    console.log('Deleting hotel:', hotel.name, 'ID:', id);
 
     // Delete the hotel
     await prisma.hotel.delete({
       where: { id }
     });
 
+    console.log('Hotel deleted successfully:', id);
+
     return NextResponse.json(
-      { message: 'Hotel deleted successfully' },
+      { message: 'Hotel deleted successfully', hotelId: id },
       { status: 200 }
     );
 
   } catch (error) {
     console.error('Hotel delete error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }

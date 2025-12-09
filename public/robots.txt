@@ -1,0 +1,11 @@
+# TripAdvisor Content API - Review Implementation Policy Compliance
+# Block TripAdvisor API endpoints from being crawled by search engines
+# This is required by TripAdvisor's Review Implementation Policy
+
+User-Agent: *
+Disallow: /api/tripadvisor/
+
+# Allow all other content
+User-Agent: *
+Allow: /
+

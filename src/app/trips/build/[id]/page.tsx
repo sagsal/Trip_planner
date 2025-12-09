@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Copy, Save, Share2, Eye, X, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import Link from 'next/link';
 
 interface Hotel {
@@ -97,6 +98,9 @@ function DraftEditContent() {
   const [newRestaurantName, setNewRestaurantName] = useState('');
   const [newActivityName, setNewActivityName] = useState('');
   const [newHotelName, setNewHotelName] = useState('');
+  const [selectedHotelData, setSelectedHotelData] = useState<any>(null);
+  const [selectedRestaurantData, setSelectedRestaurantData] = useState<any>(null);
+  const [selectedActivityData, setSelectedActivityData] = useState<any>(null);
 
   // State for adding new city to existing draft
   const [selectedCountry, setSelectedCountry] = useState('');
@@ -392,12 +396,51 @@ function DraftEditContent() {
 
     try {
       setError(null);
+      
+      // Build location string from TripAdvisor data if available
+      let location = '';
+      let rating = null;
+      let review = '';
+      
+      if (selectedHotelData) {
+        const addr = selectedHotelData.address_obj;
+        if (addr) {
+          const parts = [
+            addr.street1,
+            addr.city,
+            addr.state,
+            addr.country
+          ].filter(Boolean);
+          location = parts.join(', ');
+        }
+        
+        if (selectedHotelData.rating) {
+          rating = Math.round(parseFloat(selectedHotelData.rating));
+        }
+        
+        // Store TripAdvisor data as JSON in review field (image URL, etc.)
+        const tripadvisorData = {
+          locationId: selectedHotelData.location_id,
+          imageUrl: selectedHotelData.photos?.[0]?.images?.large?.url || 
+                   selectedHotelData.photos?.[0]?.images?.medium?.url || 
+                   selectedHotelData.photos?.[0]?.images?.original?.url || null,
+          numReviews: selectedHotelData.num_reviews,
+          webUrl: selectedHotelData.web_url || null
+        };
+        review = JSON.stringify(tripadvisorData);
+      }
+      
       const response = await fetch(`/api/trips/${draftId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           itemType: 'hotel',
-          item: { name: newHotelName.trim(), location: '' },
+          item: { 
+            name: newHotelName.trim(), 
+            location: location,
+            rating: rating,
+            review: review || null
+          },
           cityId: addingHotel
         })
       });
@@ -408,6 +451,7 @@ function DraftEditContent() {
         setTimeout(() => setSuccess(null), 3000);
         setAddingHotel(null);
         setNewHotelName('');
+        setSelectedHotelData(null);
       } else {
         let errorData;
         const contentType = response.headers.get('content-type');
@@ -438,6 +482,12 @@ function DraftEditContent() {
   const handleCancelHotel = () => {
     setAddingHotel(null);
     setNewHotelName('');
+    setSelectedHotelData(null);
+  };
+
+  const handleHotelSelect = (result: any) => {
+    setSelectedHotelData(result);
+    // Optionally auto-save or just update the name
   };
 
   const handleUpdateHotel = async (hotelId: string, field: string, value: any) => {
@@ -508,12 +558,51 @@ function DraftEditContent() {
 
     try {
       setError(null);
+      
+      // Build location string from TripAdvisor data if available
+      let location = '';
+      let rating = null;
+      let review = '';
+      
+      if (selectedRestaurantData) {
+        const addr = selectedRestaurantData.address_obj;
+        if (addr) {
+          const parts = [
+            addr.street1,
+            addr.city,
+            addr.state,
+            addr.country
+          ].filter(Boolean);
+          location = parts.join(', ');
+        }
+        
+        if (selectedRestaurantData.rating) {
+          rating = Math.round(parseFloat(selectedRestaurantData.rating));
+        }
+        
+        // Store TripAdvisor data as JSON in review field
+        const tripadvisorData = {
+          locationId: selectedRestaurantData.location_id,
+          imageUrl: selectedRestaurantData.photos?.[0]?.images?.large?.url || 
+                   selectedRestaurantData.photos?.[0]?.images?.medium?.url || 
+                   selectedRestaurantData.photos?.[0]?.images?.original?.url || null,
+          numReviews: selectedRestaurantData.num_reviews,
+          webUrl: selectedRestaurantData.web_url || null
+        };
+        review = JSON.stringify(tripadvisorData);
+      }
+      
       const response = await fetch(`/api/trips/${draftId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           itemType: 'restaurant',
-          item: { name: newRestaurantName.trim(), location: '' },
+          item: { 
+            name: newRestaurantName.trim(), 
+            location: location,
+            rating: rating,
+            review: review || null
+          },
           cityId: addingRestaurant.cityId,
           dayId: addingRestaurant.dayId
         })
@@ -525,6 +614,7 @@ function DraftEditContent() {
         setTimeout(() => setSuccess(null), 3000);
         setAddingRestaurant(null);
         setNewRestaurantName('');
+        setSelectedRestaurantData(null);
       } else {
         let errorData;
         const contentType = response.headers.get('content-type');
@@ -555,6 +645,11 @@ function DraftEditContent() {
   const handleCancelRestaurant = () => {
     setAddingRestaurant(null);
     setNewRestaurantName('');
+    setSelectedRestaurantData(null);
+  };
+
+  const handleRestaurantSelect = (result: any) => {
+    setSelectedRestaurantData(result);
   };
 
   const handleUpdateRestaurant = async (restaurantId: string, field: string, value: any) => {
@@ -625,12 +720,51 @@ function DraftEditContent() {
 
     try {
       setError(null);
+      
+      // Build location string from TripAdvisor data if available
+      let location = '';
+      let rating = null;
+      let review = '';
+      
+      if (selectedActivityData) {
+        const addr = selectedActivityData.address_obj;
+        if (addr) {
+          const parts = [
+            addr.street1,
+            addr.city,
+            addr.state,
+            addr.country
+          ].filter(Boolean);
+          location = parts.join(', ');
+        }
+        
+        if (selectedActivityData.rating) {
+          rating = Math.round(parseFloat(selectedActivityData.rating));
+        }
+        
+        // Store TripAdvisor data as JSON in review field
+        const tripadvisorData = {
+          locationId: selectedActivityData.location_id,
+          imageUrl: selectedActivityData.photos?.[0]?.images?.large?.url || 
+                   selectedActivityData.photos?.[0]?.images?.medium?.url || 
+                   selectedActivityData.photos?.[0]?.images?.original?.url || null,
+          numReviews: selectedActivityData.num_reviews,
+          webUrl: selectedActivityData.web_url || null
+        };
+        review = JSON.stringify(tripadvisorData);
+      }
+      
       const response = await fetch(`/api/trips/${draftId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           itemType: 'activity',
-          item: { name: newActivityName.trim(), location: '' },
+          item: { 
+            name: newActivityName.trim(), 
+            location: location,
+            rating: rating,
+            review: review || null
+          },
           cityId: addingActivity.cityId,
           dayId: addingActivity.dayId
         })
@@ -642,6 +776,7 @@ function DraftEditContent() {
         setTimeout(() => setSuccess(null), 3000);
         setAddingActivity(null);
         setNewActivityName('');
+        setSelectedActivityData(null);
       } else {
         let errorData;
         const contentType = response.headers.get('content-type');
@@ -672,6 +807,11 @@ function DraftEditContent() {
   const handleCancelActivity = () => {
     setAddingActivity(null);
     setNewActivityName('');
+    setSelectedActivityData(null);
+  };
+
+  const handleActivitySelect = (result: any) => {
+    setSelectedActivityData(result);
   };
 
   const handleUpdateActivity = async (activityId: string, field: string, value: any) => {
@@ -1655,21 +1795,24 @@ function DraftEditContent() {
                 </div>
                 {addingHotel === city.id ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-2">
-                    <input
-                      type="text"
+                    <TripAdvisorSearch
                       value={newHotelName}
-                      onChange={(e) => setNewHotelName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveHotel();
-                        } else if (e.key === 'Escape') {
-                          handleCancelHotel();
-                        }
-                      }}
-                      placeholder="Enter hotel name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 mb-2"
-                      autoFocus
+                      onChange={setNewHotelName}
+                      onSelect={handleHotelSelect}
+                      placeholder="Search for a hotel..."
+                      category="hotels"
+                      className="mb-2"
                     />
+                    {selectedHotelData && (
+                      <div className="mb-2 p-2 bg-white rounded border border-yellow-300">
+                        <p className="text-xs text-gray-600">
+                          ✓ Selected: {selectedHotelData.name}
+                          {selectedHotelData.rating && (
+                            <span className="ml-2">⭐ {selectedHotelData.rating}</span>
+                          )}
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <button
                         onClick={handleSaveHotel}
@@ -1691,44 +1834,70 @@ function DraftEditContent() {
                   <p className="text-gray-500 text-sm">No hotels added yet</p>
                 ) : (
                   <div className="space-y-3">
-                    {city.hotels.map((hotel) => (
-                      <div key={hotel.id} className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-lg">🏨</span>
-                            <h6 className="font-semibold text-gray-800">Hotel</h6>
+                    {city.hotels.map((hotel) => {
+                      // Parse TripAdvisor data from review field if available
+                      let tripadvisorData: any = null;
+                      let imageUrl: string | null = null;
+                      try {
+                        if (hotel.review) {
+                          tripadvisorData = JSON.parse(hotel.review);
+                          imageUrl = tripadvisorData.imageUrl || null;
+                        }
+                      } catch (e) {
+                        // review is not JSON, treat as regular review text
+                      }
+                      
+                      return (
+                        <div key={hotel.id} className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">🏨</span>
+                              <h6 className="font-semibold text-gray-800">Hotel</h6>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteHotel(city.id, hotel.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleDeleteHotel(city.id, hotel.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {imageUrl && (
+                            <div className="mb-3">
+                              <img
+                                src={imageUrl}
+                                alt={hotel.name}
+                                className="w-full h-48 object-cover rounded-lg"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                              <input
+                                type="text"
+                                value={hotel.name || ''}
+                                onChange={(e) => handleUpdateHotel(hotel.id, 'name', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                placeholder="Hotel name"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                              <input
+                                type="text"
+                                value={hotel.location || ''}
+                                onChange={(e) => handleUpdateHotel(hotel.id, 'location', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                placeholder="Address"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                            <input
-                              type="text"
-                              value={hotel.name || ''}
-                              onChange={(e) => handleUpdateHotel(hotel.id, 'name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
-                              placeholder="Hotel name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
-                            <input
-                              type="text"
-                              value={hotel.location || ''}
-                              onChange={(e) => handleUpdateHotel(hotel.id, 'location', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
-                              placeholder="Address"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1754,21 +1923,24 @@ function DraftEditContent() {
                     </div>
                     {addingRestaurant?.cityId === city.id && addingRestaurant?.dayId === day.id ? (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-                        <input
-                          type="text"
+                        <TripAdvisorSearch
                           value={newRestaurantName}
-                          onChange={(e) => setNewRestaurantName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSaveRestaurant();
-                            } else if (e.key === 'Escape') {
-                              handleCancelRestaurant();
-                            }
-                          }}
-                          placeholder="Enter restaurant name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 mb-2"
-                          autoFocus
+                          onChange={setNewRestaurantName}
+                          onSelect={handleRestaurantSelect}
+                          placeholder="Search for a restaurant..."
+                          category="restaurants"
+                          className="mb-2"
                         />
+                        {selectedRestaurantData && (
+                          <div className="mb-2 p-2 bg-white rounded border border-blue-300">
+                            <p className="text-xs text-gray-600">
+                              ✓ Selected: {selectedRestaurantData.name}
+                              {selectedRestaurantData.rating && (
+                                <span className="ml-2">⭐ {selectedRestaurantData.rating}</span>
+                              )}
+                            </p>
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={handleSaveRestaurant}
@@ -1790,44 +1962,70 @@ function DraftEditContent() {
                       <p className="text-gray-500 text-sm">No restaurants added yet</p>
                     ) : (
                       <div className="space-y-3">
-                        {day.restaurants.map((restaurant, index) => (
-                          <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-lg">🍽️</span>
-                                <h6 className="font-semibold text-gray-800">Restaurant {index + 1}</h6>
+                        {day.restaurants.map((restaurant, index) => {
+                          // Parse TripAdvisor data from review field if available
+                          let tripadvisorData: any = null;
+                          let imageUrl: string | null = null;
+                          try {
+                            if (restaurant.review) {
+                              tripadvisorData = JSON.parse(restaurant.review);
+                              imageUrl = tripadvisorData.imageUrl || null;
+                            }
+                          } catch (e) {
+                            // review is not JSON, treat as regular review text
+                          }
+                          
+                          return (
+                            <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-lg">🍽️</span>
+                                  <h6 className="font-semibold text-gray-800">Restaurant {index + 1}</h6>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteRestaurant(restaurant.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
-                              <button
-                                onClick={() => handleDeleteRestaurant(restaurant.id)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {imageUrl && (
+                                <div className="mb-3">
+                                  <img
+                                    src={imageUrl}
+                                    alt={restaurant.name}
+                                    className="w-full h-48 object-cover rounded-lg"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                  <input
+                                    type="text"
+                                    value={restaurant.name || ''}
+                                    onChange={(e) => handleUpdateRestaurant(restaurant.id, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
+                                    placeholder="Restaurant name"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    value={restaurant.location || ''}
+                                    onChange={(e) => handleUpdateRestaurant(restaurant.id, 'location', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
+                                    placeholder="Address"
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                                <input
-                                  type="text"
-                                  value={restaurant.name || ''}
-                                  onChange={(e) => handleUpdateRestaurant(restaurant.id, 'name', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
-                                  placeholder="Restaurant name"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
-                                <input
-                                  type="text"
-                                  value={restaurant.location || ''}
-                                  onChange={(e) => handleUpdateRestaurant(restaurant.id, 'location', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-gray-900"
-                                  placeholder="Address"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1848,21 +2046,24 @@ function DraftEditContent() {
                     </div>
                     {addingActivity?.cityId === city.id && addingActivity?.dayId === day.id ? (
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-2">
-                        <input
-                          type="text"
+                        <TripAdvisorSearch
                           value={newActivityName}
-                          onChange={(e) => setNewActivityName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSaveActivity();
-                            } else if (e.key === 'Escape') {
-                              handleCancelActivity();
-                            }
-                          }}
-                          placeholder="Enter activity name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 mb-2"
-                          autoFocus
+                          onChange={setNewActivityName}
+                          onSelect={handleActivitySelect}
+                          placeholder="Search for an activity..."
+                          category="attractions"
+                          className="mb-2"
                         />
+                        {selectedActivityData && (
+                          <div className="mb-2 p-2 bg-white rounded border border-purple-300">
+                            <p className="text-xs text-gray-600">
+                              ✓ Selected: {selectedActivityData.name}
+                              {selectedActivityData.rating && (
+                                <span className="ml-2">⭐ {selectedActivityData.rating}</span>
+                              )}
+                            </p>
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={handleSaveActivity}
@@ -1884,44 +2085,70 @@ function DraftEditContent() {
                       <p className="text-gray-500 text-sm">No activities added yet</p>
                     ) : (
                       <div className="space-y-3">
-                        {day.activities.map((activity, index) => (
-                          <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-lg">🎯</span>
-                                <h6 className="font-semibold text-gray-800">Activity {index + 1}</h6>
+                        {day.activities.map((activity, index) => {
+                          // Parse TripAdvisor data from review field if available
+                          let tripadvisorData: any = null;
+                          let imageUrl: string | null = null;
+                          try {
+                            if (activity.review) {
+                              tripadvisorData = JSON.parse(activity.review);
+                              imageUrl = tripadvisorData.imageUrl || null;
+                            }
+                          } catch (e) {
+                            // review is not JSON, treat as regular review text
+                          }
+                          
+                          return (
+                            <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-lg">🎯</span>
+                                  <h6 className="font-semibold text-gray-800">Activity {index + 1}</h6>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteActivity(activity.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
-                              <button
-                                onClick={() => handleDeleteActivity(activity.id)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {imageUrl && (
+                                <div className="mb-3">
+                                  <img
+                                    src={imageUrl}
+                                    alt={activity.name}
+                                    className="w-full h-48 object-cover rounded-lg"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                  <input
+                                    type="text"
+                                    value={activity.name || ''}
+                                    onChange={(e) => handleUpdateActivity(activity.id, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
+                                    placeholder="Activity name"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    value={activity.location || ''}
+                                    onChange={(e) => handleUpdateActivity(activity.id, 'location', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
+                                    placeholder="Address"
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                                <input
-                                  type="text"
-                                  value={activity.name || ''}
-                                  onChange={(e) => handleUpdateActivity(activity.id, 'name', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
-                                  placeholder="Activity name"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
-                                <input
-                                  type="text"
-                                  value={activity.location || ''}
-                                  onChange={(e) => handleUpdateActivity(activity.id, 'location', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
-                                  placeholder="Address"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

@@ -6,8 +6,12 @@
 // The API key should be set in .env.local file as TRIPADVISOR_API_KEY
 export const TRIPADVISOR_API_KEY = process.env.TRIPADVISOR_API_KEY || '4BD8D2DC82B84E01965E1180DBADE6EC';
 
+// Log API key status (only first 8 chars for security)
 if (!process.env.TRIPADVISOR_API_KEY) {
   console.warn('⚠️  TRIPADVISOR_API_KEY not found in environment variables. Using fallback key.');
+  console.warn('⚠️  Make sure .env.local exists and contains: TRIPADVISOR_API_KEY=your_key');
+} else {
+  console.log('✅ TripAdvisor API key loaded from environment:', TRIPADVISOR_API_KEY.substring(0, 8) + '...');
 }
 // Updated to use the correct Content API base URL from documentation
 const TRIPADVISOR_BASE_URL = 'https://api.content.tripadvisor.com/api/v1';
@@ -107,10 +111,11 @@ export async function searchTripAdvisor(
 
   try {
     console.log('TripAdvisor search URL:', url);
+    console.log('Using API Key:', TRIPADVISOR_API_KEY.substring(0, 8) + '...');
     const response = await fetch(url);
     const responseText = await response.text();
     console.log('TripAdvisor API response status:', response.status);
-    console.log('TripAdvisor API response:', responseText.substring(0, 500));
+    console.log('TripAdvisor API response:', responseText.substring(0, 1000));
     
     // Parse the response (even if status is not OK, it might contain error info)
     let data;
@@ -190,15 +195,33 @@ export async function searchTripAdvisor(
     let filteredData = data.data;
     if (category) {
       filteredData = data.data.filter((location: TripAdvisorLocation) => {
-        if (!location.category) return false;
+        // Skip locations without category (like cities)
+        if (!location.category) {
+          // But if the name contains hotel-related keywords, include it
+          const nameLower = location.name?.toLowerCase() || '';
+          if (category === 'hotels') {
+            return nameLower.includes('hotel') || 
+                   nameLower.includes('resort') ||
+                   nameLower.includes('lodge') ||
+                   nameLower.includes('inn');
+          }
+          return false;
+        }
+        
         const categoryKey = location.category.key?.toLowerCase() || '';
         const categoryName = location.category.name?.toLowerCase() || '';
+        const nameLower = location.name?.toLowerCase() || '';
         
         if (category === 'hotels') {
           return categoryKey.includes('hotel') || 
                  categoryKey.includes('lodging') ||
+                 categoryKey.includes('accommodation') ||
                  categoryName.includes('hotel') ||
-                 categoryName.includes('lodging');
+                 categoryName.includes('lodging') ||
+                 categoryName.includes('accommodation') ||
+                 nameLower.includes('hotel') ||
+                 nameLower.includes('resort') ||
+                 nameLower.includes('lodge');
         } else if (category === 'restaurants') {
           return categoryKey.includes('restaurant') || 
                  categoryKey.includes('dining') ||

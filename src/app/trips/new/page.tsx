@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown } from 'lucide-react';
+import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 
 interface Hotel {
   id: string;
@@ -73,6 +74,11 @@ function NewTripContent() {
   const [selectedNumberOfDays, setSelectedNumberOfDays] = useState('');
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+  
+  // State for TripAdvisor hotel search
+  const [addingHotel, setAddingHotel] = useState<string | null>(null);
+  const [newHotelName, setNewHotelName] = useState('');
+  const [selectedHotelData, setSelectedHotelData] = useState<any>(null);
 
   // Load user data from localStorage
   useEffect(() => {
@@ -364,6 +370,88 @@ function NewTripContent() {
       city.id === cityId ? { ...city, hotel } : city
     ));
   };
+
+  // TripAdvisor hotel handlers
+  const handleHotelSelect = useCallback((result: any) => {
+    setSelectedHotelData(result);
+  }, []);
+
+  const handleSaveHotel = useCallback(async (cityId: string) => {
+    if (!newHotelName.trim()) {
+      return;
+    }
+
+    try {
+      // Build location string from TripAdvisor data if available
+      let location = '';
+      let rating = null;
+      let review = '';
+      
+      if (selectedHotelData) {
+        const addr = selectedHotelData.address_obj;
+        if (addr) {
+          const parts = [
+            addr.street1,
+            addr.city,
+            addr.state,
+            addr.country
+          ].filter(Boolean);
+          location = parts.join(', ');
+        }
+        
+        if (selectedHotelData.rating) {
+          rating = Math.round(parseFloat(selectedHotelData.rating));
+        }
+        
+        // Fetch full location details to get web_url if not already available
+        let webUrl = selectedHotelData.web_url || null;
+        if (selectedHotelData.location_id && !webUrl) {
+          try {
+            const detailsResponse = await fetch(`/api/tripadvisor/search?locationId=${selectedHotelData.location_id}`);
+            if (detailsResponse.ok) {
+              const detailsData = await detailsResponse.json();
+              webUrl = detailsData.location?.web_url || null;
+            }
+          } catch (e) {
+            console.log('Could not fetch full location details:', e);
+          }
+        }
+        
+        // Store TripAdvisor data as JSON in review field
+        const tripadvisorData = {
+          locationId: selectedHotelData.location_id,
+          imageUrl: selectedHotelData.photos?.[0]?.images?.large?.url || 
+                   selectedHotelData.photos?.[0]?.images?.medium?.url || 
+                   selectedHotelData.photos?.[0]?.images?.original?.url || null,
+          numReviews: selectedHotelData.num_reviews,
+          webUrl: webUrl
+        };
+        review = JSON.stringify(tripadvisorData);
+      }
+
+      const newHotel: Hotel = {
+        id: Date.now().toString(),
+        name: newHotelName.trim(),
+        location: location,
+        rating: rating || 0,
+        review: review,
+        liked: null
+      };
+
+      setHotelForCity(cityId, newHotel);
+      setAddingHotel(null);
+      setNewHotelName('');
+      setSelectedHotelData(null);
+    } catch (err) {
+      console.error('Error saving hotel:', err);
+    }
+  }, [newHotelName, selectedHotelData, setHotelForCity]);
+
+  const handleCancelHotel = useCallback(() => {
+    setAddingHotel(null);
+    setNewHotelName('');
+    setSelectedHotelData(null);
+  }, []);
 
   const removeCity = (cityId: string) => {
     setCitiesData(prev => prev.filter(city => city.id !== cityId));
@@ -823,23 +911,83 @@ function NewTripContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           🏨 Hotel
                         </label>
-                        <input
-                          type="text"
-                          placeholder="Hotel name (optional)"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
-                          style={{ color: '#000000' }}
-                          value={selectedHotel?.name || ''}
-                          onChange={(e) => {
-                            setSelectedHotel({
-                              id: selectedHotel?.id || Date.now().toString(),
-                              name: e.target.value,
-                              location: selectedHotel?.location || '',
-                              rating: selectedHotel?.rating || 0,
-                              review: selectedHotel?.review || '',
-                              liked: selectedHotel?.liked || null
-                            });
-                          }}
-                        />
+                        {selectedCity && selectedCity !== 'custom' ? (
+                          <TripAdvisorSearch
+                            value={selectedHotel?.name || ''}
+                            onChange={(value) => {
+                              setSelectedHotel({
+                                id: selectedHotel?.id || Date.now().toString(),
+                                name: value,
+                                location: selectedHotel?.location || '',
+                                rating: selectedHotel?.rating || 0,
+                                review: selectedHotel?.review || '',
+                                liked: selectedHotel?.liked || null
+                              });
+                            }}
+                            onSelect={(result) => {
+                              const addr = result.address_obj;
+                              let location = '';
+                              if (addr) {
+                                const parts = [
+                                  addr.street1,
+                                  addr.city,
+                                  addr.state,
+                                  addr.country
+                                ].filter(Boolean);
+                                location = parts.join(', ');
+                              }
+                              
+                              let rating = 0;
+                              if (result.rating) {
+                                rating = Math.round(parseFloat(result.rating));
+                              }
+                              
+                              let review = '';
+                              if (result.location_id) {
+                                const tripadvisorData = {
+                                  locationId: result.location_id,
+                                  imageUrl: result.photos?.[0]?.images?.large?.url || 
+                                           result.photos?.[0]?.images?.medium?.url || 
+                                           result.photos?.[0]?.images?.original?.url || null,
+                                  numReviews: result.num_reviews,
+                                  webUrl: result.web_url || null
+                                };
+                                review = JSON.stringify(tripadvisorData);
+                              }
+                              
+                              setSelectedHotel({
+                                id: Date.now().toString(),
+                                name: result.name,
+                                location: location,
+                                rating: rating,
+                                review: review,
+                                liked: null
+                              });
+                            }}
+                            placeholder={`Search hotels in ${selectedCity}...`}
+                            category="hotels"
+                            cityName={selectedCity}
+                            countryName={selectedCountry}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Hotel name (optional)"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
+                            style={{ color: '#000000' }}
+                            value={selectedHotel?.name || ''}
+                            onChange={(e) => {
+                              setSelectedHotel({
+                                id: selectedHotel?.id || Date.now().toString(),
+                                name: e.target.value,
+                                location: selectedHotel?.location || '',
+                                rating: selectedHotel?.rating || 0,
+                                review: selectedHotel?.review || '',
+                                liked: selectedHotel?.liked || null
+                              });
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   )}
@@ -926,47 +1074,171 @@ function NewTripContent() {
                       </h4>
                       {city.hotel ? (
                         <div className="bg-white rounded-lg p-4 border border-gray-200">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                              <input
-                                type="text"
-                                value={city.hotel.name}
-                                onChange={(e) => updateHotel(city.id, 'name', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                                placeholder="Hotel name"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                              <input
-                                type="text"
-                                value={city.hotel.location}
-                                onChange={(e) => updateHotel(city.id, 'location', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                                placeholder="Address"
-                              />
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setHotelForCity(city.id, null)}
-                            className="mt-3 text-red-500 hover:text-red-700 text-sm"
-                          >
-                            Remove Hotel
-                          </button>
+                          {(() => {
+                            // Parse TripAdvisor data from review field if available
+                            let tripadvisorData: any = null;
+                            let imageUrl: string | null = null;
+                            let tripadvisorWebUrl: string | null = null;
+                            let numReviews: string | null = null;
+                            try {
+                              if (city.hotel.review) {
+                                tripadvisorData = JSON.parse(city.hotel.review);
+                                imageUrl = tripadvisorData.imageUrl || null;
+                                tripadvisorWebUrl = tripadvisorData.webUrl || null;
+                                numReviews = tripadvisorData.numReviews || null;
+                              }
+                            } catch (e) {
+                              // review is not JSON, treat as regular review text
+                            }
+                            
+                            return (
+                              <>
+                                {imageUrl && (
+                                  <div className="mb-3">
+                                    <img
+                                      src={imageUrl}
+                                      alt={city.hotel.name}
+                                      className="w-full h-48 object-cover rounded-lg"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                
+                                {/* TripAdvisor Information */}
+                                {(city.hotel.rating || numReviews || tripadvisorWebUrl) && (
+                                  <div className="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                      {city.hotel.rating && city.hotel.rating > 0 && (
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex items-center">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                              <Star
+                                                key={star}
+                                                className={`w-4 h-4 ${
+                                                  city.hotel && star <= (city.hotel.rating || 0)
+                                                    ? 'text-yellow-400 fill-yellow-400' 
+                                                    : 'text-gray-300'
+                                                }`}
+                                              />
+                                            ))}
+                                          </div>
+                                          <span className="text-sm font-medium text-gray-700">
+                                            {city.hotel.rating}/5
+                                          </span>
+                                        </div>
+                                      )}
+                                      {numReviews && (
+                                        <span className="text-xs text-gray-600">
+                                          {numReviews} reviews on TripAdvisor
+                                        </span>
+                                      )}
+                                      {tripadvisorWebUrl && (
+                                        <a
+                                          href={tripadvisorWebUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+                                        >
+                                          View on TripAdvisor
+                                          <Eye className="w-3 h-3" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                      type="text"
+                                      value={city.hotel.name}
+                                      onChange={(e) => updateHotel(city.id, 'name', e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                      placeholder="Hotel name"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                    <input
+                                      type="text"
+                                      value={city.hotel.location}
+                                      onChange={(e) => updateHotel(city.id, 'location', e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                      placeholder="Address"
+                                    />
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setHotelForCity(city.id, null)}
+                                  className="mt-3 text-red-500 hover:text-red-700 text-sm"
+                                >
+                                  Remove Hotel
+                                </button>
+                              </>
+                            );
+                          })()}
                         </div>
                       ) : (
-                        <div className="text-center py-4">
-                          <p className="text-gray-600 mb-3">No hotel added</p>
-                          <button
-                            type="button"
-                            onClick={() => updateHotel(city.id, 'name', '')}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                          >
-                            <Plus className="w-4 h-4 inline mr-2" />
-                            Add Hotel
-                          </button>
+                        <div className="space-y-3">
+                          {addingHotel === city.id ? (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                              <TripAdvisorSearch
+                                value={newHotelName}
+                                onChange={setNewHotelName}
+                                onSelect={handleHotelSelect}
+                                placeholder={`Search hotels in ${city.name}...`}
+                                category="hotels"
+                                className="mb-2"
+                                cityName={city.name}
+                                countryName={city.country}
+                              />
+                              {selectedHotelData && (
+                                <div className="mb-2 p-2 bg-white rounded border border-yellow-300">
+                                  <p className="text-xs text-gray-600">
+                                    ✓ Selected: {selectedHotelData.name}
+                                    {selectedHotelData.rating && (
+                                      <span className="ml-2">⭐ {selectedHotelData.rating}</span>
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveHotel(city.id)}
+                                  disabled={!newHotelName.trim()}
+                                  className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleCancelHotel}
+                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="text-center py-4">
+                                <p className="text-gray-600 mb-3">No hotel added</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setAddingHotel(city.id)}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                >
+                                  <Plus className="w-4 h-4 inline mr-2" />
+                                  Add Hotel
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

@@ -1813,9 +1813,11 @@ function DraftEditContent() {
                       value={newHotelName}
                       onChange={setNewHotelName}
                       onSelect={handleHotelSelect}
-                      placeholder="Search for a hotel..."
+                      placeholder={`Search hotels in ${city.name}...`}
                       category="hotels"
                       className="mb-2"
+                      cityName={city.name}
+                      countryName={city.country}
                     />
                     {selectedHotelData && (
                       <div className="mb-2 p-2 bg-white rounded border border-yellow-300">

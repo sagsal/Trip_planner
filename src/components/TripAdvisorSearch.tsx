@@ -35,6 +35,8 @@ interface TripAdvisorSearchProps {
   placeholder?: string;
   category?: 'hotels' | 'restaurants' | 'attractions';
   className?: string;
+  cityName?: string; // City name to include in search
+  countryName?: string; // Country name to include in search
 }
 
 export default function TripAdvisorSearch({
@@ -43,7 +45,9 @@ export default function TripAdvisorSearch({
   onSelect,
   placeholder = 'Search...',
   category,
-  className = ''
+  className = '',
+  cityName,
+  countryName
 }: TripAdvisorSearchProps) {
   const [searchQuery, setSearchQuery] = useState(value);
   const [results, setResults] = useState<TripAdvisorResult[]>([]);
@@ -59,7 +63,10 @@ export default function TripAdvisorSearch({
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (searchQuery.trim().length < 2) {
+    // If we have city name but no query, still search for hotels in that city
+    const shouldSearch = searchQuery.trim().length >= 2 || (cityName && category === 'hotels' && searchQuery.trim().length === 0);
+    
+    if (!shouldSearch) {
       setResults([]);
       setShowResults(false);
       return;
@@ -68,13 +75,32 @@ export default function TripAdvisorSearch({
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        // Build search query: if user types something, use it; otherwise search for hotels in the city
+        let query = searchQuery.trim();
+        
+        // If no query but we have city name, search for hotels in that city
+        if (!query && cityName && category === 'hotels') {
+          // Try simpler query format - just city name works better
+          query = cityName;
+          if (countryName) {
+            query = `${cityName}, ${countryName}`;
+          }
+        } else if (query && cityName && category === 'hotels') {
+          // If user types something, combine with city name for better results
+          query = `${query} ${cityName}`;
+          if (countryName) {
+            query += ` ${countryName}`;
+          }
+        }
+        
         const params = new URLSearchParams({
-          query: searchQuery.trim(),
+          query: query,
         });
         if (category) {
           params.append('category', category);
         }
 
+        console.log('TripAdvisor search query:', query);
         const response = await fetch(`/api/tripadvisor/search?${params.toString()}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -92,6 +118,16 @@ export default function TripAdvisorSearch({
         const data = await response.json();
         console.log('TripAdvisor search response:', data);
         console.log('Results count:', data.results?.length || 0);
+        
+        // Check for error in response
+        if (data.error) {
+          console.error('API returned error:', data.error);
+          setResults([]);
+          setShowResults(true);
+          setSelectedIndex(-1);
+          return;
+        }
+        
         setResults(data.results || []);
         setShowResults(true);
         setSelectedIndex(-1);
@@ -108,7 +144,52 @@ export default function TripAdvisorSearch({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, category]);
+  }, [searchQuery, category, cityName, countryName]);
+
+  // Auto-search for hotels in city when component mounts or city changes
+  useEffect(() => {
+    if (cityName && category === 'hotels' && searchQuery.trim().length === 0) {
+      // Trigger a search for hotels in the city after a short delay
+      const timeoutId = setTimeout(() => {
+        // Try different query formats for better results
+        const queries = [
+          `hotels ${cityName}${countryName ? ` ${countryName}` : ''}`,
+          `hotel ${cityName}`,
+          cityName
+        ];
+        
+        // Try simpler query format - just city name works better with TripAdvisor API
+        const query = cityName + (countryName ? `, ${countryName}` : '');
+        setIsSearching(true);
+        fetch(`/api/tripadvisor/search?query=${encodeURIComponent(query)}&category=hotels`)
+          .then(res => {
+            if (!res.ok) {
+              console.error('Auto-search API error:', res.status, res.statusText);
+              return res.json().then(data => ({ error: data.error || 'API error', results: [] }));
+            }
+            return res.json();
+          })
+          .then(data => {
+            console.log('Auto-search results:', data.results?.length || 0);
+            if (data.error) {
+              console.error('Auto-search API error:', data.error);
+            }
+            setResults(data.results || []);
+            setIsSearching(false);
+            // Show results if we have any
+            if (data.results && data.results.length > 0) {
+              setShowResults(true);
+            }
+          })
+          .catch(err => {
+            console.error('Auto-search error:', err);
+            setIsSearching(false);
+          });
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cityName, countryName, category, searchQuery]); // Include searchQuery to prevent re-running
 
   // Close results when clicking outside
   useEffect(() => {
@@ -183,6 +264,9 @@ export default function TripAdvisorSearch({
           onKeyDown={handleKeyDown}
           onFocus={() => {
             if (results.length > 0) {
+              setShowResults(true);
+            } else if (cityName && category === 'hotels') {
+              // Auto-search for hotels in city when focused
               setShowResults(true);
             }
           }}
@@ -288,14 +372,33 @@ export default function TripAdvisorSearch({
         )}
       </AnimatePresence>
 
-      {showResults && results.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
+      {showResults && results.length === 0 && !isSearching && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
-          <p className="text-center text-gray-500 mb-2">No results found</p>
-          <p className="text-xs text-gray-400 text-center">
-            This may be because your TripAdvisor API key needs to be activated.
-            <br />
-            Visit <a href="https://www.tripadvisor.com/developers" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">TripAdvisor Developer Portal</a> to activate your API key.
+          <p className="text-center text-gray-500 mb-2">
+            {cityName && category === 'hotels' 
+              ? `No hotels found in ${cityName}`
+              : 'No results found'}
           </p>
+          <div className="text-xs text-gray-400 text-center">
+            {searchQuery.trim().length < 2 && cityName && category === 'hotels' 
+              ? (
+                <p>Try typing a hotel name to search, or check the browser console for API errors</p>
+              ) : (
+                <>
+                  <p className="mb-2">This may be because:</p>
+                  <ul className="list-disc list-inside mt-2 text-left max-w-md mx-auto">
+                    <li>Your TripAdvisor API key needs to be activated</li>
+                    <li>Your IP address needs to be whitelisted in TripAdvisor Developer Portal</li>
+                    <li>The server needs to be restarted to load the API key</li>
+                    <li>There are no results for this search</li>
+                  </ul>
+                  <p className="mt-3">
+                    <a href="https://www.tripadvisor.com/developers" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Visit TripAdvisor Developer Portal</a> to check your API settings.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">Check browser console (F12) for detailed error messages</p>
+                </>
+              )}
+          </div>
         </div>
       )}
     </div>

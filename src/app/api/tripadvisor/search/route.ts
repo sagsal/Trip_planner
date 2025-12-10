@@ -39,16 +39,34 @@ export async function GET(request: NextRequest) {
 
     let searchResults;
     try {
+      console.log('Searching TripAdvisor with query:', query, 'category:', category);
       searchResults = await searchTripAdvisor(query, category || undefined);
+      console.log('Search results received:', searchResults.data?.length || 0, 'results');
     } catch (error) {
-      // If search fails, check if it's a "not found" error - return empty results
+      // Log the full error for debugging
+      console.error('TripAdvisor search error:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error message:', errorMessage);
+      
+      // If search fails, check if it's a "not found" error - return empty results
       if (errorMessage.includes('NotFoundException') || errorMessage.includes('code') && errorMessage.includes('101')) {
+        console.log('No results found for query');
         return NextResponse.json({
           results: [],
           total: 0
         });
       }
+      
+      // For 403 errors, return empty results with a helpful message
+      if (errorMessage.includes('403') || errorMessage.includes('not authorized') || errorMessage.includes('Forbidden')) {
+        console.error('API key authorization issue');
+        return NextResponse.json({
+          results: [],
+          total: 0,
+          error: 'API key not authorized. Please check your TripAdvisor API key settings.'
+        });
+      }
+      
       // Re-throw other errors
       throw error;
     }

@@ -37,17 +37,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma
 /src/generated/prisma
 
 # Local Netlify folder
 .netlify
 
-/src/generated/prisma
-
-/src/generated/prisma
-
-# Prevent duplicate favicon conflict
-src/app/favicon.ico
+# Environment variables
+.env
+.env.local
+.env*.local
 
 # Prevent duplicate favicon conflict
 src/app/favicon.ico

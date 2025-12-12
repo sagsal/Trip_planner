@@ -101,16 +101,27 @@ export async function searchTripAdvisor(
   category?: 'hotels' | 'restaurants' | 'attractions'
 ): Promise<TripAdvisorSearchResponse> {
   // TripAdvisor Content API uses 'searchQuery' parameter, not 'query'
+  // Category parameter: "hotels", "attractions", "restaurants", "geos"
   const params = new URLSearchParams({
     key: TRIPADVISOR_API_KEY,
     searchQuery: query,
     language: 'en',
   });
+  
+  // Add category parameter if specified (API supports this directly)
+  if (category) {
+    params.append('category', category);
+  }
 
   const url = `${TRIPADVISOR_BASE_URL}/location/search?${params.toString()}`;
 
   try {
     console.log('TripAdvisor search URL:', url);
+    console.log('Search parameters:', {
+      query: query,
+      category: category || 'none',
+      language: 'en'
+    });
     console.log('Using API Key:', TRIPADVISOR_API_KEY.substring(0, 8) + '...');
     console.log('Environment:', {
       nodeEnv: process.env.NODE_ENV,
@@ -210,8 +221,8 @@ export async function searchTripAdvisor(
       };
     }
     
-    // Filter by category if specified (client-side filtering)
-    // TripAdvisor API doesn't support category parameter in search, so we filter results
+    // Filter by category if specified (additional client-side filtering as fallback)
+    // Note: We also pass category to API, but keep this as backup for edge cases
     let filteredData = data.data;
     if (category) {
       filteredData = data.data.filter((location: TripAdvisorLocation) => {

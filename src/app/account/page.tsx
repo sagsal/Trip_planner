@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2 } from 'lucide-react';
+import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, LogOut } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
 
@@ -312,13 +312,30 @@ function AccountContent() {
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.name}!
-          </h1>
-          <p className="text-gray-600">
-            Manage your trips and share your travel experiences
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back, {user?.name}!
+            </h1>
+            <p className="text-gray-600">
+              Manage your trips and share your travel experiences
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              if (window.confirm('Are you sure you want to sign out?')) {
+                localStorage.removeItem('user');
+                // Dispatch storage event to notify other tabs/windows
+                window.dispatchEvent(new Event('storage'));
+                window.location.href = '/';
+              }
+            }}
+            className="flex items-center px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-300"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </button>
         </div>
 
         {/* Quick Actions */}

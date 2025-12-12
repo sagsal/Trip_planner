@@ -55,9 +55,14 @@ export default function Navigation() {
 
 
   const handleLogout = () => {
+    // Remove user data from localStorage
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setUser(null);
+    
+    // Dispatch storage event to notify other tabs/windows
+    window.dispatchEvent(new Event('storage'));
+    
     // Redirect to home page
     window.location.href = '/';
   };
@@ -84,13 +89,23 @@ export default function Navigation() {
             
             {isAuthenticated ? (
               // Authenticated user - click name to go to dashboard
-              <Link
-                href="/account"
-                className="text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
-              >
-                <User className="w-4 h-4 mr-1" />
-                {user?.name || 'Profile'}
-              </Link>
+              <>
+                <Link
+                  href="/account"
+                  className="text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
+                >
+                  <User className="w-4 h-4 mr-1" />
+                  {user?.name || 'Profile'}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-lg font-bold text-black hover:text-red-600 transition-colors flex items-center"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Sign Out
+                </button>
+              </>
             ) : (
               // Non-authenticated user menu
               <>

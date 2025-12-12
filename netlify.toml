@@ -11,6 +11,7 @@
   DIRECT_URL = "postgresql://postgres.blbyormmingveqiyjudb:Va!S+qsMbXKx!2Y@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
   NEXT_PUBLIC_SUPABASE_URL = "https://blbyormmingveqiyjudb.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsYnlvcm1taW5ndmVxaXlqdWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDI5OTYsImV4cCI6MjA3NjgxODk5Nn0.tIA0d_EvvhYQ0uYQwdzTyaxcoG0PTwpTu6pDMB3Bod8"
+  TRIPADVISOR_API_KEY = "4BD8D2DC82B84E01965E1180DBADE6EC"
 
 # Next.js handles all routing including API routes
 # Remove catch-all redirects that interfere with API routes

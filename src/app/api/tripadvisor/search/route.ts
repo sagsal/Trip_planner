@@ -111,12 +111,25 @@ export async function GET(request: NextRequest) {
     console.error('TripAdvisor API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log environment info for debugging
+    console.error('Environment check:', {
+      hasApiKey: !!process.env.TRIPADVISOR_API_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      apiKeyPrefix: process.env.TRIPADVISOR_API_KEY?.substring(0, 8) || 'NOT_SET'
+    });
+    
     console.error('Error details:', { errorMessage, errorStack });
     
+    // Return more detailed error in production for debugging
     return NextResponse.json(
       { 
         error: 'Failed to search TripAdvisor',
         message: errorMessage,
+        debug: {
+          hasApiKey: !!process.env.TRIPADVISOR_API_KEY,
+          nodeEnv: process.env.NODE_ENV
+        },
         details: process.env.NODE_ENV === 'development' ? errorStack : undefined
       },
       { status: 500 }

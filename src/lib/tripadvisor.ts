@@ -112,9 +112,29 @@ export async function searchTripAdvisor(
   try {
     console.log('TripAdvisor search URL:', url);
     console.log('Using API Key:', TRIPADVISOR_API_KEY.substring(0, 8) + '...');
-    const response = await fetch(url);
+    console.log('Environment:', {
+      nodeEnv: process.env.NODE_ENV,
+      hasEnvKey: !!process.env.TRIPADVISOR_API_KEY,
+      usingFallback: !process.env.TRIPADVISOR_API_KEY
+    });
+    
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
     const responseText = await response.text();
     console.log('TripAdvisor API response status:', response.status);
+    console.log('TripAdvisor API response headers:', Object.fromEntries(response.headers.entries()));
     console.log('TripAdvisor API response:', responseText.substring(0, 1000));
     
     // Parse the response (even if status is not OK, it might contain error info)
@@ -247,6 +267,21 @@ export async function searchTripAdvisor(
     };
   } catch (error) {
     console.error('Error searching TripAdvisor:', error);
+    
+    // Handle timeout/abort errors
+    if (error instanceof Error) {
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        console.error('TripAdvisor API request timed out');
+        throw new Error('TripAdvisor API request timed out. Please try again.');
+      }
+      
+      // Handle network errors
+      if (error.message.includes('fetch') || error.message.includes('network')) {
+        console.error('Network error connecting to TripAdvisor API');
+        throw new Error('Network error connecting to TripAdvisor API. Please check your connection.');
+      }
+    }
+    
     throw error;
   }
 }

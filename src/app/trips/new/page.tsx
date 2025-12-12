@@ -80,6 +80,11 @@ function NewTripContent() {
   const [newHotelName, setNewHotelName] = useState('');
   const [selectedHotelData, setSelectedHotelData] = useState<any>(null);
 
+  // State for TripAdvisor restaurant search
+  const [addingRestaurant, setAddingRestaurant] = useState<{cityId: string; dayId: string} | null>(null);
+  const [newRestaurantName, setNewRestaurantName] = useState('');
+  const [selectedRestaurantData, setSelectedRestaurantData] = useState<any>(null);
+
   // Load user data from localStorage
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -463,16 +468,58 @@ function NewTripContent() {
     ));
   };
 
-  // Restaurant management per day
-  const addRestaurant = (cityId: string, dayId: string) => {
+  // TripAdvisor restaurant handlers
+  const handleRestaurantSelect = useCallback((result: any) => {
+    setSelectedRestaurantData(result);
+  }, []);
+
+  const handleSaveRestaurant = useCallback((cityId: string, dayId: string) => {
+    if (!newRestaurantName.trim()) {
+      return;
+    }
+
+    // Build location string from TripAdvisor data if available
+    let location = '';
+    let rating = 0;
+    let review = '';
+    
+    if (selectedRestaurantData) {
+      const addr = selectedRestaurantData.address_obj;
+      if (addr) {
+        const parts = [
+          addr.street1,
+          addr.city,
+          addr.state,
+          addr.country
+        ].filter(Boolean);
+        location = parts.join(', ');
+      }
+      
+      if (selectedRestaurantData.rating) {
+        rating = Math.round(parseFloat(selectedRestaurantData.rating));
+      }
+      
+      // Store TripAdvisor data as JSON in review field
+      const tripadvisorData = {
+        locationId: selectedRestaurantData.location_id,
+        imageUrl: selectedRestaurantData.photos?.[0]?.images?.large?.url || 
+                 selectedRestaurantData.photos?.[0]?.images?.medium?.url || 
+                 selectedRestaurantData.photos?.[0]?.images?.original?.url || null,
+        numReviews: selectedRestaurantData.num_reviews,
+        webUrl: selectedRestaurantData.web_url || null
+      };
+      review = JSON.stringify(tripadvisorData);
+    }
+
     const newRestaurant: Restaurant = {
       id: Date.now().toString(),
-      name: '',
-      location: '',
-      rating: 0,
-      review: '',
+      name: newRestaurantName.trim(),
+      location: location,
+      rating: rating,
+      review: review,
       liked: null
     };
+
     setCitiesData(prev => prev.map(city => 
       city.id === cityId 
         ? { 
@@ -485,6 +532,22 @@ function NewTripContent() {
           }
         : city
     ));
+
+    // Reset form
+    setAddingRestaurant(null);
+    setNewRestaurantName('');
+    setSelectedRestaurantData(null);
+  }, [newRestaurantName, selectedRestaurantData]);
+
+  const handleCancelRestaurant = useCallback(() => {
+    setAddingRestaurant(null);
+    setNewRestaurantName('');
+    setSelectedRestaurantData(null);
+  }, []);
+
+  // Restaurant management per day (legacy - kept for compatibility)
+  const addRestaurant = (cityId: string, dayId: string) => {
+    setAddingRestaurant({ cityId, dayId });
   };
 
   const updateRestaurant = (cityId: string, dayId: string, restaurantId: string, field: keyof Restaurant, value: any) => {
@@ -1278,34 +1341,102 @@ function NewTripContent() {
                                   <span className="text-xl mr-2">🍽️</span>
                                   Restaurants
                                 </h5>
-                                <button
-                                  type="button"
-                                  onClick={() => addRestaurant(city.id, day.id)}
-                                  className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                >
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  Add Restaurant
-                                </button>
+                                {addingRestaurant?.cityId === city.id && addingRestaurant?.dayId === day.id ? null : (
+                                  <button
+                                    type="button"
+                                    onClick={() => addRestaurant(city.id, day.id)}
+                                    className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                  >
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    Add Restaurant
+                                  </button>
+                                )}
                               </div>
-                              {day.restaurants.length === 0 ? (
+                              {addingRestaurant?.cityId === city.id && addingRestaurant?.dayId === day.id ? (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                                  <TripAdvisorSearch
+                                    value={newRestaurantName}
+                                    onChange={setNewRestaurantName}
+                                    onSelect={handleRestaurantSelect}
+                                    placeholder={`Search restaurants in ${city.name}...`}
+                                    category="restaurants"
+                                    className="mb-2"
+                                    cityName={city.name}
+                                    countryName={city.country}
+                                  />
+                                  {selectedRestaurantData && (
+                                    <div className="mb-2 p-2 bg-white rounded border border-green-300">
+                                      <p className="text-xs text-gray-600">
+                                        ✓ Selected: {selectedRestaurantData.name}
+                                        {selectedRestaurantData.rating && (
+                                          <span className="ml-2">⭐ {selectedRestaurantData.rating}</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveRestaurant(city.id, day.id)}
+                                      disabled={!newRestaurantName.trim()}
+                                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelRestaurant}
+                                      className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : null}
+                              {day.restaurants.length === 0 && (!addingRestaurant || addingRestaurant.cityId !== city.id || addingRestaurant.dayId !== day.id) ? (
                                 <p className="text-gray-500 text-sm text-center py-4">No restaurants added for this day</p>
                               ) : (
-                                day.restaurants.map((restaurant, index) => (
-                                  <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 mb-3 border border-green-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center space-x-2">
-                                        <span className="text-lg">🍽️</span>
-                                        <h6 className="font-semibold text-gray-800">Restaurant {index + 1}</h6>
+                                day.restaurants.map((restaurant, index) => {
+                                  // Parse TripAdvisor data from review field if available
+                                  let tripadvisorData: any = null;
+                                  let imageUrl: string | null = null;
+                                  try {
+                                    if (restaurant.review) {
+                                      tripadvisorData = JSON.parse(restaurant.review);
+                                      imageUrl = tripadvisorData.imageUrl || null;
+                                    }
+                                  } catch (e) {
+                                    // review is not JSON, treat as regular review text
+                                  }
+                                  
+                                  return (
+                                    <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 mb-3 border border-green-200">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-lg">🍽️</span>
+                                          <h6 className="font-semibold text-gray-800">Restaurant {index + 1}</h6>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeRestaurant(city.id, day.id, restaurant.id)}
+                                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
                                       </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => removeRestaurant(city.id, day.id, restaurant.id)}
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                      {imageUrl && (
+                                        <div className="mb-3">
+                                          <img
+                                            src={imageUrl}
+                                            alt={restaurant.name}
+                                            className="w-full h-32 object-cover rounded-lg"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        </div>
+                                      )}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                       <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                                         <input
@@ -1355,7 +1486,8 @@ function NewTripContent() {
                                       />
                                     </div>
                                   </div>
-                                ))
+                                  );
+                                })
                               )}
                             </div>
 

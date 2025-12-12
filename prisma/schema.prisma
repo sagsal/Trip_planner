@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -25,17 +24,17 @@ model User {
 }
 
 model Trip {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
   startDate   DateTime?
   endDate     DateTime?
-  countries   String   // JSON string of countries visited
-  cities      String   // JSON string of cities visited
-  isPublic    Boolean  @default(true)
-  isDraft     Boolean  @default(false) // true for draft trips, false for completed/shared trips
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  countries   String // JSON string of countries visited
+  cities      String // JSON string of cities visited
+  isPublic    Boolean   @default(true)
+  isDraft     Boolean   @default(false) // true for draft trips, false for completed/shared trips
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -46,14 +45,14 @@ model Trip {
 }
 
 model City {
-  id          String   @id @default(cuid())
-  name        String
-  country     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  country   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  tripId      String
-  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripId       String
+  trip         Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
   numberOfDays Int?   @default(1)
 
   hotels      Hotel[]
@@ -64,14 +63,14 @@ model City {
 }
 
 model Hotel {
-  id          String   @id @default(cuid())
-  name        String
-  location    String
-  rating      Int?     // 1-5 stars
-  review      String?
-  liked       Boolean? // true for liked, false for disliked, null for neutral
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  rating    Int? // 1-5 stars
+  review    String?
+  liked     Boolean? // true for liked, false for disliked, null for neutral
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   cityId String
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
@@ -80,14 +79,14 @@ model Hotel {
 }
 
 model Restaurant {
-  id          String   @id @default(cuid())
-  name        String
-  location    String
-  rating      Int?     // 1-5 stars
-  review      String?
-  liked       Boolean? // true for liked, false for disliked, null for neutral
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  rating    Int? // 1-5 stars
+  review    String?
+  liked     Boolean? // true for liked, false for disliked, null for neutral
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   cityId String
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
@@ -96,14 +95,14 @@ model Restaurant {
 }
 
 model Activity {
-  id          String   @id @default(cuid())
-  name        String
-  location    String
-  rating      Int?     // 1-5 stars
-  review      String?
-  liked       Boolean? // true for liked, false for disliked, null for neutral
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  rating    Int? // 1-5 stars
+  review    String?
+  liked     Boolean? // true for liked, false for disliked, null for neutral
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   cityId String
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)

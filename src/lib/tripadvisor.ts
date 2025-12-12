@@ -217,13 +217,26 @@ export async function searchTripAdvisor(
       filteredData = data.data.filter((location: TripAdvisorLocation) => {
         // Skip locations without category (like cities)
         if (!location.category) {
-          // But if the name contains hotel-related keywords, include it
+          // But if the name contains category-related keywords, include it
           const nameLower = location.name?.toLowerCase() || '';
           if (category === 'hotels') {
             return nameLower.includes('hotel') || 
                    nameLower.includes('resort') ||
                    nameLower.includes('lodge') ||
                    nameLower.includes('inn');
+          } else if (category === 'restaurants') {
+            return nameLower.includes('restaurant') || 
+                   nameLower.includes('cafe') ||
+                   nameLower.includes('bistro') ||
+                   nameLower.includes('diner') ||
+                   nameLower.includes('eatery') ||
+                   nameLower.includes('food');
+          } else if (category === 'attractions') {
+            return nameLower.includes('museum') || 
+                   nameLower.includes('park') ||
+                   nameLower.includes('gallery') ||
+                   nameLower.includes('monument') ||
+                   nameLower.includes('landmark');
           }
           return false;
         }
@@ -245,9 +258,17 @@ export async function searchTripAdvisor(
         } else if (category === 'restaurants') {
           return categoryKey.includes('restaurant') || 
                  categoryKey.includes('dining') ||
+                 categoryKey.includes('food') ||
+                 categoryKey.includes('cafe') ||
+                 categoryKey.includes('bistro') ||
                  categoryName.includes('restaurant') ||
                  categoryName.includes('dining') ||
-                 categoryName.includes('food');
+                 categoryName.includes('food') ||
+                 categoryName.includes('cafe') ||
+                 categoryName.includes('bistro') ||
+                 nameLower.includes('restaurant') ||
+                 nameLower.includes('cafe') ||
+                 nameLower.includes('bistro');
         } else if (category === 'attractions') {
           return categoryKey.includes('attraction') || 
                  categoryKey.includes('sight') ||

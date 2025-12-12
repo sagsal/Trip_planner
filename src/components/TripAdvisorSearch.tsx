@@ -63,8 +63,8 @@ export default function TripAdvisorSearch({
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // If we have city name but no query, still search for hotels in that city
-    const shouldSearch = searchQuery.trim().length >= 2 || (cityName && category === 'hotels' && searchQuery.trim().length === 0);
+    // If we have city name but no query, still search for locations in that city
+    const shouldSearch = searchQuery.trim().length >= 2 || (cityName && (category === 'hotels' || category === 'restaurants' || category === 'attractions') && searchQuery.trim().length === 0);
     
     if (!shouldSearch) {
       setResults([]);
@@ -75,17 +75,17 @@ export default function TripAdvisorSearch({
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        // Build search query: if user types something, use it; otherwise search for hotels in the city
+        // Build search query: if user types something, use it; otherwise search for locations in the city
         let query = searchQuery.trim();
         
-        // If no query but we have city name, search for hotels in that city
-        if (!query && cityName && category === 'hotels') {
+        // If no query but we have city name, search for locations in that city
+        if (!query && cityName && (category === 'hotels' || category === 'restaurants' || category === 'attractions')) {
           // Try simpler query format - just city name works better
           query = cityName;
           if (countryName) {
             query = `${cityName}, ${countryName}`;
           }
-        } else if (query && cityName && category === 'hotels') {
+        } else if (query && cityName && (category === 'hotels' || category === 'restaurants' || category === 'attractions')) {
           // If user types something, combine with city name for better results
           query = `${query} ${cityName}`;
           if (countryName) {

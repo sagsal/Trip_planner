@@ -21,6 +21,9 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -c "
+            export NVM_DIR=\"/root/.nvm\" &&
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" &&
+            export PATH=\"/root/.nvm/versions/node/v18.20.8/bin:\$PATH\" &&
             cd /var/www/Trip_planner &&
             git pull origin main &&
             npm install &&

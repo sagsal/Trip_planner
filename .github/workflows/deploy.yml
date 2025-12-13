@@ -20,13 +20,13 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} '
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -c "
             cd /var/www/Trip_planner &&
             git pull origin main &&
             npm install &&
             npm run build &&
             pm2 restart tripplanner || pm2 start npm --name tripplanner -- start &&
             sudo systemctl restart nginx &&
-            echo "✅ Deployment complete!"
-          '
+            echo \"✅ Deployment complete!\"
+          "'
 

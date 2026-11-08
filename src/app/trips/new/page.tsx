@@ -919,7 +919,7 @@ function NewTripContent() {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Trip Information</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Trip Title *
@@ -934,20 +934,7 @@ function NewTripContent() {
                     placeholder="e.g., Singapore Adventure 2024"
                   />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                    placeholder="Tell us about your trip..."
-                  />
-                </div>
+
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

@@ -68,7 +68,11 @@ export async function searchGooglePlaces(
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const msg = data?.error?.message || `HTTP ${res.status}`;
+      const reasons = (data?.error?.details || [])
+        .map((d: any) => [d?.reason, d?.metadata?.service, d?.metadata?.consumer].filter(Boolean).join(' '))
+        .filter(Boolean)
+        .join('; ');
+      const msg = [data?.error?.message || `HTTP ${res.status}`, data?.error?.status, reasons].filter(Boolean).join(' | ');
       console.error('Google Places search failed:', res.status, msg);
       throw new Error(`Google Places: ${msg}`);
     }

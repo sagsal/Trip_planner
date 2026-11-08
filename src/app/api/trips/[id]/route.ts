@@ -614,7 +614,8 @@ export async function PUT(
                   location: restaurant.location,
                   rating: restaurant.rating,
                   review: restaurant.review,
-                  liked: restaurant.liked
+                  liked: restaurant.liked,
+                  dayNumber: Number.isInteger(Number(restaurant.dayNumber)) && Number(restaurant.dayNumber) > 0 ? Number(restaurant.dayNumber) : null
                 }))
               },
               activities: {
@@ -623,7 +624,8 @@ export async function PUT(
                   location: activity.location,
                   rating: activity.rating,
                   review: activity.review,
-                  liked: activity.liked
+                  liked: activity.liked,
+                  dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null
                 }))
               }
             }

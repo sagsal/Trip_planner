@@ -529,10 +529,10 @@ export async function POST(request: NextRequest) {
               activities = [];
               cityData.days.forEach((day: any) => {
                 if (day.restaurants && Array.isArray(day.restaurants)) {
-                  restaurants.push(...day.restaurants);
+                  restaurants.push(...day.restaurants.map((r: any) => ({ ...r, dayNumber: r.dayNumber ?? day.dayNumber })));
                 }
                 if (day.activities && Array.isArray(day.activities)) {
-                  activities.push(...day.activities);
+                  activities.push(...day.activities.map((a: any) => ({ ...a, dayNumber: a.dayNumber ?? day.dayNumber })));
                 }
               });
             }
@@ -556,7 +556,8 @@ export async function POST(request: NextRequest) {
                   location: restaurant.location || '',
                   rating: restaurant.rating || null,
                   review: restaurant.review || null,
-                  liked: restaurant.liked ?? null
+                  liked: restaurant.liked ?? null,
+                  dayNumber: Number.isInteger(Number(restaurant.dayNumber)) && Number(restaurant.dayNumber) > 0 ? Number(restaurant.dayNumber) : null
                 }))
               },
               activities: {
@@ -565,7 +566,8 @@ export async function POST(request: NextRequest) {
                   location: activity.location || '',
                   rating: activity.rating || null,
                   review: activity.review || null,
-                  liked: activity.liked ?? null
+                  liked: activity.liked ?? null,
+                  dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null
                 }))
               }
             };

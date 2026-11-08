@@ -23,6 +23,7 @@ interface Restaurant {
   rating: number;
   review: string;
   liked: boolean | null;
+  dayNumber?: number;
 }
 
 interface Activity {
@@ -32,6 +33,7 @@ interface Activity {
   rating: number;
   review: string;
   liked: boolean | null;
+  dayNumber?: number;
 }
 
 interface Day {
@@ -779,8 +781,8 @@ function NewTripContent() {
         const allActivities: Activity[] = [];
         
         city.days.forEach(day => {
-          allRestaurants.push(...day.restaurants.filter(r => r.name.trim() !== ''));
-          allActivities.push(...day.activities.filter(a => a.name.trim() !== ''));
+          allRestaurants.push(...day.restaurants.filter(r => r.name.trim() !== '').map(r => ({ ...r, dayNumber: day.dayNumber })));
+          allActivities.push(...day.activities.filter(a => a.name.trim() !== '').map(a => ({ ...a, dayNumber: day.dayNumber })));
         });
 
         return {

@@ -67,3 +67,20 @@ jobs:
           sudo systemctl restart nginx
           echo "✅ Deployment complete!"
           REMOTE
+
+      - name: Check TripAdvisor search works (health check, never fails the deploy)
+        continue-on-error: true
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -s' <<'REMOTE'
+          cd /var/www/Trip_planner
+          echo "Key line in .env.local: $(grep -c '^TRIPADVISOR_API_KEY=.\+' .env.local 2>/dev/null || echo 0)"
+          echo "Key line in .env:       $(grep -c '^TRIPADVISOR_API_KEY=.\+' .env 2>/dev/null || echo 0)"
+          sleep 8
+          for q in "Hilton%20Paris" "Taj%20Mumbai"; do
+            echo "--- search hotels: $q"
+            curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
+            echo
+          done
+          echo "--- recent server log lines about TripAdvisor"
+          pm2 logs tripplanner --nostream --lines 300 2>/dev/null | grep -iE "tripadvisor|403|forbidden|not authorized|unauthorized|key" | grep -viE "[0-9A-F]{32}" | tail -25
+          REMOTE

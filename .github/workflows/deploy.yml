@@ -39,17 +39,31 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -c "
-            export NVM_DIR=\"/root/.nvm\" &&
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" &&
-            export PATH=\"/root/.nvm/versions/node/v18.20.8/bin:\$PATH\" &&
-            cd /var/www/Trip_planner &&
-            git pull origin main &&
-            npm install &&
-            npx prisma db push --skip-generate &&
-            npm run build &&
-            pm2 restart tripplanner || pm2 start npm --name tripplanner -- start &&
-            sudo systemctl restart nginx &&
-            echo \"✅ Deployment complete!\"
-          "'
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -s' <<'REMOTE'
+          export NVM_DIR="/root/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || true
+          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
+          set -eo pipefail
+          cd /var/www/Trip_planner
 
+          # The server keeps its own .env (real passwords). Save it, let git
+          # update freely, then always put the server's copy back.
+          ENV_KEEP="$HOME/.trip_planner_env_keep"
+          if [ -f .env ]; then cp .env "$ENV_KEEP"; fi
+          trap 'if [ -f "$ENV_KEEP" ]; then cp "$ENV_KEEP" .env; fi' EXIT
+          git checkout -- .env 2>/dev/null || true
+
+          git pull origin main
+          if [ -f "$ENV_KEEP" ]; then cp "$ENV_KEEP" .env; fi
+
+          npm install
+          npx prisma db push --skip-generate
+          npm run build
+
+          # Exactly one copy of the site: remove any old/duplicate processes, start fresh
+          pm2 delete tripplanner >/dev/null 2>&1 || true
+          pm2 start npm --name tripplanner -- start
+          pm2 save
+          sudo systemctl restart nginx
+          echo "✅ Deployment complete!"
+          REMOTE

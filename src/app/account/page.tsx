@@ -200,6 +200,7 @@ function AccountContent() {
         // If trip not found, it might already be deleted, so just remove from UI
         if (response.status === 404) {
           setTrips(prevTrips => prevTrips.filter(trip => trip.id !== tripId));
+          setPrivateTrips(prev => prev.filter(trip => trip.id !== tripId));
           alert('Trip was already deleted.');
           return;
         }
@@ -209,6 +210,7 @@ function AccountContent() {
 
       // Remove the trip from the local state
       setTrips(prevTrips => prevTrips.filter(trip => trip.id !== tripId));
+          setPrivateTrips(prev => prev.filter(trip => trip.id !== tripId));
       
       alert('Trip deleted successfully!');
     } catch (error) {
@@ -252,6 +254,16 @@ function AccountContent() {
       setDeletingDraft(null);
     }
   };
+
+  // Every trip the user has made, newest first, tagged with its status
+  type TripStatus = 'Draft' | 'Private' | 'Shared';
+  const allMyTrips: { trip: Trip; status: TripStatus }[] = [
+    ...draftTrips.map((trip) => ({ trip, status: 'Draft' as TripStatus })),
+    ...privateTrips.map((trip) => ({ trip, status: 'Private' as TripStatus })),
+    ...trips.map((trip) => ({ trip, status: 'Shared' as TripStatus })),
+  ]
+    .filter((item, i, arr) => arr.findIndex((x) => x.trip.id === item.trip.id) === i)
+    .sort((a, b) => new Date(b.trip.createdAt || 0).getTime() - new Date(a.trip.createdAt || 0).getTime());
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -386,279 +398,119 @@ function AccountContent() {
           </div>
         )}
 
-        {/* Draft Trips */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Draft Trips</h2>
-          </div>
-          <p className="text-gray-600 text-sm mb-6">
-            Create draft trips to collect ideas from other travelers. Add items from shared trips, then click "Share Trip" when ready to publish.
-          </p>
-          {draftTrips.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {draftTrips.map((trip, index) => (
-                <motion.div
-                  key={trip.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow border-2 border-yellow-200"
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900">{trip.title}</h3>
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                            DRAFT
-                          </span>
-                        </div>
-                        {trip.description && (
-                          <p className="text-gray-600 text-sm mb-2 line-clamp-2">{trip.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-1">Countries: {parseCountries(trip.countries).join(', ') || 'Not set'}</p>
-                      <p className="text-sm text-gray-600">Cities: {parseCities(trip.cities).join(', ') || 'Not set'}</p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.hotels.length, 0) || 0} hotels</span>
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.restaurants.length, 0) || 0} restaurants</span>
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.activities.length, 0) || 0} activities</span>
-                    </div>
-                    
-                    <div className="flex flex-col space-y-2">
-                      <Link
-                        href={`/trips/build/${trip.id}`}
-                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700 transition-colors flex items-center justify-center font-semibold"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit Draft
-                      </Link>
-                      <Link
-                        href={`/trips/${trip.id}/share`}
-                        className="w-full bg-[#AAB624] text-white px-4 py-2 rounded-lg text-center hover:bg-[#AAB624]/90 transition-colors flex items-center justify-center font-semibold"
-                      >
-                        <Share2 className="w-4 h-4 mr-1" />
-                        Share Trip
-                      </Link>
-                      <button
-                        onClick={() => handleDeleteDraft(trip.id, trip.title)}
-                        disabled={deletingDraft === trip.id || deletingDraft !== null}
-                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg text-center hover:bg-red-700 transition-colors flex items-center justify-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {deletingDraft === trip.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            Deleting...
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                          </>
-                        )}
-                      </button>
-                      <p className="text-xs text-gray-500 text-center mt-1">
-                        Share anytime when ready
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center border-2 border-dashed border-yellow-200">
-              <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Draft Trips Yet</h3>
-              <p className="text-gray-600 mb-6">
-                Start building your trip by collecting ideas from other travelers!
-              </p>
-              <Link
-                href="/trips/build"
-                className="inline-flex items-center px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors font-semibold"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Build Your First Trip
-              </Link>
-            </div>
-          )}
-        </div>
+        {/* My Trips: one list of every trip the user has made */}
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-semibold text-[#2F4A5C] mb-4">My Trips</h2>
 
-        {/* Private Finalized Trips */}
-        {privateTrips.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Private Trips</h2>
-            </div>
-            <p className="text-gray-600 mb-4 text-sm">
-              These are your finalized private trips (not published).
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {privateTrips.map((trip, index) => (
-                <motion.div
-                  key={trip.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{trip.title}</h3>
-                      {trip.description && (
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{trip.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center text-gray-600 text-sm mb-4 space-x-4">
-                    {trip.startDate && trip.endDate && (
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        <span>
-                          {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Link
-                      href={`/trips/${trip.id}`}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteTrip(trip.id, trip.title)}
-                      disabled={deletingTrip === trip.id}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center text-sm font-medium disabled:opacity-50"
-                    >
-                      {deletingTrip === trip.id ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
-                      )}
-                      Delete
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* My Shared Trips */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">My Shared Trips</h2>
-          {error && trips.length === 0 ? (
-            <div className="text-center py-12">
-              <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to load trips</h3>
-              <p className="text-gray-600 mb-6">{error}</p>
+          {error && allMyTrips.length === 0 ? (
+            <div className="bg-white rounded-xl border border-[#E4DED4] p-8 text-center">
+              <AlertCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
+              <p className="text-[#2F4A5C] font-medium mb-1">Unable to load your trips</p>
+              <p className="text-[#6B7A83] text-sm mb-5">{error}</p>
               <button
                 onClick={() => fetchUserTrips(true)}
                 disabled={isRetrying}
-                className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-5 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`w-5 h-5 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
-                {isRetrying ? 'Retrying...' : 'Try Again'}
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+                {isRetrying ? 'Retrying...' : 'Try again'}
               </button>
             </div>
-          ) : trips.length === 0 ? (
-            <div className="text-center py-12">
-              <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No trips yet</h3>
-              <p className="text-gray-600 mb-6">Start documenting your travel adventures!</p>
+          ) : allMyTrips.length === 0 ? (
+            <div className="bg-white rounded-xl border border-dashed border-[#D9D2C7] p-8 text-center">
+              <p className="text-[#2F4A5C] font-medium mb-1">No trips yet</p>
+              <p className="text-[#6B7A83] text-sm mb-5">Trips you add will be listed here.</p>
               <Link
                 href="/trips/new"
-                className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors"
+                className="inline-flex items-center px-5 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Add Your First Trip
+                <Plus className="w-4 h-4 mr-2" />
+                Add your trip
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {trips.map((trip, index) => (
-                <motion.div
-                  key={trip.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-xl font-semibold text-gray-900">{trip.title}</h3>
-                      <div className="flex space-x-2">
-                        <Link
-                          href={`/trips/${trip.id}/edit`}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                        <button 
-                          onClick={() => handleDeleteTrip(trip.id, trip.title)}
-                          disabled={deletingTrip === trip.id || deletingTrip !== null}
-                          className="text-gray-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={deletingTrip === trip.id ? "Deleting..." : "Delete trip"}
-                        >
-                          {deletingTrip === trip.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
+            <ul className="bg-white rounded-xl border border-[#E4DED4] divide-y divide-[#EEE8DF] overflow-hidden">
+              {allMyTrips.map(({ trip, status }) => {
+                const places = [...parseCities(trip.cities), ...parseCountries(trip.countries)]
+                  .filter(Boolean)
+                  .slice(0, 4)
+                  .join(', ');
+                const hasDates = !!(trip.startDate && trip.endDate);
+                const openHref = status === 'Draft' ? `/trips/build/${trip.id}` : `/trips/${trip.id}`;
+                const editHref = status === 'Draft' ? `/trips/build/${trip.id}` : `/trips/${trip.id}/edit`;
+                const isDeleting = status === 'Draft' ? deletingDraft === trip.id : deletingTrip === trip.id;
+                const badge =
+                  status === 'Draft'
+                    ? 'bg-[#F3EBDD] text-[#8A6D3B]'
+                    : status === 'Private'
+                    ? 'bg-[#ECEAE6] text-[#5B6B75]'
+                    : 'bg-[#E3ECEF] text-[#3F5B6A]';
+                return (
+                  <li key={trip.id} className="flex items-center gap-4 px-4 sm:px-5 py-4 hover:bg-[#FBF9F5] transition-colors">
+                    <Link href={openHref} className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-[#2F4A5C] truncate">{trip.title || 'Untitled trip'}</span>
+                        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${badge}`}>{status}</span>
                       </div>
-                    </div>
-                    
-                    {trip.description && (
-                      <p className="text-gray-600 mb-4 line-clamp-2">{trip.description}</p>
-                    )}
-                    
-                    <div className="flex items-center text-sm text-gray-500 mb-4">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                    </div>
-                    
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-1">Countries: {parseCountries(trip.countries).join(', ')}</p>
-                      <p className="text-sm text-gray-600">Cities: {parseCities(trip.cities).join(', ')}</p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.hotels.length, 0) || 0} hotels</span>
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.restaurants.length, 0) || 0} restaurants</span>
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.activities.length, 0) || 0} activities</span>
-                    </div>
-                    
-                    <div className="flex space-x-2">
+                      <div className="flex flex-wrap items-center gap-x-3 text-sm text-[#6B7A83]">
+                        {hasDates && (
+                          <span className="inline-flex items-center">
+                            <Calendar className="w-3.5 h-3.5 mr-1" />
+                            {formatDate(trip.startDate)} – {formatDate(trip.endDate)}
+                          </span>
+                        )}
+                        {places && (
+                          <span className="inline-flex items-center truncate">
+                            <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
+                            <span className="truncate">{places}</span>
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {status === 'Draft' ? (
+                        <Link
+                          href={`/trips/${trip.id}/share`}
+                          className="p-2 rounded-lg text-[#6B7A83] hover:text-[#2F4A5C] hover:bg-[#F1ECE4]"
+                          title="Share trip"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/trips/${trip.id}`}
+                          className="p-2 rounded-lg text-[#6B7A83] hover:text-[#2F4A5C] hover:bg-[#F1ECE4]"
+                          title="View trip"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      )}
                       <Link
-                        href={`/trips/${trip.id}`}
-                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700 transition-colors flex items-center justify-center"
+                        href={editHref}
+                        className="p-2 rounded-lg text-[#6B7A83] hover:text-[#2F4A5C] hover:bg-[#F1ECE4]"
+                        title="Edit trip"
                       >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
+                        <Edit className="w-4 h-4" />
                       </Link>
-                      <Link
-                        href={`/trips/${trip.id}/edit`}
-                        className="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-center hover:bg-gray-50 transition-colors flex items-center justify-center"
+                      <button
+                        onClick={() =>
+                          status === 'Draft'
+                            ? handleDeleteDraft(trip.id, trip.title)
+                            : handleDeleteTrip(trip.id, trip.title)
+                        }
+                        disabled={deletingTrip !== null || deletingDraft !== null}
+                        className="p-2 rounded-lg text-[#6B7A83] hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete trip"
                       >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Link>
+                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
-
       </div>
     </div>
   );

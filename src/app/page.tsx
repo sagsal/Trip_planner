@@ -1,10 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
-import { MapPin, Plane, Heart } from 'lucide-react';
+import { Plane } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 function HomeContent() {
@@ -92,30 +91,6 @@ function HomeContent() {
                       capture every moment of your journey.
                     </p>
           </motion.div>
-
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 sm:mb-16 px-4 sm:px-0"
-          >
-                    <Link
-                      href="/register"
-                      className="w-full sm:w-auto bg-[#F13B13] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
-                    >
-                      <Heart className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      Register
-                    </Link>
-                    <Link
-                      href="/trips"
-                      className="w-full sm:w-auto bg-[#F13B13] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-[#F13B13]/90 transition-all duration-300 flex items-center justify-center"
-                    >
-                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      Explore Trips
-                    </Link>
-          </motion.div>
-
 
           {/* Success Message */}
           {successMessage && (

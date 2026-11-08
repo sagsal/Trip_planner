@@ -38,58 +38,17 @@ function HomeContent() {
           transition={{ duration: 0.8 }}
           className="max-w-4xl mx-auto w-full"
         >
-          {/* Logo/Title */}
+          {/* Headline */}
           <motion.div
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-8"
+            className="flex flex-col items-center px-4 sm:px-0"
           >
-                    <div className="flex flex-col sm:flex-row items-center justify-center mb-4 sm:mb-6">
-                      <motion.div
-                        animate={{
-                          x: [0, 30, -15, 25, -5, 0],
-                          y: [0, -15, 8, -12, 3, 0],
-                          rotate: [0, 8, -5, 12, -3, 0],
-                          scale: [1, 1.1, 0.95, 1.05, 1],
-                        }}
-                        transition={{
-                          duration: 10,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        className="mb-4 sm:mb-0 sm:mr-4 relative"
-                      >
-                        {/* Vapor trail effect */}
-                        <div className="absolute -left-4 sm:-left-8 top-1/2 transform -translate-y-1/2 w-3 sm:w-6 h-0.5 bg-gradient-to-r from-transparent via-blue-200/30 to-transparent rounded-full"></div>
-                        {/* Glow effect */}
-                        <div className="absolute inset-0 bg-blue-400/20 rounded-full blur-sm animate-pulse"></div>
-                        <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-white drop-shadow-lg relative z-10" />
-                      </motion.div>
-                      <h1 className="text-4xl sm:text-6xl lg:text-8xl font-bold text-white drop-shadow-lg text-center sm:text-left">
-                        Share and Plan
-                      </h1>
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-slate-100 font-light drop-shadow px-4 sm:px-0">
-                      the Ultimate Trip Planning Tool
-                    </p>
-          </motion.div>
-
-          {/* Main CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="mb-12"
-          >
-            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-white mb-4 sm:mb-6 drop-shadow-md px-4 sm:px-0">
-              Plan, Share & Build Amazing Trips
-            </h2>
-                    <p className="text-base sm:text-lg lg:text-xl text-slate-100 mb-6 sm:mb-8 drop-shadow max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
-                      Create detailed trip journals, share your experiences, and discover new destinations
-                      through the eyes of fellow travelers. From hotels to restaurants, activities to reviews -
-                      capture every moment of your journey.
-                    </p>
+            <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-white drop-shadow-lg mb-6" />
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white drop-shadow-lg leading-tight max-w-4xl">
+              Build your next trip with help from fellow travelers
+            </h1>
           </motion.div>
 
           {/* Success Message */}

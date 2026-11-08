@@ -14,6 +14,7 @@ interface Trip {
   countries: string;
   cities: string;
   isPublic: boolean;
+  isDraft?: boolean;
   cities_data: CityData[];
 }
 
@@ -492,6 +493,15 @@ function EditTripContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // For drafts: "Save draft" keeps it a draft, "Publish trip" shares it
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const publishing = !!trip?.isDraft && submitter?.value === 'publish';
+    if (publishing && (!formData.startDate || !formData.endDate)) {
+      setError('Please add a start date and end date before publishing');
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -515,7 +525,8 @@ function EditTripContent() {
         })),
         userId: user.id,
         userName: user.name,
-        userEmail: user.email
+        userEmail: user.email,
+        ...(publishing ? { isDraft: false, isPublic: true } : {})
       };
 
       // Create AbortController for timeout
@@ -546,7 +557,7 @@ function EditTripContent() {
         throw new Error(errorData.error || 'Failed to update trip');
       }
 
-      setSuccess('Trip updated successfully!');
+      setSuccess(publishing ? 'Trip published!' : trip?.isDraft ? 'Draft saved!' : 'Trip updated successfully!');
       setTimeout(() => {
         router.push('/account');
       }, 2000);
@@ -1046,13 +1057,35 @@ function EditTripContent() {
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50"
-              >
-                {saving ? 'Updating...' : 'Update Trip'}
-              </button>
+              {trip?.isDraft ? (
+                <>
+                  <button
+                    type="submit"
+                    value="draft"
+                    formNoValidate
+                    disabled={saving}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save draft'}
+                  </button>
+                  <button
+                    type="submit"
+                    value="publish"
+                    disabled={saving}
+                    className="px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Publishing...' : 'Publish trip'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Updating...' : 'Update Trip'}
+                </button>
+              )}
             </div>
           </form>
         </div>

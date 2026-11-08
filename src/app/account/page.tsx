@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass } from 'lucide-react';
+import { Plus, MapPin, Calendar, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
 
@@ -419,14 +419,9 @@ function AccountContent() {
           ) : allMyTrips.length === 0 ? (
             <div className="bg-white rounded-xl border border-dashed border-[#D9D2C7] p-8 text-center">
               <p className="text-[#2F4A5C] font-medium mb-1">No trips yet</p>
-              <p className="text-[#6B7A83] text-sm mb-5">Trips you add will be listed here.</p>
-              <Link
-                href="/trips/new"
-                className="inline-flex items-center px-5 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add your trip
-              </Link>
+              <p className="text-[#6B7A83] text-sm">
+                When you add a trip or save a draft, it will show up here so you can keep working on it.
+              </p>
             </div>
           ) : (
             <ul className="bg-white rounded-xl border border-[#E4DED4] divide-y divide-[#EEE8DF] overflow-hidden">
@@ -436,8 +431,8 @@ function AccountContent() {
                   .slice(0, 4)
                   .join(', ');
                 const hasDates = !!(trip.startDate && trip.endDate);
-                const openHref = status === 'Draft' ? `/trips/build/${trip.id}` : `/trips/${trip.id}`;
-                const editHref = status === 'Draft' ? `/trips/build/${trip.id}` : `/trips/${trip.id}/edit`;
+                // Clicking a trip opens it to keep adding to it
+                const openHref = `/trips/${trip.id}/edit`;
                 const isDeleting = status === 'Draft' ? deletingDraft === trip.id : deletingTrip === trip.id;
                 const badge =
                   status === 'Draft'
@@ -447,7 +442,7 @@ function AccountContent() {
                     : 'bg-[#E3ECEF] text-[#3F5B6A]';
                 return (
                   <li key={trip.id} className="flex items-center gap-4 px-4 sm:px-5 py-4 hover:bg-[#FBF9F5] transition-colors">
-                    <Link href={openHref} className="flex-1 min-w-0">
+                    <Link href={openHref} className="flex-1 min-w-0" title="Continue working on this trip">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-[#2F4A5C] truncate">{trip.title || 'Untitled trip'}</span>
                         <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${badge}`}>{status}</span>
@@ -485,13 +480,6 @@ function AccountContent() {
                           <Eye className="w-4 h-4" />
                         </Link>
                       )}
-                      <Link
-                        href={editHref}
-                        className="p-2 rounded-lg text-[#6B7A83] hover:text-[#2F4A5C] hover:bg-[#F1ECE4]"
-                        title="Edit trip"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Link>
                       <button
                         onClick={() =>
                           status === 'Draft'

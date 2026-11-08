@@ -647,6 +647,16 @@ function NewTripContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Which button was pressed: "Save as draft" or "Save Trip"
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const saveAsDraft = submitter?.value === 'draft';
+
+    if (saveAsDraft && !formData.title.trim()) {
+      setError('Please give your trip a title before saving a draft');
+      return;
+    }
+
     setIsLoading(true);
 
     if (!user) {
@@ -722,7 +732,7 @@ function NewTripContent() {
             userId: user.id,
             userName: user.name,
             userEmail: user.email,
-            isDraft: false // This is a shared trip, not a draft
+            isDraft: saveAsDraft // Drafts stay private and can be finished later
           }),
           signal: controller.signal,
         });
@@ -1610,6 +1620,16 @@ function NewTripContent() {
               </button>
               <button
                 type="submit"
+                value="draft"
+                formNoValidate
+                disabled={isLoading}
+                className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save as draft
+              </button>
+              <button
+                type="submit"
+                value="publish"
                 disabled={isLoading}
                 className="flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

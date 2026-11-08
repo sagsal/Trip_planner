@@ -24,11 +24,11 @@ function HomeContent() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(/pexels-bella-white-201200-635279.jpg)',
+          backgroundImage: 'url(/sea-muted.jpg)',
         }}
       >
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/45 via-slate-900/55 to-slate-900/65"></div>
       </div>
 
       {/* Main Content */}
@@ -65,13 +65,13 @@ function HomeContent() {
                         <div className="absolute -left-4 sm:-left-8 top-1/2 transform -translate-y-1/2 w-3 sm:w-6 h-0.5 bg-gradient-to-r from-transparent via-blue-200/30 to-transparent rounded-full"></div>
                         {/* Glow effect */}
                         <div className="absolute inset-0 bg-blue-400/20 rounded-full blur-sm animate-pulse"></div>
-                        <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-black drop-shadow-lg relative z-10" />
+                        <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-white drop-shadow-lg relative z-10" />
                       </motion.div>
-                      <h1 className="text-4xl sm:text-6xl lg:text-8xl font-bold text-black drop-shadow-lg text-center sm:text-left">
+                      <h1 className="text-4xl sm:text-6xl lg:text-8xl font-bold text-white drop-shadow-lg text-center sm:text-left">
                         Share and Plan
                       </h1>
                     </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-black font-light px-4 sm:px-0">
+                    <p className="text-lg sm:text-xl lg:text-2xl text-slate-100 font-light drop-shadow px-4 sm:px-0">
                       the Ultimate Trip Planning Tool
                     </p>
           </motion.div>
@@ -83,10 +83,10 @@ function HomeContent() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mb-12"
           >
-            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-black mb-4 sm:mb-6 drop-shadow-md px-4 sm:px-0">
+            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-semibold text-white mb-4 sm:mb-6 drop-shadow-md px-4 sm:px-0">
               Plan, Share & Build Amazing Trips
             </h2>
-                    <p className="text-base sm:text-lg lg:text-xl text-black mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
+                    <p className="text-base sm:text-lg lg:text-xl text-slate-100 mb-6 sm:mb-8 drop-shadow max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
                       Create detailed trip journals, share your experiences, and discover new destinations
                       through the eyes of fellow travelers. From hotels to restaurants, activities to reviews -
                       capture every moment of your journey.

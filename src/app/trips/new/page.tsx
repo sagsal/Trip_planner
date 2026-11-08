@@ -986,26 +986,25 @@ function NewTripContent() {
 
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Days *
+                  Number of Days
                 </label>
-                <select
-                  name="numberOfDays"
-                  value={formData.numberOfDays}
-                  onChange={(e) => setFormData(prev => ({ ...prev, numberOfDays: e.target.value }))}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                >
-                  <option value="">Select number of days</option>
-                  {Array.from({ length: Math.max(90, Number(formData.numberOfDays) || 0) }, (_, i) => i + 1).map(num => (
-                    <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
-                  ))}
-                </select>
-                {daysBetween(formData.startDate, formData.endDate) && (
-                  <p className="mt-1 text-xs text-gray-500">Worked out from your dates. You can still change it.</p>
-                )}
-                {formData.startDate && formData.endDate && !daysBetween(formData.startDate, formData.endDate) && (
-                  <p className="mt-1 text-xs text-red-600">The end date is before the start date.</p>
-                )}
+                {(() => {
+                  const days = daysBetween(formData.startDate, formData.endDate);
+                  const badRange = !!(formData.startDate && formData.endDate && !days);
+                  return (
+                    <>
+                      <div
+                        className={`w-full px-4 py-3 rounded-lg border ${badRange ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'} ${days ? 'text-black font-medium' : 'text-gray-400'}`}
+                        aria-live="polite"
+                      >
+                        {days ? `${days} ${days === '1' ? 'day' : 'days'}` : 'Add your start and end dates'}
+                      </div>
+                      {badRange && (
+                        <p className="mt-1 text-xs text-red-600">The end date is before the start date.</p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
                   </div>

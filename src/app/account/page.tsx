@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Star, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, LogOut } from 'lucide-react';
+import { Plus, MapPin, Calendar, Edit, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
 
@@ -309,101 +309,65 @@ function AccountContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, {user?.name}!
-            </h1>
-            <p className="text-gray-600">
-              Manage your trips and share your travel experiences
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              if (window.confirm('Are you sure you want to sign out?')) {
-                localStorage.removeItem('user');
-                // Dispatch storage event to notify other tabs/windows
-                window.dispatchEvent(new Event('storage'));
-                window.location.href = '/';
-              }
-            }}
-            className="flex items-center px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-300"
-            title="Sign Out"
+    <div className="min-h-screen bg-[#F6F2EC] pt-16">
+      {/* Welcome + main actions */}
+      <div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-16 text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl sm:text-4xl font-semibold text-[#2F4A5C] mb-3"
           >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </button>
-        </div>
+            Welcome back{user?.name ? `, ${user.name}` : ''}
+          </motion.h1>
+          <p className="text-lg text-[#5B6B75] mb-10">
+            What would you like to do today?
+          </p>
 
-        {/* Quick Actions */}
-        <div className="mb-8 space-y-3">
-          <Link
-            href="/trips/new"
-            className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors shadow-lg"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add New Trip
-          </Link>
-          <div>
-            <Link
-              href="/trips/build"
-              className="inline-flex items-center px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors shadow-lg"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 max-w-3xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Build a Trip
-            </Link>
+              <Link
+                href="/trips/new"
+                className="group flex flex-col items-center justify-center h-full rounded-xl bg-[#4A6878] text-white px-6 py-10 shadow-sm hover:bg-[#3F5B6A] transition-colors duration-200"
+              >
+                <span className="flex items-center justify-center w-14 h-14 rounded-full bg-white/15 mb-4 group-hover:bg-white/25 transition-colors">
+                  <Plus className="w-7 h-7" />
+                </span>
+                <span className="text-xl font-medium">Add your trip</span>
+                <span className="mt-2 text-white/80 text-sm sm:text-base">
+                  Share where you went, where you stayed and what you loved
+                </span>
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Link
+                href="/trips"
+                className="group flex flex-col items-center justify-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-6 py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
+              >
+                <span className="flex items-center justify-center w-14 h-14 rounded-full bg-[#E9E3DA] mb-4 group-hover:bg-[#E2DBD0] transition-colors">
+                  <Compass className="w-7 h-7" />
+                </span>
+                <span className="text-xl font-medium">Browse trips</span>
+                <span className="mt-2 text-[#6B7A83] text-sm sm:text-base">
+                  Get ideas from fellow travelers
+                </span>
+              </Link>
+            </motion.div>
           </div>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <MapPin className="w-8 h-8 text-blue-600 mr-3" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Trips</p>
-                <p className="text-2xl font-bold text-gray-900">{trips.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <Star className="w-8 h-8 text-yellow-500 mr-3" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Hotels Reviewed</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {trips.reduce((acc, trip) => acc + (trip.cities_data?.reduce((cityTotal, city) => cityTotal + city.hotels.length, 0) || 0), 0)}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <Star className="w-8 h-8 text-green-500 mr-3" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Restaurants</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {trips.reduce((acc, trip) => acc + (trip.cities_data?.reduce((cityTotal, city) => cityTotal + city.restaurants.length, 0) || 0), 0)}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <Star className="w-8 h-8 text-purple-500 mr-3" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Activities</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {trips.reduce((acc, trip) => acc + (trip.cities_data?.reduce((cityTotal, city) => cityTotal + city.activities.length, 0) || 0), 0)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
@@ -425,7 +389,7 @@ function AccountContent() {
         {/* Draft Trips */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">📝 Draft Trips</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Draft Trips</h2>
           </div>
           <p className="text-gray-600 text-sm mb-6">
             Create draft trips to collect ideas from other travelers. Add items from shared trips, then click "Share Trip" when ready to publish.
@@ -528,7 +492,7 @@ function AccountContent() {
         {privateTrips.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">🔒 Private Trips</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Private Trips</h2>
             </div>
             <p className="text-gray-600 mb-4 text-sm">
               These are your finalized private trips (not published).
@@ -695,16 +659,6 @@ function AccountContent() {
           )}
         </div>
 
-        {/* All Trips Link */}
-        <div className="text-center">
-          <Link
-            href="/trips"
-            className="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <MapPin className="w-5 h-5 mr-2" />
-            View All Public Trips
-          </Link>
-        </div>
       </div>
     </div>
   );

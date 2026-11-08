@@ -23,11 +23,11 @@ function HomeContent() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(/sea-muted.jpg)',
+          backgroundImage: 'url(/sea-warm.jpg)',
         }}
       >
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/45 via-slate-900/55 to-slate-900/65"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/10"></div>
       </div>
 
       {/* Main Content */}
@@ -45,8 +45,8 @@ function HomeContent() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex flex-col items-center px-4 sm:px-0"
           >
-            <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-white drop-shadow-lg mb-6" />
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white drop-shadow-lg leading-tight max-w-4xl">
+            <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-[#143C5A] mb-6" />
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-[#143C5A] leading-tight max-w-4xl">
               Build your next trip with help from fellow travelers
             </h1>
           </motion.div>

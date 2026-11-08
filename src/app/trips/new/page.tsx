@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
@@ -48,6 +48,8 @@ interface CityData {
   numberOfDays: number;
   hotel: Hotel | null;
   days: Day[];
+  // Extra hotels from older trips (the form shows one hotel per city); kept so nothing is lost on save
+  extraHotels?: Hotel[];
 }
 
 function NewTripContent() {
@@ -66,6 +68,12 @@ function NewTripContent() {
   });
 
   const [citiesData, setCitiesData] = useState<CityData[]>([]);
+
+  // Reopening a saved trip: /trips/new?id=TRIP_ID
+  const searchParams = useSearchParams();
+  const editingId = searchParams.get('id');
+  const [editingStatus, setEditingStatus] = useState<'draft' | 'private' | 'shared' | null>(null);
+  const [loadingTrip, setLoadingTrip] = useState(!!editingId);
 
   // State for adding new city
   const [selectedCountry, setSelectedCountry] = useState('');
@@ -95,6 +103,85 @@ function NewTripContent() {
       router.push('/login');
     }
   }, [router]);
+
+  // Load a saved trip into the form so the user can keep adding to it
+  useEffect(() => {
+    if (!editingId) return;
+    let cancelled = false;
+
+    const toItem = (x: any, fallbackId: string) => ({
+      id: String(x?.id ?? fallbackId),
+      name: x?.name ?? '',
+      location: x?.location ?? '',
+      rating: typeof x?.rating === 'number' ? x.rating : 0,
+      review: x?.review ?? '',
+      liked: typeof x?.liked === 'boolean' ? x.liked : null,
+    });
+    const toDateInput = (d: any) => {
+      if (!d) return '';
+      const date = new Date(d);
+      return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+    };
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/trips/${editingId}`);
+        if (!res.ok) throw new Error('Could not load this trip');
+        const trip = await res.json();
+        if (cancelled) return;
+
+        setEditingStatus(trip.isDraft ? 'draft' : trip.isPublic === false ? 'private' : 'shared');
+        setFormData(prev => ({
+          ...prev,
+          title: trip.title ?? '',
+          description: trip.description ?? '',
+          startDate: toDateInput(trip.startDate),
+          endDate: toDateInput(trip.endDate),
+        }));
+
+        const loadedCities: CityData[] = (trip.cities_data || []).map((city: any, ci: number) => {
+          const cityId = String(city.id ?? `loaded-${ci}`);
+          const restaurants = (city.restaurants || []).map((r: any, i: number) => toItem(r, `${cityId}-r-${i}`));
+          const activities = (city.activities || []).map((a: any, i: number) => toItem(a, `${cityId}-a-${i}`));
+          const n = Math.max(1, Number(city.numberOfDays) || 1);
+          const days: Day[] = Array.from({ length: n }, (_, i) => ({
+            id: `${cityId}-day-${i + 1}`,
+            dayNumber: i + 1,
+            restaurants: [],
+            activities: [],
+          }));
+          // Put each item back on its day when we know it, otherwise on Day 1
+          const place = (item: any, raw: any, key: 'restaurants' | 'activities') => {
+            const dn = Number(raw?.dayNumber);
+            const day = dn >= 1 && dn <= n ? days[dn - 1] : days[0];
+            day[key].push(item);
+          };
+          restaurants.forEach((r: Restaurant, i: number) => place(r, city.restaurants[i], 'restaurants'));
+          activities.forEach((a: Activity, i: number) => place(a, city.activities[i], 'activities'));
+
+          const hotels = (city.hotels || []).map((h: any, i: number) => toItem(h, `${cityId}-h-${i}`));
+          return {
+            id: cityId,
+            name: city.name ?? '',
+            country: city.country ?? '',
+            numberOfDays: n,
+            hotel: hotels[0] ?? null,
+            days,
+            extraHotels: hotels.slice(1),
+          };
+        });
+        setCitiesData(loadedCities);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load this trip');
+      } finally {
+        if (!cancelled) setLoadingTrip(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editingId]);
 
   // All countries of the world with selected cities - memoized for performance
   const countriesData = useMemo(() => ({
@@ -700,7 +787,10 @@ function NewTripContent() {
           name: city.name,
           country: city.country,
           numberOfDays: city.numberOfDays,
-          hotels: city.hotel && city.hotel.name.trim() ? [city.hotel] : [],
+          hotels: [
+            ...(city.hotel && city.hotel.name.trim() ? [city.hotel] : []),
+            ...(city.extraHotels || []).filter(h => h.name.trim() !== ''),
+          ],
           restaurants: allRestaurants,
           activities: allActivities,
           days: city.days.map(day => ({
@@ -719,21 +809,31 @@ function NewTripContent() {
       
       let response;
       try {
-        response = await fetch('/api/trips', {
-          method: 'POST',
+        const isEditing = !!editingId;
+        const publishing = editingStatus === 'draft' && !saveAsDraft;
+        const payload: any = {
+          ...formData,
+          countries: isEditing ? JSON.stringify(uniqueCountries) : uniqueCountries, // Use countries from cities
+          cities: JSON.stringify(citiesData.map(c => c.name)),
+          citiesData: transformedCitiesData,
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+        };
+        if (!isEditing) {
+          payload.isDraft = saveAsDraft; // Drafts stay private and can be finished later
+        } else if (editingStatus === 'draft') {
+          payload.isDraft = !publishing;
+          if (publishing) payload.isPublic = true;
+        }
+        // Editing a private or shared trip keeps its current status
+
+        response = await fetch(isEditing ? `/api/trips/${editingId}` : '/api/trips', {
+          method: isEditing ? 'PUT' : 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...formData,
-            countries: uniqueCountries, // Use countries from cities
-            cities: JSON.stringify(citiesData.map(c => c.name)),
-            citiesData: transformedCitiesData,
-            userId: user.id,
-            userName: user.name,
-            userEmail: user.email,
-            isDraft: saveAsDraft // Drafts stay private and can be finished later
-          }),
+          body: JSON.stringify(payload),
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
@@ -775,6 +875,10 @@ function NewTripContent() {
     }
   };
 
+  if (loadingTrip) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -785,8 +889,12 @@ function NewTripContent() {
         >
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Trip</h1>
-            <p className="text-gray-600">Document your travel experience with detailed reviews</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{editingId ? 'Continue your trip' : 'Add New Trip'}</h1>
+            <p className="text-gray-600">
+              {editingId
+                ? 'Keep adding places, reviews and details, then save your changes'
+                : 'Document your travel experience with detailed reviews'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -1618,23 +1726,31 @@ function NewTripContent() {
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                value="draft"
-                formNoValidate
-                disabled={isLoading}
-                className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Save as draft
-              </button>
+              {(!editingId || editingStatus === 'draft') && (
+                <button
+                  type="submit"
+                  value="draft"
+                  formNoValidate
+                  disabled={isLoading || loadingTrip}
+                  className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editingId ? 'Save draft' : 'Save as draft'}
+                </button>
+              )}
               <button
                 type="submit"
                 value="publish"
-                disabled={isLoading}
+                disabled={isLoading || loadingTrip}
                 className="flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isLoading ? 'Saving Trip...' : 'Save Trip'}
+                {isLoading
+                  ? 'Saving...'
+                  : !editingId
+                  ? 'Save Trip'
+                  : editingStatus === 'draft'
+                  ? 'Publish trip'
+                  : 'Save changes'}
               </button>
             </div>
           </form>

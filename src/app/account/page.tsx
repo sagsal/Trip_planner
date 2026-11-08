@@ -432,7 +432,7 @@ function AccountContent() {
                   .join(', ');
                 const hasDates = !!(trip.startDate && trip.endDate);
                 // Clicking a trip opens it to keep adding to it
-                const openHref = `/trips/${trip.id}/edit`;
+                const openHref = `/trips/new?id=${trip.id}`;
                 const isDeleting = status === 'Draft' ? deletingDraft === trip.id : deletingTrip === trip.id;
                 const badge =
                   status === 'Draft'

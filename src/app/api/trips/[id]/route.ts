@@ -598,6 +598,7 @@ export async function PUT(
               name: cityData.name,
               country: cityData.country,
               tripId: id,
+              numberOfDays: Number(cityData.numberOfDays) || 1,
               hotels: {
                 create: (cityData.hotels || []).map((hotel: any) => ({
                   name: hotel.name,

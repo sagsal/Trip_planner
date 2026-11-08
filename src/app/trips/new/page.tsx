@@ -54,6 +54,15 @@ interface CityData {
   extraHotels?: Hotel[];
 }
 
+// Number of days in a trip, counting both the first and last day (e.g. 1st to 3rd = 3 days)
+function daysBetween(start: string, end: string): string {
+  if (!start || !end) return '';
+  const s = new Date(`${start}T00:00:00Z`).getTime();
+  const e = new Date(`${end}T00:00:00Z`).getTime();
+  if (isNaN(s) || isNaN(e) || e < s) return '';
+  return String(Math.round((e - s) / 86400000) + 1);
+}
+
 function NewTripContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -139,6 +148,7 @@ function NewTripContent() {
           description: trip.description ?? '',
           startDate: toDateInput(trip.startDate),
           endDate: toDateInput(trip.endDate),
+          numberOfDays: daysBetween(toDateInput(trip.startDate), toDateInput(trip.endDate)) || prev.numberOfDays,
         }));
 
         const loadedCities: CityData[] = (trip.cities_data || []).map((city: any, ci: number) => {
@@ -394,10 +404,15 @@ function NewTripContent() {
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      // Work out the number of days automatically once both dates are set
+      if (name === 'startDate' || name === 'endDate') {
+        const days = daysBetween(next.startDate, next.endDate);
+        if (days) next.numberOfDays = days;
+      }
+      return next;
+    });
   }, []);
 
   const handleArrayChange = useCallback((field: 'countries', index: number, value: string) => {
@@ -981,10 +996,16 @@ function NewTripContent() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                 >
                   <option value="">Select number of days</option>
-                  {Array.from({ length: 90 }, (_, i) => i + 1).map(num => (
+                  {Array.from({ length: Math.max(90, Number(formData.numberOfDays) || 0) }, (_, i) => i + 1).map(num => (
                     <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
                   ))}
                 </select>
+                {daysBetween(formData.startDate, formData.endDate) && (
+                  <p className="mt-1 text-xs text-gray-500">Worked out from your dates. You can still change it.</p>
+                )}
+                {formData.startDate && formData.endDate && !daysBetween(formData.startDate, formData.endDate) && (
+                  <p className="mt-1 text-xs text-red-600">The end date is before the start date.</p>
+                )}
               </div>
 
                   </div>

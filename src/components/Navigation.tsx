@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plane, Menu, X, User, MapPin, LogOut } from 'lucide-react';
+import { Plane, Menu, X, User, LogOut } from 'lucide-react';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -79,10 +79,6 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/trips" className="text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center">
-              <MapPin className="w-4 h-4 mr-1" />
-              All Trips
-            </Link>
             <Link href="/about" className="text-lg font-bold text-black hover:text-[#0160D6] transition-colors">
               About
             </Link>
@@ -140,14 +136,6 @@ export default function Navigation() {
             className="md:hidden border-t border-gray-200"
           >
             <div className="py-4 space-y-4">
-              <Link
-                href="/trips"
-                className="block text-lg font-bold text-black hover:text-[#0160D6] transition-colors flex items-center"
-                onClick={() => setIsOpen(false)}
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                All Trips
-              </Link>
               <Link
                 href="/about"
                 className="block text-lg font-bold text-black hover:text-[#0160D6] transition-colors"

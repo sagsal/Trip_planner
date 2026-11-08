@@ -103,7 +103,7 @@ DATABASE_URL="mysql://trip_planner_user:your_password@localhost:3306/trip_planne
 
 # Other environment variables
 NODE_ENV=production
-TRIPADVISOR_API_KEY=4BD8D2DC82B84E01965E1180DBADE6EC
+TRIPADVISOR_API_KEY=your_tripadvisor_api_key
 ```
 
 ## Step 6: Install Prisma and Generate Client

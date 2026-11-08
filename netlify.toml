@@ -11,7 +11,7 @@
   # Format: mysql://username:password@host:port/database?schema=public
   # Example: DATABASE_URL = "mysql://trip_planner_user:password@localhost:3306/trip_planner?schema=public"
   DATABASE_URL = "mysql://trip_planner_user:your_password@localhost:3306/trip_planner?schema=public"
-  TRIPADVISOR_API_KEY = "4BD8D2DC82B84E01965E1180DBADE6EC"
+  # TRIPADVISOR_API_KEY: set it in the Netlify dashboard, never in this file
 
 # Next.js handles all routing including API routes
 # Remove catch-all redirects that interfere with API routes

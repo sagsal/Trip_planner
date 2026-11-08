@@ -13,7 +13,7 @@ if [ ! -f .env ]; then
     echo "Please create a .env file with the following content:"
     echo "DATABASE_URL=\"mysql://trip_planner_user:your_password@localhost:3306/trip_planner?schema=public\""
     echo "NODE_ENV=production"
-    echo "TRIPADVISOR_API_KEY=4BD8D2DC82B84E01965E1180DBADE6EC"
+    echo "TRIPADVISOR_API_KEY=your_tripadvisor_api_key"
     echo ""
     read -p "Press Enter after creating .env file..."
 fi

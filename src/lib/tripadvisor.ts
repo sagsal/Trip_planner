@@ -2,16 +2,12 @@
  * TripAdvisor API utility functions
  */
 
-// TripAdvisor API Key - Make sure this is activated in the TripAdvisor Developer Portal
-// The API key should be set in .env.local file as TRIPADVISOR_API_KEY
-export const TRIPADVISOR_API_KEY = process.env.TRIPADVISOR_API_KEY || '4BD8D2DC82B84E01965E1180DBADE6EC';
+// TripAdvisor API Key - read only from the server's environment (.env.local on the server).
+// Never write the key into this file: the repository is public.
+export const TRIPADVISOR_API_KEY = process.env.TRIPADVISOR_API_KEY || '';
 
-// Log API key status (only first 8 chars for security)
-if (!process.env.TRIPADVISOR_API_KEY) {
-  console.warn('⚠️  TRIPADVISOR_API_KEY not found in environment variables. Using fallback key.');
-  console.warn('⚠️  Make sure .env.local exists and contains: TRIPADVISOR_API_KEY=your_key');
-} else {
-  console.log('✅ TripAdvisor API key loaded from environment:', TRIPADVISOR_API_KEY.substring(0, 8) + '...');
+if (!TRIPADVISOR_API_KEY) {
+  console.warn('⚠️  TRIPADVISOR_API_KEY is not set. TripAdvisor search will return no results.');
 }
 // Updated to use the correct Content API base URL from documentation
 const TRIPADVISOR_BASE_URL = 'https://api.content.tripadvisor.com/api/v1';
@@ -167,7 +163,6 @@ export async function searchTripAdvisor(
         console.error('TripAdvisor API: 403 Forbidden - API key not authorized');
         console.error('This means your API key needs to be activated in TripAdvisor Developer Portal');
         console.error('Go to: https://www.tripadvisor.com/developers');
-        console.error('API Key:', TRIPADVISOR_API_KEY);
         // Return empty results instead of throwing to prevent 500 errors
         return {
           data: [],

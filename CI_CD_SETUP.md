@@ -75,7 +75,7 @@ Add these secrets:
 
 6. **`TRIPADVISOR_API_KEY`**
    - Value: Your TripAdvisor API key
-   - Example: `4BD8D2DC82B84E01965E1180DBADE6EC`
+   - Example: `your_tripadvisor_api_key`
 
 ### Step 4: Verify VPS Setup
 

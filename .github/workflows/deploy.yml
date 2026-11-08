@@ -18,6 +18,25 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      - name: Write private settings on the server (.env.local, never in git)
+        env:
+          TRIPADVISOR_API_KEY: ${{ secrets.TRIPADVISOR_API_KEY }}
+        run: |
+          if [ -z "$TRIPADVISOR_API_KEY" ]; then
+            echo "TRIPADVISOR_API_KEY secret not set - skipping"
+            exit 0
+          fi
+          printf 'TRIPADVISOR_API_KEY=%s\n' "$TRIPADVISOR_API_KEY" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} '
+            set -e
+            cd /var/www/Trip_planner
+            touch .env.local
+            grep -v "^TRIPADVISOR_API_KEY=" .env.local > .env.local.tmp || true
+            cat >> .env.local.tmp
+            mv .env.local.tmp .env.local
+            chmod 600 .env.local
+            echo "TripAdvisor key written to .env.local"
+          '
+
       - name: Deploy to VPS
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -c "

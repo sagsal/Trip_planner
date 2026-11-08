@@ -144,7 +144,7 @@ After running `setup-mysql.sh`, your `.env` file will contain:
 ```env
 DATABASE_URL="mysql://trip_planner_user:password@localhost:3306/trip_planner?schema=public"
 NODE_ENV=production
-TRIPADVISOR_API_KEY=4BD8D2DC82B84E01965E1180DBADE6EC
+TRIPADVISOR_API_KEY=your_tripadvisor_api_key
 ```
 
 **Important:** Keep your `.env` file secure and never commit it to version control!

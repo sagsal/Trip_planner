@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const testQuery = searchParams.get('query') || 'Hilton';
 
     console.log('Testing TripAdvisor API with query:', testQuery);
-    console.log('API Key being used:', process.env.TRIPADVISOR_API_KEY || '4BD8D2DC82B84E01965E1180DBADE6EC');
+    console.log('TripAdvisor API key set:', !!process.env.TRIPADVISOR_API_KEY);
 
     // Test the API with a simple query
     const result = await searchTripAdvisor(testQuery);

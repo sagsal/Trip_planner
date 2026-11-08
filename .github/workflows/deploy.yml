@@ -21,21 +21,25 @@ jobs:
       - name: Write private settings on the server (.env.local, never in git)
         env:
           TRIPADVISOR_API_KEY: ${{ secrets.TRIPADVISOR_API_KEY }}
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: |
-          if [ -z "$TRIPADVISOR_API_KEY" ]; then
-            echo "TRIPADVISOR_API_KEY secret not set - skipping"
-            exit 0
-          fi
-          printf 'TRIPADVISOR_API_KEY=%s\n' "$TRIPADVISOR_API_KEY" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} '
-            set -e
-            cd /var/www/Trip_planner
-            touch .env.local
-            grep -v "^TRIPADVISOR_API_KEY=" .env.local > .env.local.tmp || true
-            cat >> .env.local.tmp
-            mv .env.local.tmp .env.local
-            chmod 600 .env.local
-            echo "TripAdvisor key written to .env.local"
-          '
+          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY; do
+            VALUE="${!NAME}"
+            if [ -z "$VALUE" ]; then
+              echo "$NAME secret not set - skipping"
+              continue
+            fi
+            printf '%s=%s\n' "$NAME" "$VALUE" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+              set -e
+              cd /var/www/Trip_planner
+              touch .env.local
+              grep -v '^$NAME=' .env.local > .env.local.tmp || true
+              cat >> .env.local.tmp
+              mv .env.local.tmp .env.local
+              chmod 600 .env.local
+              echo '$NAME written to .env.local'
+            "
+          done
 
       - name: Deploy to VPS
         run: |

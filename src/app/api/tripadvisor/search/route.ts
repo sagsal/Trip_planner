@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchTripAdvisor, getLocationDetails, getLocationPhotos } from '@/lib/tripadvisor';
+import { searchGooglePlaces, GOOGLE_PLACES_API_KEY } from '@/lib/googlePlaces';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +15,27 @@ export async function GET(request: NextRequest) {
         { error: 'Query or locationId parameter is required' },
         { status: 400 }
       );
+    }
+
+    // Google Places is used whenever its key is set on the server
+    if (GOOGLE_PLACES_API_KEY) {
+      if (locationId) {
+        // Search results already include the Google Maps link; no extra (billed) call needed
+        return NextResponse.json({
+          location: {
+            location_id: locationId,
+            web_url: `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(locationId)}`,
+          },
+          photos: [],
+        });
+      }
+      try {
+        const results = await searchGooglePlaces(query as string, category || undefined);
+        return NextResponse.json({ results, total: results.length });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ results: [], total: 0, error: message });
+      }
     }
 
     // If locationId is provided, get details and optionally photos

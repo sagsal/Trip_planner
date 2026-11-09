@@ -79,6 +79,7 @@ jobs:
           cd /var/www/Trip_planner
           echo "Key line in .env.local: $(grep -c '^TRIPADVISOR_API_KEY=.\+' .env.local 2>/dev/null || echo 0)"
           echo "Key line in .env:       $(grep -c '^TRIPADVISOR_API_KEY=.\+' .env 2>/dev/null || echo 0)"
+          echo "Google key fingerprint: $(grep '^GOOGLE_PLACES_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ' | tr -d '\n' | sha256sum | cut -c1-12)"
           sleep 8
           for q in "Hilton%20Paris" "Taj%20Mumbai"; do
             echo "--- search hotels: $q"

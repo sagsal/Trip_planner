@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // Google Places is used whenever its key is set on the server
     if (GOOGLE_PLACES_API_KEY) {
-      if (locationId) {
+      if (locationId && !/^\d+$/.test(locationId)) {
         // Search results already include the Google Maps link; no extra (billed) call needed
         return NextResponse.json({
           location: {
@@ -29,12 +29,14 @@ export async function GET(request: NextRequest) {
           photos: [],
         });
       }
-      try {
-        const results = await searchGooglePlaces(query as string, category || undefined);
-        return NextResponse.json({ results, total: results.length });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ results: [], total: 0, error: message });
+      if (!locationId) {
+        try {
+          const results = await searchGooglePlaces(query as string, category || undefined);
+          return NextResponse.json({ results, total: results.length });
+        } catch (error) {
+          // Google not working (e.g. key settings): fall back to TripAdvisor below
+          console.error('Google Places failed, falling back to TripAdvisor:', error instanceof Error ? error.message : error);
+        }
       }
     }
 

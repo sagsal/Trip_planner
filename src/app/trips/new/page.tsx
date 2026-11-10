@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
+import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 
 interface Hotel {
   id: string;
@@ -139,6 +140,64 @@ function NewTripContent() {
       router.push('/login');
     }
   }, [router]);
+
+  // Fill the form from a spreadsheet imported on /trips/import (nothing is saved until the user saves)
+  const [importNotice, setImportNotice] = useState('');
+  useEffect(() => {
+    if (editingId || searchParams.get('import') !== '1') return;
+    let imported: ImportedTrip | null = null;
+    try {
+      const raw = sessionStorage.getItem(IMPORT_STORAGE_KEY);
+      imported = raw ? JSON.parse(raw) : null;
+    } catch {
+      imported = null;
+    }
+    if (!imported) return;
+    sessionStorage.removeItem(IMPORT_STORAGE_KEY);
+
+    const item = (p: any, id: string) => ({
+      id,
+      name: p.name || '',
+      location: p.location || '',
+      rating: Number(p.rating) || 0,
+      review: p.review || '',
+      liked: null,
+    });
+    const cities: CityData[] = (imported.cities || []).map((c, ci) => {
+      const cityId = `import-${Date.now()}-${ci}`;
+      const n = Math.max(1, Number(c.numberOfDays) || 1);
+      const days: Day[] = Array.from({ length: n }, (_, i) => {
+        const src = (c.days || []).find((d) => d.dayNumber === i + 1);
+        return {
+          id: `${cityId}-day-${i + 1}`,
+          dayNumber: i + 1,
+          restaurants: (src?.restaurants || []).map((r, ri) => item(r, `${cityId}-${i + 1}-r-${ri}`)),
+          activities: (src?.activities || []).map((a, ai) => item(a, `${cityId}-${i + 1}-a-${ai}`)),
+        };
+      });
+      const hotels = (c.hotels || []).map((h, hi) => item(h, `${cityId}-h-${hi}`));
+      return {
+        id: cityId,
+        name: c.name,
+        country: c.country || '',
+        numberOfDays: n,
+        hotel: hotels[0] ?? null,
+        days,
+        extraHotels: hotels.slice(1),
+      };
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      title: imported!.title || prev.title,
+      startDate: imported!.startDate || prev.startDate,
+      endDate: imported!.endDate || prev.endDate,
+      numberOfDays: daysBetween(imported!.startDate, imported!.endDate) || prev.numberOfDays,
+    }));
+    setCitiesData(cities);
+    setImportNotice('Filled in from your spreadsheet. Please check everything, then save it as a draft or save the trip.');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load a saved trip into the form so the user can keep adding to it
   useEffect(() => {
@@ -946,6 +1005,9 @@ function NewTripContent() {
                 ? 'Keep adding places, reviews and details, then save your changes'
                 : 'Document your travel experience with detailed reviews'}
             </p>
+            {importNotice && (
+              <p className="mt-3 text-sm text-[#3F5B6A] bg-[#E3ECEF] border border-[#C9D9DF] rounded-lg px-3 py-2">{importNotice}</p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">

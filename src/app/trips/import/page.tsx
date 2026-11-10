@@ -1,0 +1,157 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Upload, Download, FileSpreadsheet, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { readSpreadsheet, rowsToTrip, IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
+
+export default function ImportTripPage() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState('');
+  const [trip, setTrip] = useState<ImportedTrip | null>(null);
+  const [error, setError] = useState('');
+  const [reading, setReading] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('user')) router.push('/login');
+  }, [router]);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    setFileName(file.name);
+    setTrip(null);
+    setError('');
+    setReading(true);
+    try {
+      const rows = await readSpreadsheet(file);
+      setTrip(rowsToTrip(rows));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not read this file.');
+    } finally {
+      setReading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const continueToForm = () => {
+    if (!trip) return;
+    sessionStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(trip));
+    router.push('/trips/new?import=1');
+  };
+
+  const count = (c: ImportedTrip['cities'][number], key: 'restaurants' | 'activities') =>
+    c.days.reduce((n, d) => n + d[key].length, 0);
+
+  return (
+    <div className="min-h-screen bg-[#F6F2EC] pt-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Link href="/account" className="inline-flex items-center text-sm text-[#5B6B75] hover:text-[#2F4A5C] mb-6">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to my account
+        </Link>
+        <h1 className="text-3xl sm:text-4xl font-semibold text-[#2F4A5C] mb-3">Import a trip from a spreadsheet</h1>
+        <p className="text-[#5B6B75] mb-8">
+          Upload an Excel or CSV file with one row per hotel, restaurant or activity. We’ll fill in the trip
+          form for you to check, and nothing is saved until you click Save.
+        </p>
+
+        {/* Step 1: template */}
+        <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-medium text-[#2F4A5C] mb-1">1. Start from the template (optional)</p>
+              <p className="text-sm text-[#6B7A83]">
+                Columns: Trip Title, Start Date, End Date, City, Country, Day, Type (Hotel / Restaurant / Activity),
+                Name, Address, Rating (1–5), Review. Title and dates only need to be on the first row.
+              </p>
+            </div>
+            <a
+              href="/trip-import-template.csv"
+              download
+              className="inline-flex items-center px-4 py-2 border border-[#D9D2C7] text-[#2F4A5C] rounded-lg hover:bg-[#FBF9F5] text-sm shrink-0"
+            >
+              <Download className="w-4 h-4 mr-2" /> Download template
+            </a>
+          </div>
+        </div>
+
+        {/* Step 2: upload */}
+        <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-4">
+          <p className="font-medium text-[#2F4A5C] mb-3">2. Upload your spreadsheet</p>
+          <label
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}
+            className="flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed border-[#D9D2C7] bg-[#FBF9F5] px-6 py-10 cursor-pointer hover:border-[#4A6878] transition-colors"
+          >
+            <Upload className="w-8 h-8 text-[#4A6878] mb-2" />
+            <span className="text-[#2F4A5C] font-medium">{reading ? 'Reading…' : 'Click to choose a file, or drag it here'}</span>
+            <span className="text-xs text-[#6B7A83] mt-1">Excel (.xlsx) or CSV</span>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".xlsx,.xlsm,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+            />
+          </label>
+          {fileName && !reading && (
+            <p className="mt-2 text-sm text-[#6B7A83] flex items-center">
+              <FileSpreadsheet className="w-4 h-4 mr-1" /> {fileName}
+            </p>
+          )}
+          {error && (
+            <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+          )}
+        </div>
+
+        {/* Step 3: preview */}
+        {trip && (
+          <div className="bg-white rounded-xl border border-[#E4DED4] p-5">
+            <p className="font-medium text-[#2F4A5C] mb-3">3. Check what we found</p>
+            <p className="text-[#2F4A5C]">
+              <span className="font-semibold">{trip.title || 'Untitled trip'}</span>
+              {trip.startDate && trip.endDate && (
+                <span className="text-[#6B7A83]"> · {trip.startDate} to {trip.endDate}</span>
+              )}
+            </p>
+            <ul className="mt-3 divide-y divide-[#EEE8DF] border border-[#EEE8DF] rounded-lg">
+              {trip.cities.map((c, i) => (
+                <li key={i} className="px-4 py-3 text-sm">
+                  <span className="font-medium text-[#2F4A5C]">{c.name}</span>
+                  {c.country && <span className="text-[#6B7A83]">, {c.country}</span>}
+                  <span className="text-[#6B7A83]">
+                    {' '}· {c.numberOfDays} {c.numberOfDays === 1 ? 'day' : 'days'} · {c.hotels.length} hotel
+                    {c.hotels.length === 1 ? '' : 's'} · {count(c, 'restaurants')} restaurant
+                    {count(c, 'restaurants') === 1 ? '' : 's'} · {count(c, 'activities')} activit
+                    {count(c, 'activities') === 1 ? 'y' : 'ies'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {trip.warnings.length > 0 && (
+              <div className="mt-4 bg-[#FBF6EC] border border-[#EADFC8] rounded-lg px-4 py-3">
+                <p className="text-sm font-medium text-[#8A6D3B] flex items-center mb-1">
+                  <AlertTriangle className="w-4 h-4 mr-1" /> Worth checking
+                </p>
+                <ul className="list-disc pl-5 text-sm text-[#8A6D3B] space-y-0.5">
+                  {trip.warnings.slice(0, 12).map((w, i) => <li key={i}>{w}</li>)}
+                  {trip.warnings.length > 12 && <li>…and {trip.warnings.length - 12} more</li>}
+                </ul>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={continueToForm}
+              className="mt-5 inline-flex items-center px-5 py-2.5 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors"
+            >
+              Fill in the trip form <ArrowRight className="w-4 h-4 ml-2" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

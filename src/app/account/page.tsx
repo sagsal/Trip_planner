@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass } from 'lucide-react';
+import { Plus, MapPin, Calendar, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass, FileSpreadsheet } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
 
@@ -337,7 +337,7 @@ function AccountContent() {
             What would you like to do today?
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -353,6 +353,25 @@ function AccountContent() {
                 <span className="text-xl font-medium">Add your trip</span>
                 <span className="mt-2 text-white/80 text-sm sm:text-base">
                   Share where you went, where you stayed and what you loved
+                </span>
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+            >
+              <Link
+                href="/trips/import"
+                className="group flex flex-col items-center justify-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-6 py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
+              >
+                <span className="flex items-center justify-center w-14 h-14 rounded-full bg-[#E9E3DA] mb-4 group-hover:bg-[#E2DBD0] transition-colors">
+                  <FileSpreadsheet className="w-7 h-7" />
+                </span>
+                <span className="text-xl font-medium">Import from spreadsheet</span>
+                <span className="mt-2 text-[#6B7A83] text-sm sm:text-base">
+                  Upload an Excel or CSV file to fill in a trip
                 </span>
               </Link>
             </motion.div>

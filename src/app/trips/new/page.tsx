@@ -117,7 +117,7 @@ function NewTripContent() {
 
   // Load a saved trip into the form so the user can keep adding to it
   useEffect(() => {
-    if (!editingId) return;
+    if (!editingId || !user?.id) return; // wait until we know who is signed in
     let cancelled = false;
 
     const toItem = (x: any, fallbackId: string) => ({
@@ -136,9 +136,11 @@ function NewTripContent() {
 
     (async () => {
       try {
-        const res = await fetch(`/api/trips/${editingId}`);
+        // Drafts and private trips are only returned to their owner, so send the user id
+        const res = await fetch(`/api/trips/${editingId}?userId=${encodeURIComponent(user.id)}`);
         if (!res.ok) throw new Error('Could not load this trip');
-        const trip = await res.json();
+        const data = await res.json();
+        const trip = data.trip ?? data;
         if (cancelled) return;
 
         setEditingStatus(trip.isDraft ? 'draft' : trip.isPublic === false ? 'private' : 'shared');
@@ -193,7 +195,7 @@ function NewTripContent() {
     return () => {
       cancelled = true;
     };
-  }, [editingId]);
+  }, [editingId, user?.id]);
 
   // All countries of the world with selected cities - memoized for performance
   const countriesData = useMemo(() => ({

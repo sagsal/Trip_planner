@@ -110,9 +110,16 @@ jobs:
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Gateway%20of%20India%20Mumbai&category=attractions" | grep -o '"name":"[^"]*"' | head -3
           echo "--- AI import (only if ANTHROPIC_API_KEY is set; tiny test, well under 1 cent)"
           if grep -q '^ANTHROPIC_API_KEY=.\+' .env.local 2>/dev/null; then
-            printf '%s' '{"fileName":"test.txt","text":"Mexico City 5-7 March 2026. Stayed at Hotel Carlota. Day 1 lunch at Contramar (tuna tostadas, 9/10). Day 2 Teotihuacan."}' \
-              | curl -s -m 120 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/import/ai | head -c 1500
-            echo
+            JOB=$(printf '%s' '{"fileName":"test.txt","text":"Mexico City 5-7 March 2026. Stayed at Hotel Carlota. Day 1 lunch at Contramar (tuna tostadas, 9/10). Day 2 Teotihuacan."}' \
+              | curl -s -m 30 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/import/ai | grep -o '"jobId":"[^"]*"' | cut -d'"' -f4)
+            echo "job: ${JOB:-none}"
+            for i in $(seq 1 40); do
+              sleep 3
+              R=$(curl -s -m 30 "http://localhost:3000/api/import/ai?job=$JOB")
+              case "$R" in *'"running"'*) continue;; esac
+              echo "after $((i*3))s: $(echo "$R" | head -c 1200)"
+              break
+            done
           else
             echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
           fi

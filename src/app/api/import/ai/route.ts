@@ -10,7 +10,23 @@ import { NextRequest, NextResponse } from 'next/server';
  * Model: Claude Haiku 5.5 (cheapest; built for extraction).
  */
 
+export const dynamic = 'force-dynamic';
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+
+/*
+ * Reading a big spreadsheet can take Claude more than a minute, longer than the
+ * web server waits for one request. So POST starts a background job and returns
+ * its id right away; the page then asks GET ?job=ID every few seconds until done.
+ * Jobs live in memory (one server process) and are forgotten after 30 minutes.
+ */
+type Job = { status: 'running' | 'done' | 'error'; trip?: any; error?: string; created: number };
+const g = globalThis as unknown as { __tripImportJobs?: Map<string, Job> };
+const jobs: Map<string, Job> = g.__tripImportJobs || (g.__tripImportJobs = new Map());
+function cleanupJobs() {
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  for (const [id, job] of jobs) if (job.created < cutoff) jobs.delete(id);
+}
 const MODEL = process.env.ANTHROPIC_IMPORT_MODEL || 'claude-haiku-5-5';
 const MAX_CHARS = 150_000; // ~40k tokens; keeps each import cheap and under Haiku's lower price tier
 
@@ -133,9 +149,15 @@ function sanitize(input: any) {
   };
 }
 
-/** GET: lets the import page know whether AI import is set up. */
-export async function GET() {
-  return NextResponse.json({ available: !!ANTHROPIC_API_KEY });
+/** GET: whether AI import is set up, or (with ?job=ID) the status of an import. */
+export async function GET(request: NextRequest) {
+  const id = new URL(request.url).searchParams.get('job');
+  if (!id) return NextResponse.json({ available: !!ANTHROPIC_API_KEY });
+  const job = jobs.get(id);
+  if (!job) return NextResponse.json({ status: 'error', error: 'This import has expired. Please upload the file again.' }, { status: 404 });
+  if (job.status === 'running') return NextResponse.json({ status: 'running' });
+  if (job.status === 'error') return NextResponse.json({ status: 'error', error: job.error });
+  return NextResponse.json({ status: 'done', trip: job.trip });
 }
 
 export async function POST(request: NextRequest) {
@@ -155,12 +177,23 @@ export async function POST(request: NextRequest) {
   text = text.trim();
   if (!text) return NextResponse.json({ error: 'The file looks empty.' }, { status: 400 });
 
+  cleanupJobs();
+  const jobId = crypto.randomUUID();
+  jobs.set(jobId, { status: 'running', created: Date.now() });
+  // Run in the background; the page polls GET ?job=ID
+  runImport(text, fileName)
+    .then((result) => jobs.set(jobId, { ...result, created: Date.now() }))
+    .catch((e) => jobs.set(jobId, { status: 'error', error: e instanceof Error ? e.message : 'The AI couldn’t read this file right now.', created: Date.now() }));
+  return NextResponse.json({ jobId });
+}
+
+async function runImport(text: string, fileName: string): Promise<{ status: 'done' | 'error'; trip?: any; error?: string }> {
   const truncated = text.length > MAX_CHARS;
   if (truncated) text = text.slice(0, MAX_CHARS);
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 90_000);
+    const timer = setTimeout(() => controller.abort(), 5 * 60_000); // up to 5 minutes for big files
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -192,7 +225,7 @@ export async function POST(request: NextRequest) {
         : res.status === 429 ? 'The AI service is busy or the spending limit was reached. Please try again later.'
         : /credit|billing|balance/i.test(msg) ? 'Your Anthropic account is out of credit.'
         : 'The AI couldn’t read this file right now.';
-      return NextResponse.json({ error: friendly, detail: msg }, { status: 502 });
+      return { status: 'error', error: friendly };
     }
 
     const toolUse = (data.content || []).find((b: any) => b?.type === 'tool_use' && b?.name === 'save_trip');
@@ -204,24 +237,21 @@ export async function POST(request: NextRequest) {
       try { raw = m ? JSON.parse(m[0]) : null; } catch { raw = null; }
     }
     if (!raw) {
-      return NextResponse.json({ error: 'The AI couldn’t find a trip in this file.' }, { status: 422 });
+      return { status: 'error', error: 'The AI couldn’t find a trip in this file.' };
     }
 
     const trip = sanitize(raw);
     if (truncated) trip.warnings.unshift('The file was very long, so only the first part was read.');
     if (data.stop_reason === 'max_tokens') trip.warnings.unshift('The trip was very long; some places at the end may be missing.');
     if (trip.cities.length === 0) {
-      return NextResponse.json({ error: 'The AI couldn’t find any cities in this file.' }, { status: 422 });
+      return { status: 'error', error: 'The AI couldn’t find any cities in this file.' };
     }
 
     console.log('AI import ok:', fileName, 'cities:', trip.cities.length, 'places:', trip.rowCount, 'usage:', JSON.stringify(data.usage || {}));
-    return NextResponse.json({ trip, usage: data.usage || null });
+    return { status: 'done', trip };
   } catch (error) {
     const aborted = error instanceof Error && error.name === 'AbortError';
     console.error('AI import error:', error instanceof Error ? error.message : error);
-    return NextResponse.json(
-      { error: aborted ? 'The AI took too long. Please try a smaller file.' : 'The AI couldn’t read this file right now.' },
-      { status: 502 }
-    );
+    return { status: 'error', error: aborted ? 'The AI took too long. Please try a smaller file.' : 'The AI couldn’t read this file right now.' };
   }
 }

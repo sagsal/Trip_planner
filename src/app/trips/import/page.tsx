@@ -27,15 +27,26 @@ export default function ImportTripPage() {
 
   const isSpreadsheet = (name: string) => /\.(xlsx|xlsm|csv|tsv)$/i.test(name);
 
+  // Start an AI import, then check every few seconds until it's finished (big files can take a few minutes)
   const readWithAi = async (text: string, name: string): Promise<ImportedTrip> => {
     const res = await fetch('/api/import/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, fileName: name }),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.trip) throw new Error(data.error || 'The AI couldn’t read this file.');
-    return data.trip as ImportedTrip;
+    const start = await res.json().catch(() => ({}));
+    if (!res.ok || !start.jobId) throw new Error(start.error || 'The AI couldn’t read this file.');
+
+    const deadline = Date.now() + 6 * 60_000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const poll = await fetch(`/api/import/ai?job=${encodeURIComponent(start.jobId)}`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .catch(() => ({ status: 'running' })); // a brief network hiccup: keep waiting
+      if (poll.status === 'done' && poll.trip) return poll.trip as ImportedTrip;
+      if (poll.status === 'error') throw new Error(poll.error || 'The AI couldn’t read this file.');
+    }
+    throw new Error('The AI took too long. Please try again, or split the file into smaller parts.');
   };
 
   const handleFile = async (file: File | undefined) => {
@@ -53,9 +64,15 @@ export default function ImportTripPage() {
           setReadBy('ai');
           return;
         } catch (aiError) {
-          // AI unavailable or failed: fall back to the template reader for spreadsheets
+          // AI unavailable or failed: fall back to the template reader for spreadsheets.
+          // If that can't read it either, show the AI's reason (more useful than the template's).
           if (!isSpreadsheet(file.name)) throw aiError;
-          const fallback = rowsToTrip(await readSpreadsheet(file));
+          let fallback: ImportedTrip;
+          try {
+            fallback = rowsToTrip(await readSpreadsheet(file));
+          } catch {
+            throw aiError;
+          }
           fallback.warnings.unshift(
             `The AI reader wasn’t available (${aiError instanceof Error ? aiError.message : 'error'}), so this was read using the template columns.`
           );
@@ -151,7 +168,7 @@ export default function ImportTripPage() {
           >
             <Upload className="w-8 h-8 text-[#4A6878] mb-2" />
             <span className="text-[#2F4A5C] font-medium">
-              {reading ? (aiAvailable ? 'Reading your trip… this can take up to a minute' : 'Reading…') : 'Click to choose a file, or drag it here'}
+              {reading ? (aiAvailable ? 'Reading your trip… big files can take a few minutes' : 'Reading…') : 'Click to choose a file, or drag it here'}
             </span>
             <span className="text-xs text-[#6B7A83] mt-1">{aiAvailable ? 'Excel (.xlsx), CSV or Word (.docx)' : 'Excel (.xlsx) or CSV'}</span>
             <input

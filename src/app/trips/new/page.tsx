@@ -1555,9 +1555,11 @@ function NewTripContent() {
                                         <button
                                           type="button"
                                           onClick={() => removeRestaurant(city.id, day.id, restaurant.id)}
-                                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                                        >
-                                          <X className="w-3 h-3" />
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors text-xs font-medium"
+                                        title="Remove restaurant"
+                                      >
+                                        <X className="w-4 h-4" />
+                                        Remove
                                         </button>
                                       </div>
                                       {imageUrl && (
@@ -1656,9 +1658,11 @@ function NewTripContent() {
                                       <button
                                         type="button"
                                         onClick={() => removeActivity(city.id, day.id, activity.id)}
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors text-xs font-medium"
+                                        title="Remove activity"
                                       >
-                                        <X className="w-3 h-3" />
+                                        <X className="w-4 h-4" />
+                                        Remove
                                       </button>
                                     </div>
                                     {activity.imageUrl && (

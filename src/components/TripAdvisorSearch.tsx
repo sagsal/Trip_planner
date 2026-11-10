@@ -56,6 +56,9 @@ export default function TripAdvisorSearch({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Only search after the person types in this box (not when the box first appears),
+  // so saved names don't pop open suggestion lists or use up Google searches
+  const userTypedRef = useRef(false);
 
   // Debounced search
   useEffect(() => {
@@ -64,7 +67,7 @@ export default function TripAdvisorSearch({
     }
 
     // If we have city name but no query, still search for locations in that city
-    const shouldSearch = searchQuery.trim().length >= 2 || (cityName && (category === 'hotels' || category === 'restaurants' || category === 'attractions') && searchQuery.trim().length === 0);
+    const shouldSearch = userTypedRef.current && (searchQuery.trim().length >= 2 || (cityName && (category === 'hotels' || category === 'restaurants' || category === 'attractions') && searchQuery.trim().length === 0));
     
     if (!shouldSearch) {
       setResults([]);
@@ -205,11 +208,13 @@ export default function TripAdvisorSearch({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    userTypedRef.current = true;
     setSearchQuery(newValue);
     onChange(newValue);
   };
 
   const handleSelect = (result: TripAdvisorResult) => {
+    userTypedRef.current = false; // picking a result shouldn't start a new search
     setSearchQuery(result.name);
     onChange(result.name);
     onSelect(result);
@@ -278,7 +283,11 @@ export default function TripAdvisorSearch({
         )}
         {searchQuery && !isSearching && (
           <button
+            type="button"
+            aria-label="Clear"
+            title="Clear"
             onClick={() => {
+              userTypedRef.current = false;
               setSearchQuery('');
               onChange('');
               setResults([]);

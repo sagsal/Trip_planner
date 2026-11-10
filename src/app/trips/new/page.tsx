@@ -533,7 +533,8 @@ function NewTripContent() {
           locationId: selectedHotelData.location_id,
           imageUrl: selectedHotelData.photos?.[0]?.images?.large?.url || 
                    selectedHotelData.photos?.[0]?.images?.medium?.url || 
-                   selectedHotelData.photos?.[0]?.images?.original?.url || null,
+                   selectedHotelData.photos?.[0]?.images?.original?.url ||
+                   selectedHotelData.photo_url || null,
           numReviews: selectedHotelData.num_reviews,
           webUrl: webUrl
         };
@@ -610,7 +611,8 @@ function NewTripContent() {
         locationId: selectedRestaurantData.location_id,
         imageUrl: selectedRestaurantData.photos?.[0]?.images?.large?.url || 
                  selectedRestaurantData.photos?.[0]?.images?.medium?.url || 
-                 selectedRestaurantData.photos?.[0]?.images?.original?.url || null,
+                 selectedRestaurantData.photos?.[0]?.images?.original?.url ||
+                   selectedRestaurantData.photo_url || null,
         numReviews: selectedRestaurantData.num_reviews,
         webUrl: selectedRestaurantData.web_url || null
       };
@@ -1140,7 +1142,8 @@ function NewTripContent() {
                                   locationId: result.location_id,
                                   imageUrl: result.photos?.[0]?.images?.large?.url || 
                                            result.photos?.[0]?.images?.medium?.url || 
-                                           result.photos?.[0]?.images?.original?.url || null,
+                                           result.photos?.[0]?.images?.original?.url ||
+                   result.photo_url || null,
                                   numReviews: result.num_reviews,
                                   webUrl: result.web_url || null
                                 };

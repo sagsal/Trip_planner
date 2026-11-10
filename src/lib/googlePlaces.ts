@@ -6,8 +6,9 @@
  * .env.local on the server). Never put the key in this file: the repo is public.
  *
  * Cost: only Pro-tier fields are requested (name, address, Maps link, type),
- * which Google gives 5,000 free searches a month for. Ratings and photos are
- * left out on purpose because they are billed at a higher tier.
+ * which Google gives 5,000 free searches a month for. Ratings are left out
+ * because they are billed at a higher tier. Photo *names* come with the search;
+ * the image itself is only fetched (and billed) for places the user adds.
  */
 
 export const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || '';
@@ -18,6 +19,7 @@ const FIELD_MASK = [
   'places.formattedAddress',
   'places.googleMapsUri',
   'places.primaryTypeDisplayName',
+  'places.photos', // photo names only; images are fetched later, only for places the user adds
 ].join(',');
 
 const TYPE_FOR_CATEGORY: Record<string, string> = {
@@ -32,6 +34,8 @@ export interface PlaceResultInTripAdvisorShape {
   address_obj?: { street1?: string };
   category?: { key: string; name: string };
   web_url?: string;
+  // Link to one photo, used only after the user picks this place (not in the search list)
+  photo_url?: string;
   photos: [];
 }
 
@@ -84,7 +88,10 @@ export async function searchGooglePlaces(
         ? { key: category || 'place', name: p.primaryTypeDisplayName.text }
         : undefined,
       web_url: p.googleMapsUri || `https://www.google.com/maps/place/?q=place_id:${p.id}`,
-      photos: [],
+      photo_url: p.photos?.[0]?.name
+        ? `/api/places/photo?place=${encodeURIComponent(p.id)}&name=${encodeURIComponent(p.photos[0].name)}`
+        : undefined,
+      photos: [], // kept empty so the search list doesn't load (and pay for) photos
     }));
   } finally {
     clearTimeout(timeout);

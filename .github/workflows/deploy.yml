@@ -87,6 +87,13 @@ jobs:
             curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
             echo
           done
+          echo "--- photo for a picked place (one photo)"
+          P=$(curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Taj%20Mumbai&category=hotels" | grep -o '"photo_url":"[^"]*"' | head -1 | cut -d'"' -f4)
+          if [ -n "$P" ]; then
+            curl -s -m 30 -o /dev/null -w 'photo link -> HTTP %{http_code}, redirects to: %{redirect_url}\n' "http://localhost:3000$P" | sed -E 's#(https://[^/]+)/.*#\1/...#'
+          else
+            echo "no photo_url in search results"
+          fi
           echo "--- direct call from the server to Google Places (key hidden)"
           G=$(grep '^GOOGLE_PLACES_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ')
           echo "Google key length: ${#G} (a normal key is 39), starts with AIza: $(case "$G" in AIza*) echo yes;; *) echo no;; esac)"

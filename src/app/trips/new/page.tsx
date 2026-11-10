@@ -1660,12 +1660,21 @@ function NewTripContent() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                       <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                                        <input
-                                          type="text"
+                                        <TripAdvisorSearch
                                           value={activity.name}
-                                          onChange={(e) => updateActivity(city.id, day.id, activity.id, 'name', e.target.value)}
-                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
-                                          placeholder="Activity name"
+                                          onChange={(value) => updateActivity(city.id, day.id, activity.id, 'name', value)}
+                                          onSelect={(result: any) => {
+                                            updateActivity(city.id, day.id, activity.id, 'name', result.name);
+                                            const addr = result.address_obj;
+                                            const location = addr
+                                              ? [addr.street1, addr.city, addr.state, addr.country].filter(Boolean).join(', ')
+                                              : '';
+                                            if (location) updateActivity(city.id, day.id, activity.id, 'location', location);
+                                          }}
+                                          placeholder={`Search activities in ${city.name}...`}
+                                          category="attractions"
+                                          cityName={city.name}
+                                          countryName={city.country}
                                         />
                                       </div>
                                       <div>

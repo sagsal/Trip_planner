@@ -87,6 +87,12 @@ jobs:
             curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
             echo
           done
+          echo "--- recent trip save errors from the server log (secrets hidden)"
+          for f in $HOME/.pm2/logs/tripplanner-error*.log; do
+            [ -f "$f" ] || continue
+            grep -n -A25 -E "Trip (update|creation) error|Error creating trip|Invalid .prisma|PrismaClient" "$f" | tail -80 \
+              | sed -E 's/AIza[0-9A-Za-z_-]{35}/<KEY>/g; s/[0-9A-Fa-f]{32}/<KEY>/g; s#(mysql|postgres(ql)?)://[^ ]*#<DB_URL>#g'
+          done
           echo "--- search activities: Mumbai"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Gateway%20of%20India%20Mumbai&category=attractions" | grep -o '"name":"[^"]*"' | head -3
           echo "--- photo for a picked place (one photo)"

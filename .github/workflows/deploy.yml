@@ -88,6 +88,7 @@ jobs:
             echo
           done
           echo "--- public trips on Browse Trips (id | title | cities | owner name)"
+          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
           curl -s -m 30 "http://localhost:3000/api/trips" | node -e '
             let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);const t=Array.isArray(j)?j:(j.trips||[]);
             console.log("count:",t.length);for(const x of t){console.log([x.id,x.title,x.cities,(x.user&&x.user.name)||x.userName||""].join(" | "))}}catch(e){console.log("could not read trips:",e.message)}})'

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Upload, Download, FileSpreadsheet, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
-import { readSpreadsheet, rowsToTrip, IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
+import { Upload, Download, FileSpreadsheet, AlertTriangle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { readSpreadsheet, readFileAsText, rowsToTrip, IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 
 export default function ImportTripPage() {
   const router = useRouter();
@@ -13,25 +13,84 @@ export default function ImportTripPage() {
   const [trip, setTrip] = useState<ImportedTrip | null>(null);
   const [error, setError] = useState('');
   const [reading, setReading] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [readBy, setReadBy] = useState<'ai' | 'template' | null>(null);
+  const [pasted, setPasted] = useState('');
 
   useEffect(() => {
     if (!localStorage.getItem('user')) router.push('/login');
+    fetch('/api/import/ai')
+      .then((r) => r.json())
+      .then((d) => setAiAvailable(!!d.available))
+      .catch(() => setAiAvailable(false));
   }, [router]);
+
+  const isSpreadsheet = (name: string) => /\.(xlsx|xlsm|csv|tsv)$/i.test(name);
+
+  const readWithAi = async (text: string, name: string): Promise<ImportedTrip> => {
+    const res = await fetch('/api/import/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, fileName: name }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.trip) throw new Error(data.error || 'The AI couldn’t read this file.');
+    return data.trip as ImportedTrip;
+  };
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
     setFileName(file.name);
     setTrip(null);
     setError('');
+    setReadBy(null);
     setReading(true);
     try {
-      const rows = await readSpreadsheet(file);
-      setTrip(rowsToTrip(rows));
+      if (aiAvailable) {
+        try {
+          const text = await readFileAsText(file);
+          setTrip(await readWithAi(text, file.name));
+          setReadBy('ai');
+          return;
+        } catch (aiError) {
+          // AI unavailable or failed: fall back to the template reader for spreadsheets
+          if (!isSpreadsheet(file.name)) throw aiError;
+          const fallback = rowsToTrip(await readSpreadsheet(file));
+          fallback.warnings.unshift(
+            `The AI reader wasn’t available (${aiError instanceof Error ? aiError.message : 'error'}), so this was read using the template columns.`
+          );
+          setTrip(fallback);
+          setReadBy('template');
+          return;
+        }
+      }
+      if (!isSpreadsheet(file.name)) {
+        throw new Error('Word documents need the AI reader, which isn’t set up yet. Please upload an Excel or CSV file.');
+      }
+      setTrip(rowsToTrip(await readSpreadsheet(file)));
+      setReadBy('template');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not read this file.');
     } finally {
       setReading(false);
       if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const handlePasted = async () => {
+    if (!pasted.trim()) return;
+    setFileName('Pasted text');
+    setTrip(null);
+    setError('');
+    setReadBy(null);
+    setReading(true);
+    try {
+      setTrip(await readWithAi(pasted, 'pasted text'));
+      setReadBy('ai');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not read this text.');
+    } finally {
+      setReading(false);
     }
   };
 
@@ -52,15 +111,18 @@ export default function ImportTripPage() {
         </Link>
         <h1 className="text-3xl sm:text-4xl font-semibold text-[#2F4A5C] mb-3">Import a trip from a spreadsheet</h1>
         <p className="text-[#5B6B75] mb-8">
-          Upload an Excel or CSV file with one row per hotel, restaurant or activity. We’ll fill in the trip
-          form for you to check, and nothing is saved until you click Save.
+          {aiAvailable
+            ? 'Upload your trip notes in any layout: an Excel or CSV spreadsheet, or a Word document. Our AI reader works out the cities, days, hotels, restaurants and activities and fills in the trip form for you to check. Nothing is saved until you click Save.'
+            : 'Upload an Excel or CSV file with one row per hotel, restaurant or activity. We’ll fill in the trip form for you to check, and nothing is saved until you click Save.'}
         </p>
 
         {/* Step 1: template */}
         <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="font-medium text-[#2F4A5C] mb-1">1. Start from the template (optional)</p>
+              <p className="font-medium text-[#2F4A5C] mb-1">
+                {aiAvailable ? 'Optional: a template if you’re starting from scratch' : '1. Start from the template (optional)'}
+              </p>
               <p className="text-sm text-[#6B7A83]">
                 Columns: Trip Title, Start Date, End Date, City, Country, Day, Type (Hotel / Restaurant / Activity),
                 Name, Address, Rating (1–5), Review. Title and dates only need to be on the first row.
@@ -78,19 +140,24 @@ export default function ImportTripPage() {
 
         {/* Step 2: upload */}
         <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-4">
-          <p className="font-medium text-[#2F4A5C] mb-3">2. Upload your spreadsheet</p>
+          <p className="font-medium text-[#2F4A5C] mb-3 flex items-center">
+            {aiAvailable && <Sparkles className="w-4 h-4 mr-1.5 text-[#4A6878]" />}
+            {aiAvailable ? 'Upload your trip notes' : '2. Upload your spreadsheet'}
+          </p>
           <label
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}
             className="flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed border-[#D9D2C7] bg-[#FBF9F5] px-6 py-10 cursor-pointer hover:border-[#4A6878] transition-colors"
           >
             <Upload className="w-8 h-8 text-[#4A6878] mb-2" />
-            <span className="text-[#2F4A5C] font-medium">{reading ? 'Reading…' : 'Click to choose a file, or drag it here'}</span>
-            <span className="text-xs text-[#6B7A83] mt-1">Excel (.xlsx) or CSV</span>
+            <span className="text-[#2F4A5C] font-medium">
+              {reading ? (aiAvailable ? 'Reading your trip… this can take up to a minute' : 'Reading…') : 'Click to choose a file, or drag it here'}
+            </span>
+            <span className="text-xs text-[#6B7A83] mt-1">{aiAvailable ? 'Excel (.xlsx), CSV or Word (.docx)' : 'Excel (.xlsx) or CSV'}</span>
             <input
               ref={inputRef}
               type="file"
-              accept=".xlsx,.xlsm,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".xlsx,.xlsm,.csv,.tsv,.txt,.docx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               className="hidden"
               onChange={(e) => handleFile(e.target.files?.[0])}
             />
@@ -103,12 +170,36 @@ export default function ImportTripPage() {
           {error && (
             <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
           )}
+
+          {aiAvailable && (
+            <div className="mt-5">
+              <p className="text-sm text-[#5B6B75] mb-2">…or paste your notes (from an email, notes app, etc.)</p>
+              <textarea
+                value={pasted}
+                onChange={(e) => setPasted(e.target.value)}
+                rows={5}
+                placeholder={'e.g. Mexico City, 5–8 March. Stayed at Hotel Carlota. Day 1 lunch at Contramar (amazing tuna tostadas), Frida Kahlo museum…'}
+                className="w-full px-3 py-2 border border-[#D9D2C7] rounded-lg text-sm text-black focus:ring-2 focus:ring-[#4A6878] focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={handlePasted}
+                disabled={reading || !pasted.trim()}
+                className="mt-2 inline-flex items-center px-4 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] text-sm disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4 mr-1.5" /> Read my notes
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Step 3: preview */}
         {trip && (
           <div className="bg-white rounded-xl border border-[#E4DED4] p-5">
-            <p className="font-medium text-[#2F4A5C] mb-3">3. Check what we found</p>
+            <p className="font-medium text-[#2F4A5C] mb-1">Check what we found</p>
+            {readBy === 'ai' && (
+              <p className="text-xs text-[#6B7A83] mb-3">Read by AI. It can make mistakes, so you’ll be able to fix anything in the form.</p>
+            )}
             <p className="text-[#2F4A5C]">
               <span className="font-semibold">{trip.title || 'Untitled trip'}</span>
               {trip.startDate && trip.endDate && (

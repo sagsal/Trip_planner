@@ -22,8 +22,9 @@ jobs:
         env:
           TRIPADVISOR_API_KEY: ${{ secrets.TRIPADVISOR_API_KEY }}
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY; do
+          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY; do
             VALUE="${!NAME}"
             if [ -z "$VALUE" ]; then
               echo "$NAME secret not set - skipping"
@@ -100,6 +101,14 @@ jobs:
           done
           echo "--- search activities: Mumbai"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Gateway%20of%20India%20Mumbai&category=attractions" | grep -o '"name":"[^"]*"' | head -3
+          echo "--- AI import (only if ANTHROPIC_API_KEY is set; tiny test, well under 1 cent)"
+          if grep -q '^ANTHROPIC_API_KEY=.\+' .env.local 2>/dev/null; then
+            printf '%s' '{"fileName":"test.txt","text":"Mexico City 5-7 March 2026. Stayed at Hotel Carlota. Day 1 lunch at Contramar (tuna tostadas, 9/10). Day 2 Teotihuacan."}' \
+              | curl -s -m 120 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/import/ai | head -c 1500
+            echo
+          else
+            echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
+          fi
           echo "--- cover photo choices: Mexico City (links only, no photos loaded)"
           curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Mexico%20City,%20Mexico" | grep -o '"thumb"' | wc -l
           echo "--- photo for a picked place (one photo)"

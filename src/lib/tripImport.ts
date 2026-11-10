@@ -92,7 +92,9 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-async function unzip(buf: ArrayBuffer): Promise<Map<string, Uint8Array>> {
+const XLSX_PARTS = /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/[^/]+\.xml)$/;
+
+async function unzip(buf: ArrayBuffer, wanted: RegExp = XLSX_PARTS): Promise<Map<string, Uint8Array>> {
   const view = new DataView(buf);
   const bytes = new Uint8Array(buf);
   // Find "end of central directory" record
@@ -116,7 +118,7 @@ async function unzip(buf: ArrayBuffer): Promise<Map<string, Uint8Array>> {
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + nameLen));
     p += 46 + nameLen + extraLen + commentLen;
 
-    if (!/^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/[^/]+\.xml)$/.test(name)) continue;
+    if (!wanted.test(name)) continue;
     const lNameLen = view.getUint16(localOffset + 26, true);
     const lExtraLen = view.getUint16(localOffset + 28, true);
     const start = localOffset + 30 + lNameLen + lExtraLen;
@@ -134,6 +136,12 @@ function colIndex(ref: string): number {
 }
 
 async function readXlsx(buf: ArrayBuffer): Promise<string[][]> {
+  const sheets = await readXlsxSheets(buf, true);
+  return sheets[0]?.rows || [];
+}
+
+/** Every sheet (tab) in an .xlsx file, in workbook order. */
+export async function readXlsxSheets(buf: ArrayBuffer, firstOnly = false): Promise<{ name: string; rows: string[][] }[]> {
   const files = await unzip(buf);
   const dec = new TextDecoder();
   const parse = (name: string) => {
@@ -150,40 +158,112 @@ async function readXlsx(buf: ArrayBuffer): Promise<string[][]> {
     }
   }
 
-  // First sheet in the workbook (falls back to sheet1.xml)
-  let sheetPath = 'xl/worksheets/sheet1.xml';
+  // Sheets in workbook order, resolved through the workbook relationships
   const wb = parse('xl/workbook.xml');
   const rels = parse('xl/_rels/workbook.xml.rels');
-  const firstSheet = wb?.getElementsByTagName('sheet')[0];
-  const rid = firstSheet?.getAttribute('r:id') || firstSheet?.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
-  if (rid && rels) {
-    const rel = Array.from(rels.getElementsByTagName('Relationship')).find((r) => r.getAttribute('Id') === rid);
+  const RELS_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const targets: { name: string; path: string }[] = [];
+  for (const sh of Array.from(wb?.getElementsByTagName('sheet') || [])) {
+    const rid = sh.getAttribute('r:id') || sh.getAttributeNS(RELS_NS, 'id');
+    const rel = rels && Array.from(rels.getElementsByTagName('Relationship')).find((r) => r.getAttribute('Id') === rid);
     const target = rel?.getAttribute('Target');
-    if (target) sheetPath = target.startsWith('/') ? target.slice(1) : `xl/${target.replace(/^\.\//, '')}`;
+    if (!target) continue;
+    const path = target.startsWith('/') ? target.slice(1) : `xl/${target.replace(/^\.\//, '')}`;
+    if (files.has(path)) targets.push({ name: sh.getAttribute('name') || path, path });
   }
-  if (!files.has(sheetPath)) {
-    sheetPath = Array.from(files.keys()).filter((k) => k.startsWith('xl/worksheets/')).sort()[0] || sheetPath;
-  }
-  const sheet = parse(sheetPath);
-  if (!sheet) throw new Error('Couldn’t find a sheet in this Excel file.');
-
-  const rows: string[][] = [];
-  for (const r of Array.from(sheet.getElementsByTagName('row'))) {
-    const out: string[] = [];
-    for (const c of Array.from(r.getElementsByTagName('c'))) {
-      const idx = colIndex(c.getAttribute('r') || '');
-      const t = c.getAttribute('t');
-      const v = c.getElementsByTagName('v')[0]?.textContent ?? '';
-      let value = v;
-      if (t === 's') value = shared[Number(v)] ?? '';
-      else if (t === 'inlineStr') value = Array.from(c.getElementsByTagName('t')).map((x) => x.textContent || '').join('');
-      else if (t === 'b') value = v === '1' ? 'TRUE' : 'FALSE';
-      while (out.length < idx) out.push('');
-      out[idx] = value;
+  if (targets.length === 0) {
+    for (const k of Array.from(files.keys()).filter((k) => k.startsWith('xl/worksheets/')).sort()) {
+      targets.push({ name: k.replace(/^.*\//, '').replace(/\.xml$/, ''), path: k });
     }
-    rows.push(out);
   }
-  return rows;
+  if (targets.length === 0) throw new Error('Couldn’t find a sheet in this Excel file.');
+
+  const out: { name: string; rows: string[][] }[] = [];
+  for (const t of firstOnly ? targets.slice(0, 1) : targets) {
+    const sheet = parse(t.path);
+    if (!sheet) continue;
+    const rows: string[][] = [];
+    for (const r of Array.from(sheet.getElementsByTagName('row'))) {
+      const cells: string[] = [];
+      for (const c of Array.from(r.getElementsByTagName('c'))) {
+        const idx = colIndex(c.getAttribute('r') || '');
+        const type = c.getAttribute('t');
+        const v = c.getElementsByTagName('v')[0]?.textContent ?? '';
+        let value = v;
+        if (type === 's') value = shared[Number(v)] ?? '';
+        else if (type === 'inlineStr') value = Array.from(c.getElementsByTagName('t')).map((x) => x.textContent || '').join('');
+        else if (type === 'b') value = v === '1' ? 'TRUE' : 'FALSE';
+        while (cells.length < idx) cells.push('');
+        cells[idx] = value;
+      }
+      rows.push(cells);
+    }
+    out.push({ name: t.name, rows });
+  }
+  return out;
+}
+
+/** Plain text of a Word (.docx) document, one paragraph per line (tables as tab-separated rows). */
+async function readDocxText(buf: ArrayBuffer): Promise<string> {
+  const files = await unzip(buf, /^word\/document\.xml$/);
+  const xml = files.get('word/document.xml');
+  if (!xml) throw new Error('This doesn’t look like a Word (.docx) document.');
+  const doc = new DOMParser().parseFromString(new TextDecoder().decode(xml), 'application/xml');
+  const lines: string[] = [];
+  const body = doc.getElementsByTagName('w:body')[0] || doc.documentElement;
+  const paraText = (p: Element) =>
+    Array.from(p.getElementsByTagName('*'))
+      .map((n) => (n.tagName === 'w:t' ? n.textContent || '' : n.tagName === 'w:tab' ? '\t' : n.tagName === 'w:br' ? ' ' : ''))
+      .join('');
+  for (const node of Array.from(body.children)) {
+    if (node.tagName === 'w:p') lines.push(paraText(node));
+    else if (node.tagName === 'w:tbl') {
+      for (const tr of Array.from(node.getElementsByTagName('w:tr'))) {
+        lines.push(
+          Array.from(tr.getElementsByTagName('w:tc'))
+            .map((tc) => Array.from(tc.getElementsByTagName('w:p')).map(paraText).join(' '))
+            .join('\t')
+        );
+      }
+    }
+  }
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/** Excel serial dates (e.g. 46143) shown as YYYY-MM-DD so the AI reads them correctly. */
+function cellForText(v: string): string {
+  if (/^\d{5}(\.\d+)?$/.test(v) && Number(v) > 30000 && Number(v) < 60000) {
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(v)) * 86400000);
+    return `${v} (${d.toISOString().slice(0, 10)} if this is a date)`;
+  }
+  return v.replace(/[\t\r\n]+/g, ' ');
+}
+
+/**
+ * Any supported file as plain text for the AI reader:
+ * spreadsheets as tab-separated rows (every tab), Word documents as paragraphs.
+ */
+export async function readFileAsText(file: File): Promise<string> {
+  const lower = file.name.toLowerCase();
+  if (lower.endsWith('.docx')) return readDocxText(await file.arrayBuffer());
+  if (lower.endsWith('.doc')) {
+    throw new Error('Old .doc files can’t be read. In Word, choose File → Save As → Word Document (.docx), then upload that.');
+  }
+  if (lower.endsWith('.xlsx') || lower.endsWith('.xlsm')) {
+    const sheets = await readXlsxSheets(await file.arrayBuffer());
+    return sheets
+      .map((sh) => `### Sheet: ${sh.name}\n` + sh.rows.filter((r) => r.some((c) => c && c.trim())).map((r) => r.map(cellForText).join('\t')).join('\n'))
+      .join('\n\n');
+  }
+  if (lower.endsWith('.xls')) {
+    throw new Error('Old .xls files can’t be read. In Excel, choose File → Save As → Excel Workbook (.xlsx) or CSV, then upload that.');
+  }
+  // CSV / TSV / plain text
+  const text = await file.text();
+  if (lower.endsWith('.csv') || lower.endsWith('.tsv')) {
+    return parseCsv(text).filter((r) => r.some((c) => c && c.trim())).map((r) => r.map(cellForText).join('\t')).join('\n');
+  }
+  return text;
 }
 
 /* ------------------------- turning rows into a trip ------------------------- */

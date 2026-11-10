@@ -103,33 +103,56 @@ Rules:
 Always answer by calling the save_trip tool exactly once.`;
 
 /* ---------- make sure whatever comes back is safe and well-formed ---------- */
+// Models sometimes send a nested list as a JSON string ("[{...}]") instead of a real list
+function unstring(v: unknown): unknown {
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if ((t.startsWith('[') && t.endsWith(']')) || (t.startsWith('{') && t.endsWith('}'))) {
+      try { return unstring(JSON.parse(t)); } catch { return v; }
+    }
+    return v;
+  }
+  if (Array.isArray(v)) return v.map(unstring);
+  if (v && typeof v === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(v)) out[k] = unstring(val);
+    return out;
+  }
+  return v;
+}
+// Accept a few likely alternative field names
+const pick = (o: any, ...keys: string[]) => { for (const k of keys) if (o?.[k] !== undefined) return o[k]; return undefined; };
 const str = (v: unknown, max = 500) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const isoDate = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : '');
-const toPlace = (p: any) => ({
-  name: str(p?.name, 200),
+const toPlace = (p: any) => (typeof p === 'string' ? { name: str(p, 200), location: '', rating: 0, review: '' } : {
+  name: str(pick(p, 'name', 'title', 'place'), 200),
   location: str(p?.location, 300),
   rating: Math.max(0, Math.min(5, Math.round(Number(p?.rating) || 0))),
   review: str(p?.review, 2000),
 });
-const places = (arr: unknown) => (Array.isArray(arr) ? arr.map(toPlace).filter((p) => p.name) : []);
+const places = (arr: unknown) =>
+  (Array.isArray(arr) ? arr : arr && typeof arr === 'object' ? [arr] : []).map(toPlace).filter((p: any) => p.name);
 
-function sanitize(input: any) {
+function sanitize(rawInput: any) {
+  const input: any = unstring(rawInput);
   const warnings: string[] = Array.isArray(input?.warnings) ? input.warnings.map((w: unknown) => str(w, 300)).filter(Boolean) : [];
-  const cities = (Array.isArray(input?.cities) ? input.cities : [])
+  const rawCities = pick(input, 'cities', 'destinations', 'locations');
+  const cities = (Array.isArray(rawCities) ? rawCities : [])
     .map((c: any) => {
-      const days = (Array.isArray(c?.days) ? c.days : [])
+      const rawDays = pick(c, 'days', 'itinerary');
+      const days = (Array.isArray(rawDays) ? rawDays : [])
         .map((d: any) => ({
-          dayNumber: Math.max(1, Math.min(90, Math.round(Number(d?.dayNumber) || 1))),
-          restaurants: places(d?.restaurants),
-          activities: places(d?.activities),
+          dayNumber: Math.max(1, Math.min(90, Math.round(Number(pick(d, 'dayNumber', 'day', 'day_number')) || 1))),
+          restaurants: places(pick(d, 'restaurants', 'food', 'dining')),
+          activities: places(pick(d, 'activities', 'sights', 'attractions')),
         }))
         .filter((d: any) => d.restaurants.length || d.activities.length);
       const maxDay = days.reduce((m: number, d: any) => Math.max(m, d.dayNumber), 1);
       return {
-        name: str(c?.name, 120),
+        name: str(pick(c, 'name', 'city'), 120),
         country: str(c?.country, 120),
         numberOfDays: Math.max(maxDay, Math.min(90, Math.max(1, Math.round(Number(c?.numberOfDays) || 1)))),
-        hotels: places(c?.hotels),
+        hotels: places(pick(c, 'hotels', 'hotel', 'accommodation', 'stays')),
         days,
       };
     })
@@ -203,7 +226,7 @@ async function runImport(text: string, fileName: string): Promise<{ status: 'don
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 16000,
+        max_tokens: 32000,
         system: SYSTEM,
         tools: [TRIP_TOOL],
         messages: [
@@ -244,6 +267,14 @@ async function runImport(text: string, fileName: string): Promise<{ status: 'don
     if (truncated) trip.warnings.unshift('The file was very long, so only the first part was read.');
     if (data.stop_reason === 'max_tokens') trip.warnings.unshift('The trip was very long; some places at the end may be missing.');
     if (trip.cities.length === 0) {
+      const u = unstring(raw) as any;
+      console.error(
+        `AI import no cities: stop=${data.stop_reason} out=${data.usage?.output_tokens} in=${data.usage?.input_tokens} ` +
+        `viaTool=${!!toolUse} keys=${Object.keys(u || {}).join('|')} citiesType=${Array.isArray(u?.cities) ? 'array' + u.cities.length : typeof u?.cities} chars=${text.length}`
+      );
+      if (data.stop_reason === 'max_tokens') {
+        return { status: 'error', error: 'The file has more places than the AI can read in one go. Try splitting it into one file per city.' };
+      }
       return { status: 'error', error: 'The AI couldn’t find any cities in this file.' };
     }
 

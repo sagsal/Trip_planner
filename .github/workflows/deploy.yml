@@ -88,36 +88,23 @@ jobs:
             curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
             echo
           done
-          echo "--- public trips on Browse Trips (id | title | cities | owner name)"
-          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
-          curl -s -m 30 "http://localhost:3000/api/trips" | node -e '
-            let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);const t=Array.isArray(j)?j:(j.trips||[]);
-            console.log("count:",t.length);for(const x of t){console.log([x.id,x.title,x.cities,(x.user&&x.user.name)||x.userName||""].join(" | "))}}catch(e){console.log("could not read trips:",e.message)}})'
-          echo "--- recent AI import log lines"
-          for f in $HOME/.pm2/logs/tripplanner-out*.log $HOME/.pm2/logs/tripplanner-error*.log; do
-            [ -f "$f" ] && grep -hE "AI import" "$f" | tail -8 | cut -c1-400 | sed -E 's/sk-ant-[A-Za-z0-9_-]+/<KEY>/g'
-          done
-          echo "--- nginx timeouts for the AI import (if any)"
-          sudo grep -h "api/import/ai" /var/log/nginx/error.log 2>/dev/null | tail -5 | cut -c1-300
-          sudo grep -h "api/import/ai" /var/log/nginx/access.log 2>/dev/null | tail -8 | cut -c1-220
-          echo "--- recent trip save errors from the server log (secrets hidden)"
+          echo "--- recent server errors (types only, no user data)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
-            [ -f "$f" ] || continue
-            grep -n -A25 -E "Trip (update|creation) error|Error creating trip|Invalid .prisma|PrismaClient" "$f" | tail -80 \
-              | sed -E 's/AIza[0-9A-Za-z_-]{35}/<KEY>/g; s/[0-9A-Fa-f]{32}/<KEY>/g; s#(mysql|postgres(ql)?)://[^ ]*#<DB_URL>#g'
+            [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6
           done
           echo "--- search activities: Mumbai"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Gateway%20of%20India%20Mumbai&category=attractions" | grep -o '"name":"[^"]*"' | head -3
           echo "--- AI import (only if ANTHROPIC_API_KEY is set; tiny test, well under 1 cent)"
+          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
           if grep -q '^ANTHROPIC_API_KEY=.\+' .env.local 2>/dev/null; then
-            JOB=$(printf '%s' '{"fileName":"test.txt","text":"Mexico City 5-7 March 2026. Stayed at Hotel Carlota. Day 1 lunch at Contramar (tuna tostadas, 9/10). Day 2 Teotihuacan."}' \
+            JOB=$(printf '%s' '{"fileName": "messy-test.xlsx", "text": "### Sheet: Summary\nOur Europe trip!!\tBudget 3000\nFlights\tTAP\n\n### Sheet: Plan\nWhen\tWhere\tWhat we did / thoughts\nMay 1 (46143 (2026-05-01 if this is a date))\tLisbon\tchecked into Memmo Alfama - great view 9/10\n\t\tdinner Taberna da Rua das Flores, book ahead\nMay 2\t\tBelem tower + pasteis de belem\nMay 3\tPorto\ttrain up, stayed at The Yeatman\n\t\tLivraria Lello (touristy 6/10), francesinha at Cafe Santiago\nMay 4\tPorto\tport tasting at Graham'\''s"}' \
               | curl -s -m 30 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/import/ai | grep -o '"jobId":"[^"]*"' | cut -d'"' -f4)
             echo "job: ${JOB:-none}"
             for i in $(seq 1 40); do
               sleep 3
               R=$(curl -s -m 30 "http://localhost:3000/api/import/ai?job=$JOB")
               case "$R" in *'"running"'*) continue;; esac
-              echo "after $((i*3))s: $(echo "$R" | head -c 1200)"
+              echo "after $((i*3))s: $(echo "$R" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.status!=="done"){console.log("status="+j.status+" error="+j.error);return}const t=j.trip;console.log("cities="+t.cities.map(c=>c.name+"("+c.numberOfDays+"d,"+c.hotels.length+"h,"+c.days.reduce((n,x)=>n+x.restaurants.length+x.activities.length,0)+"p)").join(" ")+" warnings="+t.warnings.length)}catch(e){console.log("unreadable")}})')"
               break
             done
           else

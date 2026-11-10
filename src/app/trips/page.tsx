@@ -168,22 +168,22 @@ function TripsContent() {
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: 'url(/sea-side-beach-0e.jpg)',
+            backgroundImage: 'url(/sea-warm.jpg)',
           }}
         >
           {/* Overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/30"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-white/20 backdrop-blur-sm rounded w-1/4 mb-6"></div>
+            <div className="h-8 bg-white/60 backdrop-blur-sm rounded w-1/4 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white/20 backdrop-blur-sm rounded-lg shadow p-6">
-                  <div className="h-4 bg-white/30 rounded w-3/4 mb-4"></div>
-                  <div className="h-3 bg-white/30 rounded w-1/2 mb-2"></div>
-                  <div className="h-3 bg-white/30 rounded w-2/3"></div>
+                <div key={i} className="bg-white/60 backdrop-blur-sm rounded-xl shadow-sm p-6">
+                  <div className="h-4 bg-[#E9E3DA] rounded w-3/4 mb-4"></div>
+                  <div className="h-3 bg-[#E9E3DA] rounded w-1/2 mb-2"></div>
+                  <div className="h-3 bg-[#E9E3DA] rounded w-2/3"></div>
                 </div>
               ))}
             </div>
@@ -199,24 +199,24 @@ function TripsContent() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(/sea-side-beach-0e.jpg)',
+          backgroundImage: 'url(/sea-warm.jpg)',
         }}
       >
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/30"></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Amazing Trips</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-[#143C5A] mb-2">Discover Amazing Trips</h1>
+          <p className="text-[#5B6B75]">
             Explore travel experiences shared by fellow adventurers
           </p>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white/20 backdrop-blur-sm rounded-lg shadow p-6 mb-8 border border-white/30">
+        <div className="bg-white/75 backdrop-blur-sm rounded-xl shadow-sm p-6 mb-8 border border-[#E4DED4]">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -226,7 +226,7 @@ function TripsContent() {
                   placeholder="Search trips, countries, cities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent text-black bg-white/90"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6878] focus:border-transparent text-black bg-white/90"
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ function TripsContent() {
                 <select
                   value={filterCountry}
                   onChange={(e) => setFilterCountry(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0160D6] focus:border-transparent appearance-none text-black bg-white/90"
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6878] focus:border-transparent appearance-none text-black bg-white/90"
                 >
                   <option value="" className="text-gray-900">All Countries</option>
                   {countries.map((country) => (
@@ -261,7 +261,7 @@ function TripsContent() {
         {filteredTrips.length === 0 ? (
           <div className="text-center py-12">
             <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No trips found</h3>
+            <h3 className="text-lg font-medium text-[#2F4A5C] mb-2">No trips found</h3>
             <p className="text-gray-600 mb-6">
               {searchTerm || filterCountry 
                 ? 'Try adjusting your search or filter criteria'
@@ -270,7 +270,7 @@ function TripsContent() {
             </p>
             <Link
               href="/trips/new"
-              className="inline-flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors"
             >
               <Heart className="w-5 h-5 mr-2" />
               Share Your Trip
@@ -284,11 +284,11 @@ function TripsContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white/20 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow border border-white/30"
+                className="bg-white/85 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-[#E4DED4]"
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">{trip.title}</h3>
+                    <h3 className="text-xl font-semibold text-[#2F4A5C] line-clamp-2">{trip.title}</h3>
                     <div className="flex items-center text-sm text-gray-500 ml-2">
                       <User className="w-4 h-4 mr-1" />
                       {trip.user.name}
@@ -340,7 +340,7 @@ function TripsContent() {
                   
                   <Link
                     href={`/trips/${trip.id}`}
-                    className="block w-full bg-[#0160D6] text-white px-4 py-3 rounded-lg text-center hover:bg-[#0160D6]/90 transition-colors"
+                    className="block w-full bg-[#4A6878] text-white px-4 py-3 rounded-lg text-center hover:bg-[#3F5B6A] transition-colors"
                   >
                     View Details
                   </Link>
@@ -352,14 +352,14 @@ function TripsContent() {
 
         {/* Call to Action */}
         <div className="mt-12 text-center">
-          <div className="bg-white/20 backdrop-blur-sm rounded-lg shadow p-8 border border-white/30">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Share Your Adventure</h2>
+          <div className="bg-white/75 backdrop-blur-sm rounded-xl shadow-sm p-8 border border-[#E4DED4]">
+            <h2 className="text-2xl font-bold text-[#143C5A] mb-4">Share Your Adventure</h2>
             <p className="text-gray-600 mb-6">
               Have an amazing trip to share? Help other travelers discover new destinations and experiences.
             </p>
             <Link
               href="/trips/new"
-              className="inline-flex items-center px-8 py-4 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors text-lg font-semibold"
+              className="inline-flex items-center px-8 py-4 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors text-lg font-semibold"
             >
               <Heart className="w-5 h-5 mr-2" />
               Share Your Trip

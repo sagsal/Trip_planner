@@ -87,6 +87,15 @@ jobs:
             curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
             echo
           done
+          echo "--- direct call from the server to Google Places (key hidden)"
+          G=$(grep '^GOOGLE_PLACES_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ')
+          if [ -n "$G" ]; then
+            curl -s -m 30 -w '\nHTTP %{http_code}\n' -X POST 'https://places.googleapis.com/v1/places:searchText' \
+              -H 'Content-Type: application/json' -H "X-Goog-Api-Key: $G" \
+              -H 'X-Goog-FieldMask: places.id,places.displayName,places.formattedAddress' \
+              -d '{"textQuery":"Hilton Paris","includedType":"lodging","pageSize":3}' | head -c 1200 | sed "s/$G/<KEY>/g"
+            echo
+          fi
           echo "--- direct call from the server to TripAdvisor (key hidden)"
           K=$(grep '^TRIPADVISOR_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ')
           URL="https://api.content.tripadvisor.com/api/v1/location/search?key=$K&searchQuery=Hilton%20Paris&category=hotels&language=en"

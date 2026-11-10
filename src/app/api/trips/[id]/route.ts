@@ -507,8 +507,14 @@ export async function PUT(
       userName,
       userEmail,
       tripRating,
-      tripReview
+      tripReview,
+      coverImageUrl
     } = body;
+    // Only accept cover photos served by this site's own photo route; null removes it
+    const coverUpdate =
+      coverImageUrl === undefined
+        ? {}
+        : { coverImageUrl: typeof coverImageUrl === 'string' && coverImageUrl.startsWith('/api/places/photo?') ? coverImageUrl : null };
 
     // Validate required fields - for shared trips, dates are required
     if (!title || !countries) {
@@ -583,7 +589,8 @@ export async function PUT(
           countries: countries || existingTrip.countries,
           cities: cities || existingTrip.cities,
           isPublic: finalIsPublic,
-          isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft
+          isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft,
+          ...coverUpdate
         }
       });
 

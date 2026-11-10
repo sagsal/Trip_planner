@@ -11,6 +11,7 @@ import { fetchTrip } from '@/utils/api';
 interface Trip {
   id: string;
   title: string;
+  coverImageUrl?: string | null;
   description: string | null;
   startDate: string;
   endDate: string;
@@ -937,7 +938,15 @@ function TripDetailContent() {
           transition={{ duration: 0.6 }}
         >
           {/* Trip Header */}
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-8 overflow-hidden">
+            {trip.coverImageUrl && (
+              <img
+                src={trip.coverImageUrl}
+                alt={trip.title}
+                className="-mx-8 -mt-8 mb-6 w-[calc(100%+4rem)] max-w-none h-64 sm:h-80 object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{trip.title}</h1>

@@ -442,6 +442,19 @@ function AccountContent() {
                     : 'bg-[#E3ECEF] text-[#3F5B6A]';
                 return (
                   <li key={trip.id} className="flex items-center gap-4 px-4 sm:px-5 py-4 hover:bg-[#FBF9F5] transition-colors">
+                    {(trip as any).coverImageUrl ? (
+                      <Link href={openHref} className="shrink-0">
+                        <img
+                          src={(trip as any).coverImageUrl}
+                          alt=""
+                          loading="lazy"
+                          className="w-16 h-12 rounded-md object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }}
+                        />
+                      </Link>
+                    ) : (
+                      <div className="shrink-0 w-16 h-12 rounded-md bg-[#EEE8DF]" />
+                    )}
                     <Link href={openHref} className="flex-1 min-w-0" title="Continue working on this trip">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-[#2F4A5C] truncate">{trip.title || 'Untitled trip'}</span>

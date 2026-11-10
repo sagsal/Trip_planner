@@ -33,6 +33,7 @@ model Trip {
   cities      String // JSON string of cities visited
   isPublic    Boolean   @default(true)
   isDraft     Boolean   @default(false) // true for draft trips, false for completed/shared trips
+  coverImageUrl String? @db.Text // cover photo chosen when adding the trip (Google photo link)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

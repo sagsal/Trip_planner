@@ -100,6 +100,8 @@ jobs:
           done
           echo "--- search activities: Mumbai"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Gateway%20of%20India%20Mumbai&category=attractions" | grep -o '"name":"[^"]*"' | head -3
+          echo "--- cover photo choices: Mexico City (links only, no photos loaded)"
+          curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Mexico%20City,%20Mexico" | grep -o '"thumb"' | wc -l
           echo "--- photo for a picked place (one photo)"
           P=$(curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Taj%20Mumbai&category=hotels" | grep -o '"photo_url":"[^"]*"' | head -1 | cut -d'"' -f4)
           if [ -n "$P" ]; then

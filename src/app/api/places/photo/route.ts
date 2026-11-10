@@ -14,9 +14,9 @@ import { GOOGLE_PLACES_API_KEY } from '@/lib/googlePlaces';
 const PLACE_ID = /^[A-Za-z0-9_-]{10,300}$/;
 const PHOTO_NAME = /^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/;
 
-async function photoUri(name: string): Promise<string | null> {
+async function photoUri(name: string, width: number): Promise<string | null> {
   const res = await fetch(
-    `https://places.googleapis.com/v1/${name}/media?maxWidthPx=800&skipHttpRedirect=true`,
+    `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${width}&skipHttpRedirect=true`,
     { headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY } }
   );
   if (!res.ok) return null;
@@ -40,12 +40,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const name = searchParams.get('name') || '';
   const place = searchParams.get('place') || '';
+  // Optional size: 400 for small thumbnails, up to 1600 for cover photos (default 800)
+  const width = Math.min(1600, Math.max(200, Number(searchParams.get('w')) || 800));
 
   try {
-    let uri = PHOTO_NAME.test(name) ? await photoUri(name) : null;
+    let uri = PHOTO_NAME.test(name) ? await photoUri(name, width) : null;
     if (!uri && PLACE_ID.test(place)) {
       const fresh = await freshPhotoName(place);
-      if (fresh) uri = await photoUri(fresh);
+      if (fresh) uri = await photoUri(fresh, width);
     }
     if (!uri) return new NextResponse('Photo not found', { status: 404 });
 

@@ -17,6 +17,7 @@ interface Trip {
   cities: string;
   isPublic: boolean;
   isDraft?: boolean; // Add isDraft to interface
+  coverImageUrl?: string | null;
   createdAt: string;
   cities_data: CityData[];
   user: {
@@ -286,6 +287,17 @@ function TripsContent() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="bg-white/85 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-[#E4DED4]"
               >
+                {trip.coverImageUrl && (
+                  <Link href={`/trips/${trip.id}`} className="block">
+                    <img
+                      src={trip.coverImageUrl}
+                      alt={trip.title}
+                      loading="lazy"
+                      className="w-full h-44 object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </Link>
+                )}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-xl font-semibold text-[#2F4A5C] line-clamp-2">{trip.title}</h3>

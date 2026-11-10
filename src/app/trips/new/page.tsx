@@ -87,6 +87,30 @@ function NewTripContent() {
   const [editingStatus, setEditingStatus] = useState<'draft' | 'private' | 'shared' | null>(null);
   const [loadingTrip, setLoadingTrip] = useState(!!editingId);
 
+  // Cover photo for the trip (chosen from Google photos of the first city)
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [coverChoices, setCoverChoices] = useState<{ thumb: string; full: string }[]>([]);
+  const [loadingCovers, setLoadingCovers] = useState(false);
+  const [coverMessage, setCoverMessage] = useState('');
+
+  const loadCoverChoices = async () => {
+    const first = citiesData[0];
+    if (!first) return;
+    setLoadingCovers(true);
+    setCoverMessage('');
+    try {
+      const q = [first.name, first.country].filter(Boolean).join(', ');
+      const res = await fetch(`/api/places/cover-photos?query=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setCoverChoices(data.photos || []);
+      if (!data.photos?.length) setCoverMessage('No photos found for this city.');
+    } catch {
+      setCoverMessage('Could not load photos. Please try again.');
+    } finally {
+      setLoadingCovers(false);
+    }
+  };
+
   // State for adding new city
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
@@ -145,6 +169,7 @@ function NewTripContent() {
         if (cancelled) return;
 
         setEditingStatus(trip.isDraft ? 'draft' : trip.isPublic === false ? 'private' : 'shared');
+        setCoverImageUrl(trip.coverImageUrl || null);
         setFormData(prev => ({
           ...prev,
           title: trip.title ?? '',
@@ -841,6 +866,7 @@ function NewTripContent() {
           countries: isEditing ? JSON.stringify(uniqueCountries) : uniqueCountries, // Use countries from cities
           cities: JSON.stringify(citiesData.map(c => c.name)),
           citiesData: transformedCitiesData,
+          coverImageUrl: coverImageUrl,
           userId: user.id,
           userName: user.name,
           userEmail: user.email,
@@ -1000,6 +1026,64 @@ function NewTripContent() {
                     </>
                   );
                 })()}
+              </div>
+
+              {/* Cover photo */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cover photo</label>
+                {coverImageUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                    <img src={coverImageUrl} alt="Trip cover" className="w-full h-48 object-cover" />
+                    <div className="absolute bottom-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setCoverImageUrl(null); if (coverChoices.length === 0) loadCoverChoices(); }}
+                        className="px-3 py-1.5 bg-white/90 text-gray-800 rounded-lg text-sm font-medium hover:bg-white"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCoverImageUrl(null)}
+                        className="px-3 py-1.5 bg-white/90 text-red-600 rounded-lg text-sm font-medium hover:bg-white"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : citiesData.length === 0 ? (
+                  <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400 text-sm">
+                    Add a city below, then choose a photo of it for your trip
+                  </div>
+                ) : coverChoices.length === 0 ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={loadCoverChoices}
+                      disabled={loadingCovers}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                    >
+                      {loadingCovers ? 'Loading photos...' : `Choose a cover photo of ${citiesData[0].name}`}
+                    </button>
+                    {coverMessage && <p className="mt-1 text-xs text-gray-500">{coverMessage}</p>}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Click a photo to use it as your trip's cover.</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {coverChoices.map((c) => (
+                        <button
+                          key={c.thumb}
+                          type="button"
+                          onClick={() => setCoverImageUrl(c.full)}
+                          className="rounded-lg overflow-hidden border-2 border-transparent hover:border-[#4A6878] focus:border-[#4A6878] focus:outline-none"
+                        >
+                          <img src={c.thumb} alt="Cover option" className="w-full h-24 object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
                   </div>

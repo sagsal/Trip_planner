@@ -376,7 +376,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('POST /api/trips - Received request body:', JSON.stringify(body, null, 2));
     
-    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft } = body;
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl } = body;
+    // Only accept cover photos served by this site's own photo route
+    const safeCover = typeof coverImageUrl === 'string' && coverImageUrl.startsWith('/api/places/photo?') ? coverImageUrl : null;
     
     console.log('Extracted values:', {
       title: title ? `${title.substring(0, 50)}...` : 'missing',
@@ -515,6 +517,7 @@ export async function POST(request: NextRequest) {
         cities: citiesString,
         isPublic: isDraft ? false : true, // Drafts are always private
         isDraft: isDraft || false,
+        coverImageUrl: safeCover,
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {

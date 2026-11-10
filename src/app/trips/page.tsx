@@ -350,22 +350,6 @@ function TripsContent() {
           </div>
         )}
 
-        {/* Call to Action */}
-        <div className="mt-12 text-center">
-          <div className="bg-white/75 backdrop-blur-sm rounded-xl shadow-sm p-8 border border-[#E4DED4]">
-            <h2 className="text-2xl font-bold text-[#143C5A] mb-4">Share Your Adventure</h2>
-            <p className="text-gray-600 mb-6">
-              Have an amazing trip to share? Help other travelers discover new destinations and experiences.
-            </p>
-            <Link
-              href="/trips/new"
-              className="inline-flex items-center px-8 py-4 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors text-lg font-semibold"
-            >
-              <Heart className="w-5 h-5 mr-2" />
-              Share Your Trip
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

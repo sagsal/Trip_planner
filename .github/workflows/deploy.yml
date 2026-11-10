@@ -87,6 +87,10 @@ jobs:
             curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
             echo
           done
+          echo "--- public trips on Browse Trips (id | title | cities | owner name)"
+          curl -s -m 30 "http://localhost:3000/api/trips" | node -e '
+            let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);const t=Array.isArray(j)?j:(j.trips||[]);
+            console.log("count:",t.length);for(const x of t){console.log([x.id,x.title,x.cities,(x.user&&x.user.name)||x.userName||""].join(" | "))}}catch(e){console.log("could not read trips:",e.message)}})'
           echo "--- recent trip save errors from the server log (secrets hidden)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
             [ -f "$f" ] || continue

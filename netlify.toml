@@ -1,6 +1,10 @@
+# The live site (tripshare.org) runs on the VPS via GitHub Actions, not Netlify.
+# Tell Netlify to skip every build so pushes don't use Netlify credits.
+# (An "ignore" command that exits with 0 means "skip this build".)
 [build]
   command = "npm run build"
   publish = ".next"
+  ignore = "exit 0"
 
 # For Next.js on Netlify, we need to ensure API routes work
 # The Next.js runtime handles routing, so we don't need catch-all redirects

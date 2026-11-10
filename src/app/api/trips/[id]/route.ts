@@ -635,7 +635,7 @@ export async function PUT(
       }
 
       return trip;
-    });
+    }, { maxWait: 10000, timeout: 30000 }); // trips with many places can take more than the 5s default
 
     console.log('Trip updated successfully:', title, 'by user:', userName);
 

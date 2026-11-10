@@ -26,7 +26,7 @@ model User {
 model Trip {
   id          String    @id @default(cuid())
   title       String
-  description String?
+  description String? @db.Text
   startDate   DateTime?
   endDate     DateTime?
   countries   String // JSON string of countries visited
@@ -67,7 +67,7 @@ model Hotel {
   name      String
   location  String
   rating    Int? // 1-5 stars
-  review    String?
+  review    String?  @db.Text // can hold a review plus place details (photo and map links)
   liked     Boolean? // true for liked, false for disliked, null for neutral
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -83,7 +83,7 @@ model Restaurant {
   name      String
   location  String
   rating    Int? // 1-5 stars
-  review    String?
+  review    String?  @db.Text // can hold a review plus place details (photo and map links)
   liked     Boolean? // true for liked, false for disliked, null for neutral
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -100,7 +100,7 @@ model Activity {
   name      String
   location  String
   rating    Int? // 1-5 stars
-  review    String?
+  review    String?  @db.Text // can hold a review plus place details (photo and map links)
   liked     Boolean? // true for liked, false for disliked, null for neutral
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

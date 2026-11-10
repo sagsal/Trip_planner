@@ -75,7 +75,9 @@ const SYSTEM = `You turn a traveller's trip notes into structured data for a tri
 The notes may be a spreadsheet (tab-separated rows, possibly several sheets), a Word document, or pasted text, in any layout.
 Rules:
 - Use only what the notes say. Never invent places, addresses, ratings or reviews. Infer only the obvious: a city's country, whether a place is a hotel/restaurant/activity, which day it belongs to from context.
-- Put each place in exactly one city. If a day isn't clear, use Day 1 for that city and add a warning.
+- Put each place in exactly one city. Hotels belong to the city stay, not to a day, so never warn about a hotel's day.
+- If a restaurant's or activity's day isn't clear, use Day 1 for that city and add a warning.
+- Only add warnings that help the traveller check something; don't report routine conversions like rating scales.
 - numberOfDays per city: from dates or the highest day mentioned; at least 1.
 - Dates: output YYYY-MM-DD. If a date like 03/04/2026 is ambiguous, prefer the reading that fits the other dates, and add a warning.
 - Spreadsheet dates may appear as Excel serial numbers with a YYYY-MM-DD hint next to them — use the hint.

@@ -34,6 +34,7 @@ interface Activity {
   review: string;
   liked: boolean | null;
   dayNumber?: number;
+  imageUrl?: string | null;
 }
 
 interface Day {
@@ -156,7 +157,10 @@ function NewTripContent() {
         const loadedCities: CityData[] = (trip.cities_data || []).map((city: any, ci: number) => {
           const cityId = String(city.id ?? `loaded-${ci}`);
           const restaurants = (city.restaurants || []).map((r: any, i: number) => toItem(r, `${cityId}-r-${i}`));
-          const activities = (city.activities || []).map((a: any, i: number) => toItem(a, `${cityId}-a-${i}`));
+          const activities = (city.activities || []).map((a: any, i: number) => ({
+            ...toItem(a, `${cityId}-a-${i}`),
+            imageUrl: a?.imageUrl ?? null,
+          }));
           const n = Math.max(1, Number(city.numberOfDays) || 1);
           const days: Day[] = Array.from({ length: n }, (_, i) => ({
             id: `${cityId}-day-${i + 1}`,
@@ -1657,6 +1661,18 @@ function NewTripContent() {
                                         <X className="w-3 h-3" />
                                       </button>
                                     </div>
+                                    {activity.imageUrl && (
+                                      <div className="mb-3">
+                                        <img
+                                          src={activity.imageUrl}
+                                          alt={activity.name}
+                                          className="w-full h-32 object-cover rounded-lg"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                       <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
@@ -1670,6 +1686,7 @@ function NewTripContent() {
                                               ? [addr.street1, addr.city, addr.state, addr.country].filter(Boolean).join(', ')
                                               : '';
                                             if (location) updateActivity(city.id, day.id, activity.id, 'location', location);
+                                            updateActivity(city.id, day.id, activity.id, 'imageUrl', result.photo_url || null);
                                           }}
                                           placeholder={`Search activities in ${city.name}...`}
                                           category="attractions"

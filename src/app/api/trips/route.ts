@@ -567,7 +567,8 @@ export async function POST(request: NextRequest) {
                   rating: activity.rating || null,
                   review: activity.review || null,
                   liked: activity.liked ?? null,
-                  dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null
+                  dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null,
+                  imageUrl: typeof activity.imageUrl === 'string' && activity.imageUrl ? activity.imageUrl : null
                 }))
               }
             };

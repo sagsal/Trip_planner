@@ -625,7 +625,8 @@ export async function PUT(
                   rating: activity.rating,
                   review: activity.review,
                   liked: activity.liked,
-                  dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null
+                  dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null,
+                  imageUrl: typeof activity.imageUrl === 'string' && activity.imageUrl ? activity.imageUrl : null
                 }))
               }
             }

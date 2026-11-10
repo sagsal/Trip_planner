@@ -106,6 +106,7 @@ model Activity {
   updatedAt DateTime @updatedAt
 
   dayNumber Int? // which day of the city stay (1, 2, 3...); null if unknown
+  imageUrl  String? @db.Text // photo link for a place picked from search
   cityId String
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 

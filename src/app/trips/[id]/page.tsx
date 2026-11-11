@@ -8,6 +8,8 @@ import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, C
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { cleanArrival, cleanTravel, parseJson, routeText, modeInfo, type FlightLeg } from '@/lib/travel';
 import { tripTypeIcon } from '@/lib/regions';
+import SaveToSandbox from '@/components/SaveToSandbox';
+import type { PlaceToSave } from '@/lib/sandbox';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -100,7 +102,7 @@ interface DraftTrip {
 }
 
 // One hotel / restaurant / activity: photo, name, address, rating, the traveller's review and a link
-function PlaceCard({ place }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null } }) {
+function PlaceCard({ place, save }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null }; save?: PlaceToSave }) {
   const details = placeFields(place);
   const rating = Number(place.rating) || 0;
   return (
@@ -136,6 +138,7 @@ function PlaceCard({ place }: { place: { name: string; location?: string; rating
               )}
               {place.liked === true && <ThumbsUp className="w-4 h-4 text-green-600" />}
               {place.liked === false && <ThumbsDown className="w-4 h-4 text-red-500" />}
+              {save && <SaveToSandbox places={[save]} />}
             </div>
           </div>
           {details.review && (
@@ -843,11 +846,38 @@ function TripDetailContent() {
                 const noDayRestaurants = city.restaurants.filter((r) => !r.dayNumber);
                 const noDayActivities = city.activities.filter((a) => !a.dayNumber);
                 const totalDays = Math.max(city.numberOfDays || 0, days.length ? days[days.length - 1] : 0);
+                // What gets saved to the sandbox for a place in this city
+                const toSave = (p: any, kind: PlaceToSave['kind']): PlaceToSave => {
+                  const f = placeFields(p);
+                  return {
+                    kind,
+                    name: p.name,
+                    location: p.location || null,
+                    city: city.name,
+                    country: city.country,
+                    imageUrl: f.imageUrl,
+                    webUrl: f.webUrl,
+                    stayType: p.stayType || null,
+                    sourceTripId: trip.id,
+                    sourceTripTitle: trip.title,
+                    sourceUserName: trip.user?.name || null,
+                    sourceRating: p.rating || null,
+                    sourceReview: f.review || null,
+                  };
+                };
+                const cityPlaces: PlaceToSave[] = [
+                  ...city.hotels.map((h) => toSave(h, 'hotel')),
+                  ...city.activities.map((a) => toSave(a, 'activity')),
+                  ...city.restaurants.map((r) => toSave(r, 'restaurant')),
+                ];
 
                 return (
                   <div key={city.id} className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                     <div className="mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-1">{city.name}</h2>
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-1">{city.name}</h2>
+                        {cityPlaces.length > 1 && <SaveToSandbox places={cityPlaces} label="Save this city" variant="pill" />}
+                      </div>
                       <p className="text-gray-600">
                         {city.country}
                         {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
@@ -874,7 +904,7 @@ function TripDetailContent() {
                         <h3 className="text-lg font-semibold text-gray-900 mb-3">🏨 Where we stayed</h3>
                         <div className="space-y-4">
                           {city.hotels.map((hotel) => (
-                            <PlaceCard key={hotel.id} place={hotel} />
+                            <PlaceCard key={hotel.id} place={hotel} save={toSave(hotel, 'hotel')} />
                           ))}
                         </div>
                       </div>
@@ -885,12 +915,21 @@ function TripDetailContent() {
                       const as = city.activities.filter((a) => a.dayNumber === dayNumber);
                       return (
                         <div key={dayNumber} className="mb-8 last:mb-0">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Day {dayNumber}</h3>
+                          <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900">Day {dayNumber}</h3>
+                            {as.length + rs.length > 1 && (
+                              <SaveToSandbox
+                                places={[...as.map((a) => toSave(a, 'activity')), ...rs.map((r) => toSave(r, 'restaurant'))]}
+                                label="Save this day"
+                                variant="pill"
+                              />
+                            )}
+                          </div>
                           {as.length > 0 && (
                             <div className="mb-4">
                               <p className="text-sm font-medium text-gray-500 mb-2">🎯 Activities</p>
                               <div className="space-y-4">
-                                {as.map((a) => <PlaceCard key={a.id} place={a} />)}
+                                {as.map((a) => <PlaceCard key={a.id} place={a} save={toSave(a, 'activity')} />)}
                               </div>
                             </div>
                           )}
@@ -898,7 +937,7 @@ function TripDetailContent() {
                             <div>
                               <p className="text-sm font-medium text-gray-500 mb-2">🍽️ Restaurants</p>
                               <div className="space-y-4">
-                                {rs.map((r) => <PlaceCard key={r.id} place={r} />)}
+                                {rs.map((r) => <PlaceCard key={r.id} place={r} save={toSave(r, 'restaurant')} />)}
                               </div>
                             </div>
                           )}
@@ -915,7 +954,7 @@ function TripDetailContent() {
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-500 mb-2">🎯 Activities</p>
                             <div className="space-y-4">
-                              {noDayActivities.map((a) => <PlaceCard key={a.id} place={a} />)}
+                              {noDayActivities.map((a) => <PlaceCard key={a.id} place={a} save={toSave(a, 'activity')} />)}
                             </div>
                           </div>
                         )}
@@ -923,7 +962,7 @@ function TripDetailContent() {
                           <div>
                             <p className="text-sm font-medium text-gray-500 mb-2">🍽️ Restaurants</p>
                             <div className="space-y-4">
-                              {noDayRestaurants.map((r) => <PlaceCard key={r.id} place={r} />)}
+                              {noDayRestaurants.map((r) => <PlaceCard key={r.id} place={r} save={toSave(r, 'restaurant')} />)}
                             </div>
                           </div>
                         )}

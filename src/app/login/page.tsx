@@ -68,7 +68,9 @@ function LoginForm() {
         localStorage.setItem('user', JSON.stringify(data.user));
         // Force navigation update
         window.dispatchEvent(new Event('storage'));
-        router.push('/account');
+        // Go back to where they were (e.g. a trip they wanted to save from), if it's a page on this site
+        const next = searchParams.get('next');
+        router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/account');
       } else {
         const data = await response.json();
         console.log('Login failed:', data);

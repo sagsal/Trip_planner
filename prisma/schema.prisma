@@ -19,6 +19,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   trips Trip[]
+  sandboxTrips SandboxTrip[]
+  savedPlaces  SavedPlace[]
 
   @@map("users")
 }
@@ -122,4 +124,60 @@ model Activity {
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   @@map("activities")
+}
+
+// ---------- My Travel Sandbox ----------
+// A planned trip in the user's sandbox (they can plan many at once)
+model SandboxTrip {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  region    String?
+  tripType  String?
+  startDate String?  // YYYY-MM-DD, optional while planning
+  endDate   String?
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  places SavedPlace[]
+
+  @@index([userId])
+  @@map("sandbox_trips")
+}
+
+// A hotel / restaurant / activity saved into the sandbox from someone's trip
+model SavedPlace {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sandboxTripId String?      // null = "Unsorted"
+  sandboxTrip   SandboxTrip? @relation(fields: [sandboxTripId], references: [id], onDelete: SetNull)
+
+  kind      String   // "hotel" | "restaurant" | "activity"
+  name      String
+  location  String?  @db.Text
+  city      String?
+  country   String?
+  imageUrl  String?  @db.Text
+  webUrl    String?  @db.Text
+  stayType  String?  // "rental" for Airbnb/VRBO-style stays
+
+  // From the trip it was found in
+  sourceTripId    String?
+  sourceTripTitle String?
+  sourceUserName  String?
+  sourceRating    Int?
+  sourceReview    String?  @db.Text
+
+  // The planner's own
+  note      String?  @db.Text
+  dayNumber Int?     // day within the city, once scheduled
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sandboxTripId])
+  @@map("saved_places")
 }

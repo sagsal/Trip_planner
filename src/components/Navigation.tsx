@@ -5,8 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown,
+  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package,
 } from 'lucide-react';
+import { SANDBOX_EVENT } from '@/lib/sandbox';
 
 type Item = { href: string; label: string; hint?: string; icon: ComponentType<{ className?: string }> };
 
@@ -15,6 +16,7 @@ const SIGNED_IN: { title: string; items: Item[] }[] = [
   {
     title: 'My trips',
     items: [
+      { href: '/sandbox', label: 'My Travel Sandbox', hint: 'Places you’ve saved for trips you’re planning', icon: Package },
       { href: '/account', label: 'My account & trips', hint: 'Drafts, private and shared trips', icon: User },
       { href: '/trips/new', label: 'Add a trip', hint: 'Day by day, with hotels, food and activities', icon: PlusCircle },
       { href: '/trips/import', label: 'Import your notes', hint: 'From a spreadsheet, Word doc or pasted text', icon: Sparkles },
@@ -52,8 +54,27 @@ export default function Navigation() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id?: string; name: string; email: string } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [sandboxCount, setSandboxCount] = useState<number | null>(null);
+
+  // Sandbox counter: load once signed in, and update whenever something is saved or removed
+  useEffect(() => {
+    if (!user) { setSandboxCount(null); return; }
+    const id = (user as any).id;
+    if (!id) return;
+    let cancelled = false;
+    fetch(`/api/sandbox?userId=${encodeURIComponent(id)}&countOnly=1`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && typeof d.count === 'number') setSandboxCount(d.count); })
+      .catch(() => {});
+    const onChange = (e: Event) => {
+      const c = (e as CustomEvent).detail?.count;
+      if (typeof c === 'number') setSandboxCount(c);
+    };
+    window.addEventListener(SANDBOX_EVENT, onChange);
+    return () => { cancelled = true; window.removeEventListener(SANDBOX_EVENT, onChange); };
+  }, [user]);
 
   // Check authentication status on mount and when it changes (login/logout, other tabs)
   useEffect(() => {
@@ -143,6 +164,24 @@ export default function Navigation() {
                   Register
                 </Link>
               </>
+            )}
+
+            {/* My Travel Sandbox (saved places), with a counter */}
+            {isAuthenticated && (
+              <Link
+                href="/sandbox"
+                id="sandbox-nav-icon"
+                title="My Travel Sandbox"
+                aria-label={`My Travel Sandbox${sandboxCount ? `, ${sandboxCount} saved` : ''}`}
+                className="relative flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 text-black hover:bg-gray-50"
+              >
+                <Package className="w-5 h-5" />
+                {!!sandboxCount && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#F13B13] text-white text-xs font-semibold flex items-center justify-center">
+                    {sandboxCount > 99 ? '99+' : sandboxCount}
+                  </span>
+                )}
+              </Link>
             )}
 
             {/* The menu */}

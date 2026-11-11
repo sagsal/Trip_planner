@@ -261,6 +261,8 @@ function NewTripContent() {
       rating: Number(p.rating) || 0,
       review: p.review || '',
       liked: null,
+      imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : null,
+      webUrl: typeof p.webUrl === 'string' ? p.webUrl : null,
     });
     const cities: CityData[] = (imported.cities || []).map((c, ci) => {
       const cityId = `import-${Date.now()}-${ci}`;
@@ -274,7 +276,10 @@ function NewTripContent() {
           activities: (src?.activities || []).map((a, ai) => item(a, `${cityId}-${i + 1}-a-${ai}`)),
         };
       });
-      const hotels = (c.hotels || []).map((h, hi) => item(h, `${cityId}-h-${hi}`));
+      const hotels = (c.hotels || []).map((h, hi) => ({
+        ...item(h, `${cityId}-h-${hi}`),
+        stayType: h.stayType === 'rental' ? ('rental' as const) : null,
+      }));
       return {
         id: cityId,
         name: c.name,
@@ -297,9 +302,14 @@ function NewTripContent() {
     {
       const all = Array.from(new Set(cities.map((c) => c.country).filter(Boolean)));
       setTripCountries(all);
-      setRegion(regionOf(all[0] || '') || '');
+      setRegion(imported!.region || regionOf(all[0] || '') || '');
+      if (imported!.tripType) setTripType(imported!.tripType);
     }
-    setImportNotice('Filled in from your spreadsheet. Please check everything, then save it as a draft or save the trip.');
+    setImportNotice(
+      imported.source === 'sandbox'
+        ? 'Filled in from your sandbox plan. Check the days and details, then save it as a draft — after your trip, add your own ratings and reviews.'
+        : 'Filled in from your spreadsheet. Please check everything, then save it as a draft or save the trip.'
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

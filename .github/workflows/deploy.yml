@@ -77,89 +77,21 @@ jobs:
           echo "✅ Deployment complete!"
           REMOTE
 
-      - name: Check TripAdvisor search works (health check, never fails the deploy)
+      - name: Quick checks after deploy (never fail the deploy; counts / pass-fail only, logs are public)
         continue-on-error: true
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -l -s' <<'REMOTE'
+          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
           cd /var/www/Trip_planner
-          echo "Key line in .env.local: $(grep -c '^TRIPADVISOR_API_KEY=.\+' .env.local 2>/dev/null || echo 0)"
-          echo "Key line in .env:       $(grep -c '^TRIPADVISOR_API_KEY=.\+' .env 2>/dev/null || echo 0)"
-          echo "TripAdvisor key fingerprint: $(grep '^TRIPADVISOR_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ' | tr -d '\n' | sha256sum | cut -c1-12)"
-          echo "Google key fingerprint: $(grep '^GOOGLE_PLACES_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ' | tr -d '\n' | sha256sum | cut -c1-12)"
           sleep 8
-          for q in "Hilton%20Paris" "Taj%20Mumbai"; do
-            echo "--- search hotels: $q"
-            curl -s -m 30 -w '\nHTTP %{http_code}\n' "http://localhost:3000/api/tripadvisor/search?query=$q&category=hotels" | head -c 1500
-            echo
-          done
+          echo "--- keys present: google=$(grep -c '^GOOGLE_PLACES_API_KEY=.\+' .env.local 2>/dev/null || echo 0) anthropic=$(grep -c '^ANTHROPIC_API_KEY=.\+' .env.local 2>/dev/null || echo 0)"
+          echo "--- place search (1 Google search)"
+          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- sandbox API test (temporary test user, deleted afterwards)"
+          node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
-            [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6
+            [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|Google Places search failed|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6
           done
-          echo "--- search activities: Mumbai"
-          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Gateway%20of%20India%20Mumbai&category=attractions" | grep -o '"name":"[^"]*"' | head -3
-          echo "--- AI import (only if ANTHROPIC_API_KEY is set; tiny test, well under 1 cent)"
-          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
-          if grep -q '^ANTHROPIC_API_KEY=.\+' .env.local 2>/dev/null; then
-            JOB=$(printf '%s' '{"fileName": "messy-test.xlsx", "text": "### Sheet: Summary\nOur Europe trip!!\tBudget 3000\nFlights\tTAP\n\n### Sheet: Plan\nWhen\tWhere\tWhat we did / thoughts\nMay 1 (46143 (2026-05-01 if this is a date))\tLisbon\tchecked into Memmo Alfama - great view 9/10\n\t\tdinner Taberna da Rua das Flores, book ahead\nMay 2\t\tBelem tower + pasteis de belem\nMay 3\tPorto\ttrain up, stayed at The Yeatman\n\t\tLivraria Lello (touristy 6/10), francesinha at Cafe Santiago\nMay 4\tPorto\tport tasting at Graham'\''s"}' \
-              | curl -s -m 30 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/import/ai | grep -o '"jobId":"[^"]*"' | cut -d'"' -f4)
-            echo "job: ${JOB:-none}"
-            for i in $(seq 1 40); do
-              sleep 3
-              R=$(curl -s -m 30 "http://localhost:3000/api/import/ai?job=$JOB")
-              case "$R" in *'"running"'*) continue;; esac
-              echo "after $((i*3))s: $(echo "$R" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.status!=="done"){console.log("status="+j.status+" error="+j.error);return}const t=j.trip;console.log("cities="+t.cities.map(c=>c.name+"("+c.numberOfDays+"d,"+c.hotels.length+"h,"+c.days.reduce((n,x)=>n+x.restaurants.length+x.activities.length,0)+"p)").join(" ")+" warnings="+t.warnings.length)}catch(e){console.log("unreadable")}})')"
-              break
-            done
-          else
-            echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
-          fi
-          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
-          echo "--- hotel name search: Totoco, Ometepe Nicaragua"
-          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Totoco%20Ometepe%20Nicaragua&category=hotels" \
-            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{for(const r of JSON.parse(d).results||[])console.log(" - "+r.name+" | photo: "+(r.photo_url?"yes":"none"))}catch(e){console.log("unreadable")}})'
-          echo "--- describe: totoco (photo check)"
-          printf '{"text":"Totoco eco lodge on Ometepe","city":"Ometepe","country":"Nicaragua","category":"hotels"}' \
-            | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
-            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{for(const r of JSON.parse(d).results||[])console.log(" - "+r.name+" | photo: "+((r.photos||[]).length?"yes":"none"))}catch(e){console.log("unreadable")}})'
-
-          echo "--- activity name search: Falasarna, Chania Greece"
-          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Falasarna%20Chania%20Greece&category=attractions" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(" -> "+(JSON.parse(d).results||[]).slice(0,4).map(r=>r.name).join(" | "))}catch(e){console.log("unreadable")}})'
-          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Falasarna%20beach%20Chania%20Greece&category=attractions" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(" -> "+(JSON.parse(d).results||[]).slice(0,4).map(r=>r.name).join(" | "))}catch(e){console.log("unreadable")}})'
-          echo "--- describe a restaurant (test; public place names only)"
-          for t in "restaurants|the vegetarian restaurant on Parque Espana" "attractions|the big park with the castle on the hill" "hotels|the boutique hotel with a rooftop pool in Condesa"; do
-            cat_="${t%%|*}"; d="${t#*|}"
-            printf '{"text":"%s","city":"Mexico City","country":"Mexico","category":"%s"}' "$d" "$cat_" \
-              | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
-              | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("ai="+j.usedAi+" note="+(j.note||"-")+" photos="+(j.results||[]).filter(r=>r.photos&&r.photos.length).length+"/"+(j.results||[]).length+" -> "+(j.results||[]).slice(0,4).map(r=>r.name).join(" | ")+(j.error?" error="+j.error:""))}catch(e){console.log("unreadable")}})'
-          done
-          echo "--- cover photo choices: Mexico (links only, no photos loaded)"
-          curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Mexico" | grep -o '"thumb"' | wc -l
-          echo "--- photo for a picked place (one photo)"
-          P=$(curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Taj%20Mumbai&category=hotels" | grep -o '"photo_url":"[^"]*"' | head -1 | cut -d'"' -f4)
-          if [ -n "$P" ]; then
-            curl -s -m 30 -o /dev/null -w 'photo link -> HTTP %{http_code}, redirects to: %{redirect_url}\n' "http://localhost:3000$P" | sed -E 's#(https://[^/]+)/.*#\1/...#'
-          else
-            echo "no photo_url in search results"
-          fi
-          echo "--- direct call from the server to Google Places (key hidden)"
-          G=$(grep '^GOOGLE_PLACES_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ')
-          echo "Google key length: ${#G} (a normal key is 39), starts with AIza: $(case "$G" in AIza*) echo yes;; *) echo no;; esac)"
-          if [ -n "$G" ]; then
-            curl -s -m 30 -w '\nHTTP %{http_code}\n' -X POST 'https://places.googleapis.com/v1/places:searchText' \
-              -H 'Content-Type: application/json' -H "X-Goog-Api-Key: $G" \
-              -H 'X-Goog-FieldMask: places.id,places.displayName,places.formattedAddress' \
-              -d '{"textQuery":"Hilton Paris","includedType":"lodging","pageSize":3}' | head -c 1200 | sed "s/$G/<KEY>/g"
-            echo
-          fi
-          echo "--- direct call from the server to TripAdvisor (key hidden)"
-          K=$(grep '^TRIPADVISOR_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ')
-          URL="https://api.content.tripadvisor.com/api/v1/location/search?key=$K&searchQuery=Hilton%20Paris&category=hotels&language=en"
-          echo "[no referer]"
-          curl -s -m 30 -w '\nHTTP %{http_code}\n' -H 'Accept: application/json' "$URL" | head -c 600 | sed "s/$K/<KEY>/g"
-          echo
-          echo "[referer https://tripshare.org]"
-          curl -s -m 30 -w '\nHTTP %{http_code}\n' -H 'Accept: application/json' -H 'Referer: https://tripshare.org' "$URL" | head -c 600 | sed "s/$K/<KEY>/g"
-          echo
-          echo "Server public IP: $(curl -s -m 10 https://api.ipify.org || echo unknown)"
           REMOTE

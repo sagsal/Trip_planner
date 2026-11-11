@@ -14,6 +14,9 @@ export interface ImportedPlace {
   location: string;
   rating: number;
   review: string;
+  imageUrl?: string | null; // e.g. from My Travel Sandbox
+  webUrl?: string | null;
+  stayType?: 'rental' | null;
 }
 
 export interface ImportedCity {
@@ -31,6 +34,9 @@ export interface ImportedTrip {
   cities: ImportedCity[];
   warnings: string[];
   rowCount: number;
+  source?: 'file' | 'sandbox';
+  region?: string;
+  tripType?: string;
 }
 
 /* ---------------------------- reading files ---------------------------- */

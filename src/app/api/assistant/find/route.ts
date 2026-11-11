@@ -20,7 +20,17 @@ const NEXT_STEP_TOOL = {
   input_schema: {
     type: 'object',
     properties: {
-      action: { type: 'string', enum: ['ask', 'search'] },
+      action: {
+        type: 'string',
+        enum: ['ask', 'search', 'collect'],
+        description: '"collect" when they ask to create a sandbox / planned trip and add places from trips (e.g. "create a Mexico sandbox and add places from family trips to Mexico"). Otherwise "search" (or "ask").',
+      },
+      sandboxTitle: { type: 'string', description: 'For collect: a short name for the planned trip, e.g. "Mexico – family ideas".' },
+      kinds: {
+        type: 'array',
+        items: { type: 'string', enum: ['hotel', 'restaurant', 'activity'] },
+        description: 'For collect: only these kinds of places, if they said so (e.g. "just restaurants"). Empty = all.',
+      },
       question: { type: 'string', description: 'When asking: one short, friendly question.' },
       options: { type: 'array', items: { type: 'string' }, description: 'When asking: 3-6 short tap-to-answer choices.' },
       multi: { type: 'boolean', description: 'When asking: true if several choices can be picked.' },
@@ -96,13 +106,22 @@ export async function POST(request: NextRequest) {
       `You help a traveller find trips on a trip-sharing website, where people share real itineraries (cities, hotels, restaurants, activities, day by day). ` +
       `Ask at most ${Math.max(0, 3 - asked)} more short follow-up question(s), only if the answer would really change which trips fit (e.g. kids' ages, trip length, interests). ` +
       (asked >= 3 ? 'Do NOT ask anything more: search now. ' : 'If you already know enough, search now. ') +
-      'Questions must offer tap-to-answer options. Be warm and brief.',
+      'Questions must offer tap-to-answer options. Be warm and brief. ' +
+      'If they ask to create a sandbox or planned trip from trips, use action "collect" (you may still ask one question first if the destination is unclear).',
     messages,
     tool: NEXT_STEP_TOOL,
     maxTokens: 1200,
     timeoutMs: 25_000,
   });
   if (!step.input) return NextResponse.json({ error: step.error || 'Something went wrong.' }, { status: 502 });
+
+  const collect =
+    step.input.action === 'collect'
+      ? {
+          title: (typeof step.input.sandboxTitle === 'string' && step.input.sandboxTitle.trim()) || (step.input.filters?.summary as string) || 'My next trip',
+          kinds: (Array.isArray(step.input.kinds) ? step.input.kinds : []).filter((k: any) => ['hotel', 'restaurant', 'activity'].includes(k)),
+        }
+      : null;
 
   if (step.input.action === 'ask' && asked < 3 && typeof step.input.question === 'string') {
     const options = (Array.isArray(step.input.options) ? step.input.options : []).filter((o: any) => typeof o === 'string').slice(0, 6);
@@ -232,6 +251,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     action: 'results',
+    collect,
     results,
     note: typeof ranked.input?.note === 'string' ? ranked.input.note.slice(0, 300) : results.length ? '' : 'No shared trips match that yet.',
     filters: { ...f, region: wantRegion || f.region },

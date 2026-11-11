@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Loader2, ArrowRight, RotateCcw, Send, MapPin, Calendar } from 'lucide-react';
+import { Sparkles, Loader2, ArrowRight, RotateCcw, Send, MapPin, Calendar, Package, Check } from 'lucide-react';
 import SaveToSandbox from '@/components/SaveToSandbox';
 import { tripTypeIcon } from '@/lib/regions';
-import type { PlaceToSave } from '@/lib/sandbox';
+import { SANDBOX_EVENT, type PlaceToSave } from '@/lib/sandbox';
 
 /**
  * "Find me a trip" assistant on Browse Trips: the traveller says what they want,
@@ -31,6 +31,7 @@ type Result = {
 
 const EXAMPLES = [
   'Japan with my family',
+  'Create a Mexico sandbox with places from family trips to Mexico',
   'A romantic week in Italy',
   'Two weeks backpacking in Central America',
   'Food trip to Mexico City',
@@ -50,6 +51,60 @@ export default function TripFinder() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState(false);
+  // "Create a planned trip from these trips" panel
+  const [collectOpen, setCollectOpen] = useState(false);
+  const [collectTitle, setCollectTitle] = useState('');
+  const [collectKinds, setCollectKinds] = useState<string[]>(['hotel', 'activity', 'restaurant']);
+  const [collectTrips, setCollectTrips] = useState<string[]>([]);
+  const [collecting, setCollecting] = useState(false);
+  const [collected, setCollected] = useState<{ id: string; title: string; saved: number } | null>(null);
+
+  const openCollect = (title: string, kinds: string[] | undefined, res: Result[]) => {
+    setCollectTitle(title);
+    setCollectKinds(kinds && kinds.length ? kinds : ['hotel', 'activity', 'restaurant']);
+    setCollectTrips(res.filter((r) => r.exact).map((r) => r.id));
+    setCollected(null);
+    setCollectOpen(true);
+  };
+
+  const collectPlaces = (res: Result[]) =>
+    res.filter((r) => collectTrips.includes(r.id)).flatMap((r) => r.places).filter((p) => collectKinds.includes(p.kind));
+
+  const createAndAdd = async () => {
+    let user: { id: string } | null = null;
+    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch {}
+    if (!user?.id) { router.push(`/login?next=${encodeURIComponent('/trips')}`); return; }
+    const places = collectPlaces(results || []);
+    if (places.length === 0) { setError('Choose at least one trip and one kind of place.'); return; }
+    setCollecting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          title: collectTitle.trim() || 'My next trip',
+          region: filters?.region || undefined,
+          tripType: Array.isArray(filters?.tripTypes) ? filters.tripTypes[0] : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.trip) throw new Error(data.error || 'Couldn’t create the planned trip.');
+      const add = await fetch('/api/sandbox/places', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, sandboxTripId: data.trip.id, places }),
+      }).then((r) => r.json());
+      if (add.error) throw new Error(add.error);
+      window.dispatchEvent(new CustomEvent(SANDBOX_EVENT, { detail: { count: add.count } }));
+      setCollected({ id: data.trip.id, title: data.trip.title, saved: add.saved || 0 });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Couldn’t create the planned trip.');
+    } finally {
+      setCollecting(false);
+    }
+  };
 
   const send = async (msgs: Msg[], askedSoFar: number) => {
     setBusy(true);
@@ -73,6 +128,9 @@ export default function TripFinder() {
         setNote(data.note || '');
         setFilters(data.filters || null);
         setSummary(data.filters?.summary || msgs[0]?.content || '');
+        // They asked to create a sandbox trip from these trips: open the confirmation
+        if (data.collect && (data.results || []).length) openCollect(data.collect.title, data.collect.kinds, data.results);
+        else setCollectOpen(false);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -109,6 +167,8 @@ export default function TripFinder() {
     setNote('');
     setError('');
     setInput('');
+    setCollectOpen(false);
+    setCollected(null);
   };
 
   /** Create a planned trip in the sandbox and open "Fill with AI" with this conversation. */
@@ -273,18 +333,77 @@ export default function TripFinder() {
               ))}
             </div>
           )}
-          <div className="rounded-xl bg-[#F3F7F8] border border-[#C9D9DF] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <p className="text-sm text-[#2F4A5C]">
-              <span className="font-medium">Want a head start?</span> Start a planned trip in your sandbox and let the AI fill it with places, day by day.
-            </p>
-            <button
-              type="button"
-              onClick={startPlanning}
-              disabled={starting}
-              className="shrink-0 inline-flex items-center px-4 py-2 bg-[#2F4A5C] text-white rounded-lg hover:bg-[#24394A] text-sm font-medium disabled:opacity-60"
-            >
-              {starting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Start planning this trip
-            </button>
+          {/* Create a planned trip from these trips */}
+          {collectOpen && results.length > 0 && (
+            <div className="rounded-xl bg-white border-2 border-[#4A6878] p-4 mb-4">
+              {collected ? (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <p className="text-[#2F4A5C]">
+                    <Check className="inline w-5 h-5 text-green-600 mr-1" />
+                    Added <b>{collected.saved}</b> {collected.saved === 1 ? 'place' : 'places'} to <b>{collected.title}</b> in your sandbox.
+                  </p>
+                  <Link href="/sandbox" className="inline-flex items-center px-4 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] text-sm font-medium">
+                    <Package className="w-4 h-4 mr-1" /> Open my sandbox
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <p className="font-semibold text-[#2F4A5C] mb-3 flex items-center gap-2"><Package className="w-5 h-5" /> Create a planned trip from these trips</p>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    value={collectTitle}
+                    onChange={(e) => setCollectTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 mb-3"
+                  />
+                  <p className="text-xs font-medium text-gray-700 mb-1">Include</p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {[['hotel', '🏨 Where to stay'], ['activity', '🎯 Things to do'], ['restaurant', '🍽️ Where to eat']].map(([k, label]) => {
+                      const on = collectKinds.includes(k);
+                      return (
+                        <button key={k} type="button" onClick={() => setCollectKinds((p) => (on ? p.filter((x) => x !== k) : [...p, k]))}
+                          className={`px-3 py-1.5 rounded-full border text-sm ${on ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">From these trips</p>
+                  <div className="space-y-1 mb-3">
+                    {results.map((r) => (
+                      <label key={r.id} className="flex items-center gap-2 text-sm text-[#2F4A5C]">
+                        <input type="checkbox" checked={collectTrips.includes(r.id)} onChange={() => setCollectTrips((p) => (p.includes(r.id) ? p.filter((x) => x !== r.id) : [...p, r.id]))} />
+                        {r.title}{r.userName ? ` (${r.userName})` : ''}{!r.exact && <span className="text-xs text-[#8A6D3B]">· similar</span>}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={createAndAdd} disabled={collecting}
+                      className="inline-flex items-center px-4 py-2 bg-[#2F4A5C] text-white rounded-lg hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">
+                      {collecting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                      Create &amp; add {collectPlaces(results).length} places
+                    </button>
+                    <button type="button" onClick={() => setCollectOpen(false)} className="px-3 py-2 text-sm text-[#5B6B75] underline">Cancel</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* What next? */}
+          <div className="rounded-xl bg-[#F3F7F8] border border-[#C9D9DF] p-4">
+            <p className="text-sm font-medium text-[#2F4A5C] mb-3">Planning a trip like this? Put it in your sandbox:</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {results.length > 0 && !collectOpen && (
+                <button type="button" onClick={() => openCollect(summary || 'My next trip', undefined, results)}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-white border border-[#C9D9DF] text-[#2F4A5C] rounded-lg hover:bg-[#E3ECEF] text-sm font-medium">
+                  <Package className="w-4 h-4 mr-1" /> Save these trips’ places into a new planned trip
+                </button>
+              )}
+              <button type="button" onClick={startPlanning} disabled={starting}
+                className="inline-flex items-center justify-center px-4 py-2 bg-[#2F4A5C] text-white rounded-lg hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">
+                {starting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Let AI plan it day by day
+              </button>
+            </div>
           </div>
         </div>
       )}

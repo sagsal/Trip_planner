@@ -624,7 +624,7 @@ function NewTripContent() {
         // Store TripAdvisor data as JSON in review field
         const tripadvisorData = {
           locationId: selectedHotelData.location_id,
-          imageUrl: selectedHotelData.photos?.[0]?.images?.large?.url || 
+          imageUrl: selectedHotelData.photo_url || selectedHotelData.photos?.[0]?.images?.large?.url || 
                    selectedHotelData.photos?.[0]?.images?.medium?.url || 
                    selectedHotelData.photos?.[0]?.images?.original?.url ||
                    selectedHotelData.photo_url || null,
@@ -702,7 +702,7 @@ function NewTripContent() {
       // Store TripAdvisor data as JSON in review field
       const tripadvisorData = {
         locationId: selectedRestaurantData.location_id,
-        imageUrl: selectedRestaurantData.photos?.[0]?.images?.large?.url || 
+        imageUrl: selectedRestaurantData.photo_url || selectedRestaurantData.photos?.[0]?.images?.large?.url || 
                  selectedRestaurantData.photos?.[0]?.images?.medium?.url || 
                  selectedRestaurantData.photos?.[0]?.images?.original?.url ||
                    selectedRestaurantData.photo_url || null,
@@ -1295,7 +1295,7 @@ function NewTripContent() {
                               if (result.location_id) {
                                 const tripadvisorData = {
                                   locationId: result.location_id,
-                                  imageUrl: result.photos?.[0]?.images?.large?.url || 
+                                  imageUrl: result.photo_url || result.photos?.[0]?.images?.large?.url || 
                                            result.photos?.[0]?.images?.medium?.url || 
                                            result.photos?.[0]?.images?.original?.url ||
                    result.photo_url || null,

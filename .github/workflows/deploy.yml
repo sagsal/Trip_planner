@@ -118,7 +118,7 @@ jobs:
           for d in "the vegetarian restaurant on Parque Espana" "one of the restaurants directly across from the Hyatt Regency Polanco"; do
             printf '{"text":"%s","city":"Mexico City","country":"Mexico","category":"restaurants"}' "$d" \
               | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
-              | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("ai="+j.usedAi+" note="+(j.note||"-")+" -> "+(j.results||[]).slice(0,4).map(r=>r.name).join(" | ")+(j.error?" error="+j.error:""))}catch(e){console.log("unreadable")}})'
+              | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("ai="+j.usedAi+" note="+(j.note||"-")+" photos="+(j.results||[]).filter(r=>r.photos&&r.photos.length).length+"/"+(j.results||[]).length+" -> "+(j.results||[]).slice(0,4).map(r=>r.name).join(" | ")+(j.error?" error="+j.error:""))}catch(e){console.log("unreadable")}})'
           done
           echo "--- cover photo choices: Mexico City (links only, no photos loaded)"
           curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Mexico%20City,%20Mexico" | grep -o '"thumb"' | wc -l

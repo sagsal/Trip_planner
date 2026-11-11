@@ -138,7 +138,13 @@ export async function POST(request: NextRequest) {
       results = await searchGooglePlaces([text, city, country].filter(Boolean).join(', '), category);
     }
 
-    return NextResponse.json({ results: results.slice(0, 8), note, usedAi: !!plan });
+    // Show a small photo with each suggestion to help the traveller recognise the place.
+    // (Each photo shown is billed by Google, so only up to 6 suggestions here.)
+    const withPhotos = results.slice(0, 6).map((r: any) => ({
+      ...r,
+      photos: r.photo_url ? [{ images: { medium: { url: `${r.photo_url}&w=300` } } }] : [],
+    }));
+    return NextResponse.json({ results: withPhotos, note, usedAi: !!plan });
   } catch (e) {
     console.error('Describe search error:', e instanceof Error ? e.message : e);
     return NextResponse.json({ results: [], error: 'Couldn’t search right now. Please try again.' }, { status: 502 });

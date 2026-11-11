@@ -1418,32 +1418,6 @@ function NewTripContent() {
 
                               {stayMode === 'rental' ? (
                                 <div className="space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Paste the listing link</label>
-                                    <input
-                                      type="url"
-                                      value={rentalUrl}
-                                      onChange={(e) => setRentalUrl(e.target.value)}
-                                      onPaste={(e) => {
-                                        const t = e.clipboardData.getData('text');
-                                        if (t) setTimeout(() => lookUpRental(t), 0);
-                                      }}
-                                      onBlur={() => { if (rentalUrl && !rentalSite) lookUpRental(rentalUrl); }}
-                                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookUpRental(rentalUrl); } }}
-                                      placeholder="https://www.airbnb.com/rooms/…  or  https://www.vrbo.com/…"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
-                                    />
-                                    {rentalLoading && <p className="mt-1 text-xs text-gray-500">Getting the rental’s details…</p>}
-                                    {rentalMsg && <p className="mt-1 text-xs text-[#8A6D3B]">{rentalMsg}</p>}
-                                  </div>
-                                  {rentalImage && (
-                                    <img
-                                      src={rentalImage}
-                                      alt=""
-                                      className="w-full h-40 object-cover rounded-lg border border-yellow-200"
-                                      onError={() => setRentalImage(null)}
-                                    />
-                                  )}
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
                                       <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
@@ -1466,6 +1440,34 @@ function NewTripContent() {
                                       />
                                     </div>
                                   </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Listing link (optional)</label>
+                                    <input
+                                      type="url"
+                                      value={rentalUrl}
+                                      onChange={(e) => setRentalUrl(e.target.value)}
+                                      onPaste={(e) => {
+                                        const t = e.clipboardData.getData('text');
+                                        if (t) setTimeout(() => lookUpRental(t), 0);
+                                      }}
+                                      onBlur={() => { if (rentalUrl && !rentalSite) lookUpRental(rentalUrl); }}
+                                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookUpRental(rentalUrl); } }}
+                                      placeholder="https://www.airbnb.com/rooms/…  or  https://www.vrbo.com/…"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                      {rentalLoading ? 'Getting the rental’s details…' : 'If you have the Airbnb / VRBO link, paste it to add a link (and, for Airbnb, a photo).'}
+                                    </p>
+                                    {rentalMsg && <p className="mt-1 text-xs text-[#8A6D3B]">{rentalMsg}</p>}
+                                  </div>
+                                  {rentalImage && (
+                                    <img
+                                      src={rentalImage}
+                                      alt=""
+                                      className="w-full h-40 object-cover rounded-lg border border-yellow-200"
+                                      onError={() => setRentalImage(null)}
+                                    />
+                                  )}
                                   <div className="flex gap-2">
                                     <button
                                       type="button"

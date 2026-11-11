@@ -510,7 +510,8 @@ export async function PUT(
       userEmail,
       tripRating,
       tripReview,
-      coverImageUrl
+      coverImageUrl,
+      region
     } = body;
     // Only accept cover photos served by this site's own photo route; null removes it
     const coverUpdate =
@@ -595,7 +596,8 @@ export async function PUT(
           cities: cities || existingTrip.cities,
           isPublic: finalIsPublic,
           isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft,
-          ...coverUpdate
+          ...coverUpdate,
+          ...(typeof region === 'string' ? { region: region.trim() ? region.trim().slice(0, 60) : null } : {})
         }
       });
 

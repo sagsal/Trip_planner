@@ -378,7 +378,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('POST /api/trips - Received request body:', JSON.stringify(body, null, 2));
     
-    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl } = body;
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl, region } = body;
     // Only accept cover photos served by this site's own photo route
     const safeCover = typeof coverImageUrl === 'string' && coverImageUrl.startsWith('/api/places/photo?') ? coverImageUrl : null;
     
@@ -523,6 +523,7 @@ export async function POST(request: NextRequest) {
         isPublic: isDraft ? false : true, // Drafts are always private
         isDraft: isDraft || false,
         coverImageUrl: safeCover,
+        region: typeof region === 'string' && region.trim() ? region.trim().slice(0, 60) : null,
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {

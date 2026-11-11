@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel } from '@/lib/placeDetails';
+import { REGIONS, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
 
 interface Hotel {
   id: string;
@@ -87,6 +88,23 @@ function NewTripContent() {
   });
 
   const [citiesData, setCitiesData] = useState<CityData[]>([]);
+  // Trip organised as Region → Countries → Cities
+  const [region, setRegion] = useState('');
+  const [tripCountries, setTripCountries] = useState<string[]>([]);
+  const [addingCityFor, setAddingCityFor] = useState<string | null>(null); // country whose "Add a city" form is in use
+
+  // Countries in this trip, in order: those added, then any a city belongs to that wasn't added
+  const countryList = useMemo(() => {
+    const list = [...tripCountries];
+    for (const c of citiesData) if (c.country && !list.includes(c.country)) list.push(c.country);
+    return list;
+  }, [tripCountries, citiesData]);
+  // Trip name, made from its countries (and cities when there's one country)
+  const autoTitle = useMemo(() => {
+    const byCountry: Record<string, string[]> = {};
+    for (const c of citiesData) (byCountry[c.country] ||= []).push(c.name);
+    return tripNameFrom(countryList, byCountry);
+  }, [countryList, citiesData]);
 
   // Reopening a saved trip: /trips/new?id=TRIP_ID
   const searchParams = useSearchParams();
@@ -107,7 +125,7 @@ function NewTripContent() {
     for (const c of citiesData) if (c.country?.trim()) counts.set(c.country.trim(), (counts.get(c.country.trim()) || 0) + 1);
     let best = '';
     for (const [country, n] of counts) if (!best || n > (counts.get(best) || 0)) best = country;
-    return best || citiesData[0]?.name || '';
+    return best || tripCountries[0] || citiesData[0]?.name || '';
   })();
 
   // If the trip's country changes, offer fresh choices for the new country
@@ -216,6 +234,11 @@ function NewTripContent() {
       numberOfDays: daysBetween(imported!.startDate, imported!.endDate) || prev.numberOfDays,
     }));
     setCitiesData(cities);
+    {
+      const all = Array.from(new Set(cities.map((c) => c.country).filter(Boolean)));
+      setTripCountries(all);
+      setRegion(regionOf(all[0] || '') || '');
+    }
     setImportNotice('Filled in from your spreadsheet. Please check everything, then save it as a draft or save the trip.');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -249,6 +272,14 @@ function NewTripContent() {
         if (cancelled) return;
 
         setEditingStatus(trip.isDraft ? 'draft' : trip.isPublic === false ? 'private' : 'shared');
+        {
+          let saved: string[] = [];
+          try { saved = typeof trip.countries === 'string' ? JSON.parse(trip.countries) : trip.countries || []; } catch { saved = []; }
+          const fromCities = (trip.cities_data || []).map((c: any) => c?.country).filter(Boolean);
+          const all = Array.from(new Set([...(Array.isArray(saved) ? saved : []), ...fromCities].filter((c: any) => typeof c === 'string' && c.trim())));
+          setTripCountries(all as string[]);
+          setRegion(trip.region || regionOf((all as string[])[0] || '') || '');
+        }
         setCoverImageUrl(trip.coverImageUrl || null);
         setFormData(prev => ({
           ...prev,
@@ -532,9 +563,10 @@ function NewTripContent() {
     }));
   }, []);
 
-  const addCity = () => {
+  const addCity = (countryOverride?: string) => {
     const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
-    if (!selectedCountry || !nameToAdd || !selectedNumberOfDays) return;
+    const countryToUse = countryOverride || selectedCountry;
+    if (!countryToUse || !nameToAdd || !selectedNumberOfDays) return;
     
     const numberOfDays = parseInt(selectedNumberOfDays);
     if (isNaN(numberOfDays) || numberOfDays < 1) return;
@@ -550,7 +582,7 @@ function NewTripContent() {
     const newCity: CityData = {
       id: Date.now().toString(),
       name: nameToAdd,
-      country: selectedCountry,
+      country: countryToUse,
       numberOfDays: numberOfDays,
       hotel: null, // added in the city's own box
       days: days
@@ -868,10 +900,6 @@ function NewTripContent() {
     const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
     const saveAsDraft = submitter?.value === 'draft';
 
-    if (saveAsDraft && !formData.title.trim()) {
-      setError('Please give your trip a title before saving a draft');
-      return;
-    }
 
     setIsLoading(true);
 
@@ -886,16 +914,12 @@ function NewTripContent() {
       // Debug: Log what we're sending
       console.log('Cities Data being sent:', citiesData);
 
-      // Collect unique countries from cities (filter out empty strings)
-      const uniqueCountries = Array.from(new Set(
-        citiesData
-          .map(city => city.country)
-          .filter(country => country && country.trim() !== '')
-      ));
-      
+      // The trip's countries: the ones added, plus any a city belongs to
+      const uniqueCountries = countryList;
+
       // Validate that we have at least one country
       if (uniqueCountries.length === 0) {
-        setError('Please ensure at least one city has a valid country');
+        setError('Please add at least one country');
         setIsLoading(false);
         return;
       }
@@ -942,6 +966,8 @@ function NewTripContent() {
         const publishing = editingStatus === 'draft' && !saveAsDraft;
         const payload: any = {
           ...formData,
+          title: autoTitle, // trips are named from their countries/cities
+          region: region || regionOf(uniqueCountries[0]) || '',
           countries: isEditing ? JSON.stringify(uniqueCountries) : uniqueCountries, // Use countries from cities
           cities: JSON.stringify(citiesData.map(c => c.name)),
           citiesData: transformedCitiesData,
@@ -1005,327 +1031,8 @@ function NewTripContent() {
     }
   };
 
-  if (loadingTrip) {
-    return <LoadingSpinner />;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{editingId ? 'Continue your trip' : 'Add New Trip'}</h1>
-            <p className="text-gray-600">
-              {editingId
-                ? 'Keep adding places, reviews and details, then save your changes'
-                : 'Document your travel experience with detailed reviews'}
-            </p>
-            {importNotice && (
-              <p className="mt-3 text-sm text-[#3F5B6A] bg-[#E3ECEF] border border-[#C9D9DF] rounded-lg px-3 py-2">{importNotice}</p>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Basic Trip Information */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Trip Information</h2>
-              
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trip Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                    placeholder="e.g., Singapore Adventure 2024"
-                  />
-                </div>
-
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date *
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    required
-                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Date *
-                  </label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    required
-                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Days
-                </label>
-                {(() => {
-                  const days = daysBetween(formData.startDate, formData.endDate);
-                  const badRange = !!(formData.startDate && formData.endDate && !days);
-                  return (
-                    <>
-                      <div
-                        className={`w-full px-4 py-3 rounded-lg border ${badRange ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'} ${days ? 'text-black font-medium' : 'text-gray-400'}`}
-                        aria-live="polite"
-                      >
-                        {days ? `${days} ${days === '1' ? 'day' : 'days'}` : 'Add your start and end dates'}
-                      </div>
-                      {badRange && (
-                        <p className="mt-1 text-xs text-red-600">The end date is before the start date.</p>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-
-              {/* Cover photo */}
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cover photo</label>
-                {coverImageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
-                    <img src={coverImageUrl} alt="Trip cover" className="w-full h-48 object-cover" />
-                    <div className="absolute bottom-2 right-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => { setCoverImageUrl(null); if (coverChoices.length === 0) loadCoverChoices(); }}
-                        className="px-3 py-1.5 bg-white/90 text-gray-800 rounded-lg text-sm font-medium hover:bg-white"
-                      >
-                        Change
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCoverImageUrl(null)}
-                        className="px-3 py-1.5 bg-white/90 text-red-600 rounded-lg text-sm font-medium hover:bg-white"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ) : citiesData.length === 0 ? (
-                  <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400 text-sm">
-                    Add a city below, then choose a photo of its country for your trip
-                  </div>
-                ) : coverChoices.length === 0 ? (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={loadCoverChoices}
-                      disabled={loadingCovers}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
-                    >
-                      {loadingCovers ? 'Loading photos...' : `Choose a cover photo of ${coverPlace}`}
-                    </button>
-                    {coverMessage && <p className="mt-1 text-xs text-gray-500">{coverMessage}</p>}
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-xs text-gray-500 mb-2">Click a photo to use it as your trip's cover.</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {coverChoices.map((c) => (
-                        <button
-                          key={c.thumb}
-                          type="button"
-                          onClick={() => setCoverImageUrl(c.full)}
-                          className="rounded-lg overflow-hidden border-2 border-transparent hover:border-[#4A6878] focus:border-[#4A6878] focus:outline-none"
-                        >
-                          <img src={c.thumb} alt="Cover option" className="w-full h-24 object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-                  </div>
-
-            {/* Cities and their data */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Cities & Details</h2>
-              </div>
-
-              {/* Country & City Selection */}
-              <div id="country-city-selection" className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-8 mb-8 border border-blue-200">
-                <div className="text-center mb-6">
-                  <div className="text-6xl mb-4">🌍</div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-2">Select Your Destination</h3>
-                  <p className="text-gray-600 text-lg">First choose a country, then select a city!</p>
-                </div>
-                
-                <div className="max-w-2xl mx-auto">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        🌍 Country *
-                      </label>
-                      <select
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
-                        value={selectedCountry}
-                        onChange={(e) => {
-                          setSelectedCountry(e.target.value);
-                          setSelectedCity(''); // Reset city when country changes
-                        }}
-                      >
-                        <option value="">Select a country...</option>
-                        {Object.keys(countriesData).map(country => (
-                          <option key={country} value={country}>{country}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                        🏙️ City *
-                </label>
-                      <select
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
-                        value={selectedCity}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setSelectedCity(value);
-                          if (value !== 'custom') {
-                            setCustomCityName('');
-                          }
-                        }}
-                        disabled={!selectedCountry}
-                      >
-                        <option value="">Select a city...</option>
-                        {selectedCountry && countriesData[selectedCountry as keyof typeof countriesData]?.map(city => (
-                          <option key={city} value={city}>{city}</option>
-                        ))}
-                        {selectedCountry && (
-                          <option value="custom">+ Add custom city</option>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {/* Custom city input */}
-                  {selectedCity === 'custom' && (
-                    <div className="mb-4">
-                      <label className="block text-sm font-bold mb-2" style={{ color: '#000000', fontWeight: 'bold', fontSize: '14px' }}>
-                        🏙️ Custom City Name *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter custom city name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
-                        style={{ color: '#000000' }}
-                        value={customCityName}
-                        onChange={(e) => setCustomCityName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Number of days for this city (the hotel is added in the city's box below) */}
-                  {(selectedCity || (selectedCity === 'custom' && customCityName.trim())) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          📅 Number of Days *
-                        </label>
-                        <select
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
-                          value={selectedNumberOfDays}
-                          onChange={(e) => setSelectedNumberOfDays(e.target.value)}
-                        >
-                          <option value="">Select days...</option>
-                          {Array.from({ length: 30 }, (_, i) => i + 1).map(num => (
-                            <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="text-center">
-                <button
-                  type="button"
-                      onClick={addCity}
-                      disabled={
-                        !selectedCountry ||
-                        !selectedCity ||
-                        (selectedCity === 'custom' && customCityName.trim() === '') ||
-                        !selectedNumberOfDays
-                      }
-                      className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                      Add City ✨
-                </button>
-              </div>
-            </div>
-              </div>
-
-              {/* Show message when no cities */}
-              {citiesData.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-8 max-w-2xl mx-auto border border-gray-200">
-                    <div className="text-6xl mb-4">🏙️</div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Ready to Plan Your Trip?</h3>
-                    <p className="text-gray-600 mb-6">Add your first city above to unlock all the planning features!</p>
-                    
-                    {/* Interactive Preview */}
-                    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                      <h4 className="font-semibold text-gray-900 mb-4">✨ What happens after adding a city:</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <div className="text-2xl mb-2">🏨</div>
-                          <div className="font-medium text-blue-900">Hotels</div>
-                          <div className="text-blue-700">Add multiple hotels</div>
-                        </div>
-                        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                          <div className="text-2xl mb-2">🍽️</div>
-                          <div className="font-medium text-green-900">Restaurants</div>
-                          <div className="text-green-700">Add multiple restaurants</div>
-                        </div>
-                        <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
-                          <div className="text-2xl mb-2">🎯</div>
-                          <div className="font-medium text-purple-900">Activities</div>
-                          <div className="text-purple-700">Add multiple activities</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {citiesData.map((city, cityIndex) => (
+  // One city's box (hotel, days, restaurants, activities); shown inside its country's section
+  const renderCityCard = (city: CityData, cityIndex: number) => (
                 <div key={city.id} className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
                   {/* City Header */}
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
@@ -1850,8 +1557,338 @@ function NewTripContent() {
                       </div>
                     ))}
                   </div>
+                </div>);
+
+  if (loadingTrip) {
+    return <LoadingSpinner />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{editingId ? 'Continue your trip' : 'Add New Trip'}</h1>
+            <p className="text-gray-600">
+              {editingId
+                ? 'Keep adding places, reviews and details, then save your changes'
+                : 'Document your travel experience with detailed reviews'}
+            </p>
+            {importNotice && (
+              <p className="mt-3 text-sm text-[#3F5B6A] bg-[#E3ECEF] border border-[#C9D9DF] rounded-lg px-3 py-2">{importNotice}</p>
+            )}
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Trip Information */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Trip Information</h2>
+              
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Region
+                  </label>
+                  <select
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                  >
+                    <option value="">Choose a region…</option>
+                    {REGIONS.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  {countryList.length > 0 && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Your trip will be listed as <span className="font-medium text-gray-700">{autoTitle}</span>
+                    </p>
+                  )}
                 </div>
-              ))}
+
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                    required
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleInputChange}
+                    required
+                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Days
+                </label>
+                {(() => {
+                  const days = daysBetween(formData.startDate, formData.endDate);
+                  const badRange = !!(formData.startDate && formData.endDate && !days);
+                  return (
+                    <>
+                      <div
+                        className={`w-full px-4 py-3 rounded-lg border ${badRange ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'} ${days ? 'text-black font-medium' : 'text-gray-400'}`}
+                        aria-live="polite"
+                      >
+                        {days ? `${days} ${days === '1' ? 'day' : 'days'}` : 'Add your start and end dates'}
+                      </div>
+                      {badRange && (
+                        <p className="mt-1 text-xs text-red-600">The end date is before the start date.</p>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Cover photo */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cover photo</label>
+                {coverImageUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                    <img src={coverImageUrl} alt="Trip cover" className="w-full h-48 object-cover" />
+                    <div className="absolute bottom-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setCoverImageUrl(null); if (coverChoices.length === 0) loadCoverChoices(); }}
+                        className="px-3 py-1.5 bg-white/90 text-gray-800 rounded-lg text-sm font-medium hover:bg-white"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCoverImageUrl(null)}
+                        className="px-3 py-1.5 bg-white/90 text-red-600 rounded-lg text-sm font-medium hover:bg-white"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : citiesData.length === 0 ? (
+                  <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400 text-sm">
+                    Add a city below, then choose a photo of its country for your trip
+                  </div>
+                ) : coverChoices.length === 0 ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={loadCoverChoices}
+                      disabled={loadingCovers}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                    >
+                      {loadingCovers ? 'Loading photos...' : `Choose a cover photo of ${coverPlace}`}
+                    </button>
+                    {coverMessage && <p className="mt-1 text-xs text-gray-500">{coverMessage}</p>}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Click a photo to use it as your trip's cover.</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {coverChoices.map((c) => (
+                        <button
+                          key={c.thumb}
+                          type="button"
+                          onClick={() => setCoverImageUrl(c.full)}
+                          className="rounded-lg overflow-hidden border-2 border-transparent hover:border-[#4A6878] focus:border-[#4A6878] focus:outline-none"
+                        >
+                          <img src={c.thumb} alt="Cover option" className="w-full h-24 object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+                  </div>
+
+            {/* Cities and their data */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Countries & Cities</h2>
+              </div>
+
+              {/* Countries, each with its own cities */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {countryList.length === 0 ? 'Which country did you visit?' : 'Add another country'}
+                </label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const c = e.target.value;
+                    if (!c) return;
+                    setTripCountries((prev) => (prev.includes(c) ? prev : [...prev, c]));
+                    if (!region) setRegion(regionOf(c) || '');
+                    setAddingCityFor(c); // go straight to adding its first city
+                    setSelectedCountry(c);
+                    setSelectedCity('');
+                    setCustomCityName('');
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                >
+                  <option value="">
+                    {region ? `Choose a country in ${region}…` : 'Choose a country…'}
+                  </option>
+                  {(region ? countriesIn(region) : Object.keys(countriesData))
+                    .filter((c) => !countryList.includes(c))
+                    .map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                </select>
+                {region && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Showing countries in {region}. To add a country elsewhere, change the Region above.
+                  </p>
+                )}
+              </div>
+
+              {countryList.length === 0 && (
+                <div className="text-center py-10 rounded-xl border border-dashed border-gray-300 bg-gray-50">
+                  <div className="text-5xl mb-3">🌍</div>
+                  <p className="text-gray-700 font-medium">Start by choosing a region and a country</p>
+                  <p className="text-gray-500 text-sm mt-1">Then add its cities, and for each city your hotel, days, restaurants and activities.</p>
+                </div>
+              )}
+
+              {countryList.map((country) => {
+                const citiesHere = citiesData
+                  .map((city, cityIndex) => ({ city, cityIndex }))
+                  .filter(({ city }) => city.country === country);
+                const isAdding = addingCityFor === country;
+                const cityOptions = (countriesData as Record<string, string[]>)[country] || [];
+                return (
+                  <section key={country} className="mb-10 rounded-2xl border border-[#D9D2C7] bg-[#FBF9F5] p-4 sm:p-6">
+                    <div className="flex items-center justify-between gap-3 mb-5">
+                      <div>
+                        <h3 className="text-2xl font-bold text-[#2F4A5C]">{country}</h3>
+                        <p className="text-sm text-[#6B7A83]">
+                          {citiesHere.length === 0
+                            ? 'No cities yet'
+                            : `${citiesHere.length} ${citiesHere.length === 1 ? 'city' : 'cities'} · ${citiesHere.reduce((n, x) => n + (x.city.numberOfDays || 0), 0)} days`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (citiesHere.length > 0 && !window.confirm(`Remove ${country} and its ${citiesHere.length} ${citiesHere.length === 1 ? 'city' : 'cities'} from this trip?`)) return;
+                          setTripCountries((prev) => prev.filter((c) => c !== country));
+                          setCitiesData((prev) => prev.filter((c) => c.country !== country));
+                          if (addingCityFor === country) setAddingCityFor(null);
+                        }}
+                        className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg"
+                      >
+                        Remove country
+                      </button>
+                    </div>
+
+                    {citiesHere.map(({ city, cityIndex }) => renderCityCard(city, cityIndex))}
+
+                    {/* Add a city in this country */}
+                    <div className="rounded-xl border border-[#C9D9DF] bg-white p-4">
+                      <p className="font-medium text-[#2F4A5C] mb-3">
+                        {citiesHere.length === 0 ? `Add a city in ${country}` : `Add another city in ${country}`}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <select
+                          value={isAdding ? selectedCity : ''}
+                          onChange={(e) => {
+                            setAddingCityFor(country);
+                            setSelectedCountry(country);
+                            setSelectedCity(e.target.value);
+                            if (e.target.value !== 'custom') setCustomCityName('');
+                          }}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                        >
+                          <option value="">Choose a city…</option>
+                          {cityOptions.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                          <option value="custom">+ A city not in the list</option>
+                        </select>
+                        {isAdding && selectedCity === 'custom' ? (
+                          <input
+                            type="text"
+                            value={customCityName}
+                            onChange={(e) => setCustomCityName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+                            placeholder="City name"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                          />
+                        ) : (
+                          <select
+                            value={isAdding ? selectedNumberOfDays : ''}
+                            onChange={(e) => {
+                              setAddingCityFor(country);
+                              setSelectedCountry(country);
+                              setSelectedNumberOfDays(e.target.value);
+                            }}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="">Number of days…</option>
+                            {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                              <option key={n} value={n}>{n} {n === 1 ? 'day' : 'days'}</option>
+                            ))}
+                          </select>
+                        )}
+                        {isAdding && selectedCity === 'custom' && (
+                          <select
+                            value={selectedNumberOfDays}
+                            onChange={(e) => setSelectedNumberOfDays(e.target.value)}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="">Number of days…</option>
+                            {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                              <option key={n} value={n}>{n} {n === 1 ? 'day' : 'days'}</option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => addCity(country)}
+                          disabled={
+                            !isAdding ||
+                            !selectedCity ||
+                            (selectedCity === 'custom' && customCityName.trim() === '') ||
+                            !selectedNumberOfDays
+                          }
+                          className={`px-4 py-2.5 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${isAdding && selectedCity === 'custom' ? 'md:col-span-3' : ''}`}
+                        >
+                          + Add city
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                );
+              })}
 
             </div>
 

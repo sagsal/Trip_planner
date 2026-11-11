@@ -114,6 +114,8 @@ jobs:
           else
             echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
           fi
+          echo "--- hotel name search: Totoco, Ometepe Nicaragua"
+          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Totoco%20Ometepe%20Nicaragua&category=hotels" | grep -o '"name":"[^"]*"' | head -5 | tr '\n' ' '; echo
           echo "--- describe a restaurant (test; public place names only)"
           for t in "restaurants|the vegetarian restaurant on Parque Espana" "attractions|the big park with the castle on the hill" "hotels|the boutique hotel with a rooftop pool in Condesa"; do
             cat_="${t%%|*}"; d="${t#*|}"

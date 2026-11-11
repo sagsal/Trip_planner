@@ -39,10 +39,28 @@ export interface PlaceResultInTripAdvisorShape {
   photos: [];
 }
 
+/**
+ * Search Google Places. Hotels and restaurants first search strictly by type; if that finds
+ * fewer than 3 places (e.g. an eco-lodge Google files as a "farm stay"), it searches again
+ * without the strict type filter and adds those results after the strict ones.
+ */
 export async function searchGooglePlaces(
   query: string,
   category?: 'hotels' | 'restaurants' | 'attractions',
   near?: { center: { lat: number; lng: number }; radiusMeters: number } // only look close to a point
+): Promise<PlaceResultInTripAdvisorShape[]> {
+  const strict = await searchGooglePlacesOnce(query, category, near, true);
+  if (strict.length >= 3 || !category || category === 'attractions') return strict;
+  const loose = await searchGooglePlacesOnce(query, category, near, false).catch(() => []);
+  const seen = new Set(strict.map((r) => r.location_id));
+  return [...strict, ...loose.filter((r) => !seen.has(r.location_id))].slice(0, 10);
+}
+
+async function searchGooglePlacesOnce(
+  query: string,
+  category: 'hotels' | 'restaurants' | 'attractions' | undefined,
+  near: { center: { lat: number; lng: number }; radiusMeters: number } | undefined,
+  strictType: boolean
 ): Promise<PlaceResultInTripAdvisorShape[]> {
   if (!GOOGLE_PLACES_API_KEY) throw new Error('GOOGLE_PLACES_API_KEY is not set');
 
@@ -63,10 +81,11 @@ export async function searchGooglePlaces(
     };
   }
   const includedType = category ? TYPE_FOR_CATEGORY[category] : undefined;
-  if (includedType) {
+  // Strict pass: only that type (attractions: related types allowed too).
+  // Loose pass: no type at all, so places Google files differently (lodges, farm stays) still show.
+  if (includedType && (strictType || category === 'attractions')) {
     body.includedType = includedType;
-    // Hotels and restaurants: only that type. Attractions: allow related types too.
-    body.strictTypeFiltering = category !== 'attractions';
+    body.strictTypeFiltering = strictType && category !== 'attractions';
   }
 
   const controller = new AbortController();

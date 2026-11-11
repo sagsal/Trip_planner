@@ -100,17 +100,32 @@ function NewTripContent() {
   const [loadingCovers, setLoadingCovers] = useState(false);
   const [coverMessage, setCoverMessage] = useState('');
 
+  // The trip's country for the cover photo: the country with the most cities (first one on a tie);
+  // falls back to the first city if no country is set
+  const coverPlace = (() => {
+    const counts = new Map<string, number>();
+    for (const c of citiesData) if (c.country?.trim()) counts.set(c.country.trim(), (counts.get(c.country.trim()) || 0) + 1);
+    let best = '';
+    for (const [country, n] of counts) if (!best || n > (counts.get(best) || 0)) best = country;
+    return best || citiesData[0]?.name || '';
+  })();
+
+  // If the trip's country changes, offer fresh choices for the new country
+  useEffect(() => {
+    setCoverChoices([]);
+    setCoverMessage('');
+  }, [coverPlace]);
+
   const loadCoverChoices = async () => {
-    const first = citiesData[0];
-    if (!first) return;
+    if (!coverPlace) return;
     setLoadingCovers(true);
     setCoverMessage('');
     try {
-      const q = [first.name, first.country].filter(Boolean).join(', ');
+      const q = coverPlace;
       const res = await fetch(`/api/places/cover-photos?query=${encodeURIComponent(q)}`);
       const data = await res.json();
       setCoverChoices(data.photos || []);
-      if (!data.photos?.length) setCoverMessage('No photos found for this city.');
+      if (!data.photos?.length) setCoverMessage(`No photos found for ${coverPlace}.`);
     } catch {
       setCoverMessage('Could not load photos. Please try again.');
     } finally {
@@ -1120,7 +1135,7 @@ function NewTripContent() {
                   </div>
                 ) : citiesData.length === 0 ? (
                   <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400 text-sm">
-                    Add a city below, then choose a photo of it for your trip
+                    Add a city below, then choose a photo of its country for your trip
                   </div>
                 ) : coverChoices.length === 0 ? (
                   <div>
@@ -1130,7 +1145,7 @@ function NewTripContent() {
                       disabled={loadingCovers}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
                     >
-                      {loadingCovers ? 'Loading photos...' : `Choose a cover photo of ${citiesData[0].name}`}
+                      {loadingCovers ? 'Loading photos...' : `Choose a cover photo of ${coverPlace}`}
                     </button>
                     {coverMessage && <p className="mt-1 text-xs text-gray-500">{coverMessage}</p>}
                   </div>

@@ -120,8 +120,8 @@ jobs:
               | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
               | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("ai="+j.usedAi+" note="+(j.note||"-")+" photos="+(j.results||[]).filter(r=>r.photos&&r.photos.length).length+"/"+(j.results||[]).length+" -> "+(j.results||[]).slice(0,4).map(r=>r.name).join(" | ")+(j.error?" error="+j.error:""))}catch(e){console.log("unreadable")}})'
           done
-          echo "--- cover photo choices: Mexico City (links only, no photos loaded)"
-          curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Mexico%20City,%20Mexico" | grep -o '"thumb"' | wc -l
+          echo "--- cover photo choices: Mexico (links only, no photos loaded)"
+          curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Mexico" | grep -o '"thumb"' | wc -l
           echo "--- photo for a picked place (one photo)"
           P=$(curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Taj%20Mumbai&category=hotels" | grep -o '"photo_url":"[^"]*"' | head -1 | cut -d'"' -f4)
           if [ -n "$P" ]; then

@@ -552,7 +552,7 @@ function NewTripContent() {
       name: nameToAdd,
       country: selectedCountry,
       numberOfDays: numberOfDays,
-      hotel: selectedHotel,
+      hotel: null, // added in the city's own box
       days: days
     };
     setCitiesData(prev => [...prev, newCity]);
@@ -1253,7 +1253,7 @@ function NewTripContent() {
                     </div>
                   )}
 
-                  {/* Number of Days and Hotel for this city */}
+                  {/* Number of days for this city (the hotel is added in the city's box below) */}
                   {(selectedCity || (selectedCity === 'custom' && customCityName.trim())) && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
@@ -1270,89 +1270,6 @@ function NewTripContent() {
                             <option key={num} value={num}>{num} {num === 1 ? 'day' : 'days'}</option>
                           ))}
                         </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          🏨 Hotel
-                        </label>
-                        {selectedCity && selectedCity !== 'custom' ? (
-                          <TripAdvisorSearch
-                            value={selectedHotel?.name || ''}
-                            onChange={(value) => {
-                              setSelectedHotel({
-                                id: selectedHotel?.id || Date.now().toString(),
-                                name: value,
-                                location: selectedHotel?.location || '',
-                                rating: selectedHotel?.rating || 0,
-                                review: selectedHotel?.review || '',
-                                liked: selectedHotel?.liked || null
-                              });
-                            }}
-                            onSelect={(result) => {
-                              const addr = result.address_obj;
-                              let location = '';
-                              if (addr) {
-                                const parts = [
-                                  addr.street1,
-                                  addr.city,
-                                  addr.state,
-                                  addr.country
-                                ].filter(Boolean);
-                                location = parts.join(', ');
-                              }
-                              
-                              let rating = 0;
-                              if (result.rating) {
-                                rating = Math.round(parseFloat(result.rating));
-                              }
-                              
-                              let review = '';
-                              if (result.location_id) {
-                                const tripadvisorData = {
-                                  locationId: result.location_id,
-                                  imageUrl: result.photo_url || result.photos?.[0]?.images?.large?.url || 
-                                           result.photos?.[0]?.images?.medium?.url || 
-                                           result.photos?.[0]?.images?.original?.url ||
-                   result.photo_url || null,
-                                  numReviews: result.num_reviews,
-                                  webUrl: result.web_url || null
-                                };
-                                review = JSON.stringify(tripadvisorData);
-                              }
-                              
-                              setSelectedHotel({
-                                id: Date.now().toString(),
-                                name: result.name,
-                                location: location,
-                                rating: rating,
-                                ...placeFields({ review }), // review = own words; photo/link in their own fields
-                                liked: null
-                              });
-                            }}
-                            placeholder={`Search hotels in ${selectedCity}...`}
-                            category="hotels"
-                            cityName={selectedCity}
-                            countryName={selectedCountry}
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            placeholder="Hotel name (optional)"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-900"
-                            style={{ color: '#000000' }}
-                            value={selectedHotel?.name || ''}
-                            onChange={(e) => {
-                              setSelectedHotel({
-                                id: selectedHotel?.id || Date.now().toString(),
-                                name: e.target.value,
-                                location: selectedHotel?.location || '',
-                                rating: selectedHotel?.rating || 0,
-                                review: selectedHotel?.review || '',
-                                liked: selectedHotel?.liked || null
-                              });
-                            }}
-                          />
-                        )}
                       </div>
                     </div>
                   )}

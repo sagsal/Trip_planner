@@ -114,8 +114,15 @@ jobs:
           else
             echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
           fi
+          export PATH="/root/.nvm/versions/node/v18.20.8/bin:$PATH"
           echo "--- hotel name search: Totoco, Ometepe Nicaragua"
-          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Totoco%20Ometepe%20Nicaragua&category=hotels" | grep -o '"name":"[^"]*"' | head -5 | tr '\n' ' '; echo
+          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Totoco%20Ometepe%20Nicaragua&category=hotels" \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{for(const r of JSON.parse(d).results||[])console.log(" - "+r.name+" | photo: "+(r.photo_url?"yes":"none"))}catch(e){console.log("unreadable")}})'
+          echo "--- describe: totoco (photo check)"
+          printf '{"text":"Totoco eco lodge on Ometepe","city":"Ometepe","country":"Nicaragua","category":"hotels"}' \
+            | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{for(const r of JSON.parse(d).results||[])console.log(" - "+r.name+" | photo: "+((r.photos||[]).length?"yes":"none"))}catch(e){console.log("unreadable")}})'
+
           echo "--- describe a restaurant (test; public place names only)"
           for t in "restaurants|the vegetarian restaurant on Parque Espana" "attractions|the big park with the castle on the hill" "hotels|the boutique hotel with a rooftop pool in Condesa"; do
             cat_="${t%%|*}"; d="${t#*|}"

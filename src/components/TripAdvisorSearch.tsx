@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Star, Loader2, X, Sparkles } from 'lucide-react';
+import { Search, MapPin, Star, Loader2, X, Sparkles, ZoomIn, Check, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 
 interface TripAdvisorResult {
   location_id: string;
@@ -19,6 +20,7 @@ interface TripAdvisorResult {
     name: string;
   };
   web_url?: string;
+  photo_url?: string; // full photo link (Google), used for the large preview
   photos?: Array<{
     images: {
       medium?: { url: string };
@@ -56,6 +58,10 @@ export default function TripAdvisorSearch({
   const [describeText, setDescribeText] = useState('');
   const [describing, setDescribing] = useState(false);
   const [describeMsg, setDescribeMsg] = useState('');
+  // Large photo preview, so a place can be recognised before choosing it
+  const [preview, setPreview] = useState<TripAdvisorResult | null>(null);
+  const previewOpenRef = useRef(false);
+  previewOpenRef.current = !!preview;
   const [searchQuery, setSearchQuery] = useState(value);
   const [results, setResults] = useState<TripAdvisorResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -204,6 +210,7 @@ export default function TripAdvisorSearch({
   // Close results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (previewOpenRef.current) return; // clicks in the photo preview shouldn't close the list
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setShowResults(false);
       }
@@ -415,7 +422,15 @@ export default function TripAdvisorSearch({
                 >
                   <div className="flex gap-4">
                     {imageUrl ? (
-                      <div className="flex-shrink-0">
+                      <button
+                        type="button"
+                        title="See a bigger photo"
+                        onClick={(e) => {
+                          e.stopPropagation(); // view the photo without choosing the place
+                          setPreview(result);
+                        }}
+                        className="relative flex-shrink-0 group/photo rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A6878]"
+                      >
                         <img
                           src={imageUrl}
                           alt={result.name}
@@ -425,7 +440,10 @@ export default function TripAdvisorSearch({
                           }}
                           loading="lazy"
                         />
-                      </div>
+                        <span className="absolute bottom-1 right-1 bg-black/55 text-white rounded p-0.5 group-hover/photo:bg-black/75">
+                          <ZoomIn className="w-3.5 h-3.5" />
+                        </span>
+                      </button>
                     ) : (
                       <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
                         <span className="text-gray-400 text-xs">No image</span>
@@ -498,6 +516,54 @@ export default function TripAdvisorSearch({
               )}
           </div>
         </div>
+      )}
+
+      {/* Large photo preview (shown over the whole page) */}
+      {preview && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setPreview(null)}
+          role="dialog"
+          aria-label={`Photo of ${preview.name}`}
+        >
+          <div
+            className="bg-white rounded-xl overflow-hidden shadow-2xl max-w-3xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={preview.photo_url ? `${preview.photo_url}&w=1200` : getImageUrl(preview) || ''}
+              alt={preview.name}
+              className="w-full max-h-[65vh] object-contain bg-gray-100"
+            />
+            <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold text-gray-900">{preview.name}</p>
+                {getAddress(preview) && <p className="text-sm text-gray-600">{getAddress(preview)}</p>}
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setPreview(null)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const r = preview;
+                    setPreview(null);
+                    handleSelect(r);
+                  }}
+                  className="inline-flex items-center px-3 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] text-sm"
+                >
+                  <Check className="w-4 h-4 mr-1" /> Use this place
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

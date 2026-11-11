@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package,
+  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle,
 } from 'lucide-react';
 import { SANDBOX_EVENT } from '@/lib/sandbox';
 
@@ -27,6 +27,7 @@ const SIGNED_IN: { title: string; items: Item[] }[] = [
     items: [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
       { href: '/', label: 'Home', icon: Home },
+      { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
       { href: '/about', label: 'About', icon: Info },
     ],
   },
@@ -38,6 +39,7 @@ const SIGNED_OUT: { title: string; items: Item[] }[] = [
     items: [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
       { href: '/', label: 'Home', icon: Home },
+      { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
       { href: '/about', label: 'About', icon: Info },
     ],
   },

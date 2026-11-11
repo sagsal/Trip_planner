@@ -38,6 +38,10 @@ export default function AboutPage() {
           </section>
         </div>
 
+        <p className="text-[#4A5A63] mb-10">
+          New here? See <Link href="/how-to" className="underline text-[#2F4A5C] hover:text-[#3F5B6A]">how to use Share and Plan</Link>.
+        </p>
+
         <p className="text-xl font-medium text-[#2F4A5C] mb-6">Real trips, from real travelers.</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <Link

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
+import { cleanLegs, cleanArrival } from '@/lib/travel';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -511,7 +512,8 @@ export async function PUT(
       tripRating,
       tripReview,
       coverImageUrl,
-      region
+      region,
+      travelInfo
     } = body;
     // Only accept cover photos served by this site's own photo route; null removes it
     const coverUpdate =
@@ -597,7 +599,8 @@ export async function PUT(
           isPublic: finalIsPublic,
           isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft,
           ...coverUpdate,
-          ...(typeof region === 'string' ? { region: region.trim() ? region.trim().slice(0, 60) : null } : {})
+          ...(typeof region === 'string' ? { region: region.trim() ? region.trim().slice(0, 60) : null } : {}),
+          ...(travelInfo !== undefined ? { travelInfo: cleanLegs(travelInfo).length ? JSON.stringify(cleanLegs(travelInfo)) : null } : {})
         }
       });
 
@@ -613,6 +616,7 @@ export async function PUT(
               country: cityData.country,
               tripId: id,
               numberOfDays: Number(cityData.numberOfDays) || 1,
+              arrival: cleanArrival(cityData.arrival) ? JSON.stringify(cleanArrival(cityData.arrival)) : null,
               hotels: {
                 create: (cityData.hotels || []).map((hotel: any) => ({
                   name: hotel.name,

@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X, ExternalLink } from 'lucide-react';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
+import { cleanLegs, cleanArrival, parseJson, routeText, modeInfo } from '@/lib/travel';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -13,6 +14,7 @@ interface Trip {
   id: string;
   title: string;
   coverImageUrl?: string | null;
+  travelInfo?: string | null;
   description: string | null;
   startDate: string;
   endDate: string;
@@ -33,6 +35,7 @@ interface CityData {
   name: string;
   country: string;
   numberOfDays?: number;
+  arrival?: string | null;
   hotels: Hotel[];
   restaurants: Restaurant[];
   activities: Activity[];
@@ -780,6 +783,30 @@ function TripDetailContent() {
                 </p>
               </div>
             </div>
+
+            {/* Getting there: flights */}
+            {(() => {
+              const legs = cleanLegs(parseJson(trip.travelInfo, []));
+              if (legs.length === 0) return null;
+              return (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center text-gray-600 mb-2">
+                    <span className="mr-2">✈️</span>
+                    <span className="font-medium">Getting there</span>
+                  </div>
+                  {routeText(legs) && <p className="text-gray-900 font-semibold mb-2">{routeText(legs)}</p>}
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    {legs.map((l, i) => (
+                      <li key={i}>
+                        <span className="font-medium">{[l.from, l.to].filter(Boolean).join(' → ')}</span>
+                        {l.airline && <span> · {l.airline}</span>}
+                        {l.flightNumber && <span className="text-gray-500"> · {l.flightNumber}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Cities, day by day */}
@@ -803,6 +830,21 @@ function TripDetailContent() {
                         {city.country}
                         {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
                       </p>
+                      {(() => {
+                        const a = cleanArrival(parseJson(city.arrival, null));
+                        if (!a || !a.mode) return null;
+                        const m = modeInfo(a.mode);
+                        return (
+                          <div className="mt-3 rounded-lg bg-[#F3F7F8] border border-[#C9D9DF] px-3 py-2 text-sm text-[#2F4A5C]">
+                            <span className="font-medium">
+                              {m?.icon} Arrived by {m?.label.toLowerCase()}
+                              {a.from && ` from ${a.from}`}
+                            </span>
+                            {a.operator && <span> · {a.operator}</span>}
+                            {a.details && <p className="mt-1 text-[#3F5B6A] whitespace-pre-line">{a.details}</p>}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {city.hotels.length > 0 && (

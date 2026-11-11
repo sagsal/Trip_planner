@@ -9,6 +9,7 @@ import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { REGIONS, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
+import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, type FlightLeg, type Arrival } from '@/lib/travel';
 
 interface Hotel {
   id: string;
@@ -62,6 +63,7 @@ interface CityData {
   days: Day[];
   // Extra hotels from older trips (the form shows one hotel per city); kept so nothing is lost on save
   extraHotels?: Hotel[];
+  arrival?: Arrival | null; // how they got to this city
 }
 
 // Number of days in a trip, counting both the first and last day (e.g. 1st to 3rd = 3 days)
@@ -93,6 +95,18 @@ function NewTripContent() {
   const [region, setRegion] = useState('');
   const [tripCountries, setTripCountries] = useState<string[]>([]);
   const [addingCityFor, setAddingCityFor] = useState<string | null>(null); // country whose "Add a city" form is in use
+  // Flights to the destination, e.g. YYZ → JFK (Air Canada), JFK → ATH (Delta)
+  const [flightLegs, setFlightLegs] = useState<FlightLeg[]>([]);
+  const updateLeg = (i: number, field: keyof FlightLeg, value: string) =>
+    setFlightLegs((prev) => prev.map((l, j) => (j === i ? { ...l, [field]: value } : l)));
+  const addLeg = () =>
+    setFlightLegs((prev) => [...prev, { from: prev.length ? prev[prev.length - 1].to : '', to: '', airline: prev.length ? prev[prev.length - 1].airline : '', flightNumber: '' }]);
+  const removeLeg = (i: number) => setFlightLegs((prev) => prev.filter((_, j) => j !== i));
+  // How they got to a city
+  const updateArrival = (cityId: string, field: keyof Arrival, value: string) =>
+    setCitiesData((prev) =>
+      prev.map((c) => (c.id === cityId ? { ...c, arrival: { mode: '', from: '', operator: '', details: '', ...(c.arrival || {}), [field]: value } as Arrival } : c))
+    );
 
   // Countries in this trip, in order: those added, then any a city belongs to that wasn't added
   const countryList = useMemo(() => {
@@ -316,6 +330,7 @@ function NewTripContent() {
           setRegion(trip.region || regionOf((all as string[])[0] || '') || '');
         }
         setCoverImageUrl(trip.coverImageUrl || null);
+        setFlightLegs(cleanLegs(parseJson(trip.travelInfo, [])));
         setFormData(prev => ({
           ...prev,
           title: trip.title ?? '',
@@ -353,6 +368,7 @@ function NewTripContent() {
           }));
           return {
             id: cityId,
+            arrival: cleanArrival(parseJson(city.arrival, null)),
             name: city.name ?? '',
             country: city.country ?? '',
             numberOfDays: n,
@@ -978,6 +994,7 @@ function NewTripContent() {
           name: city.name,
           country: city.country,
           numberOfDays: city.numberOfDays,
+          arrival: city.arrival || null,
           hotels: [
             ...(city.hotel && city.hotel.name.trim() ? [city.hotel] : []),
             ...(city.extraHotels || []).filter(h => h.name.trim() !== ''),
@@ -1006,6 +1023,7 @@ function NewTripContent() {
           ...formData,
           title: autoTitle, // trips are named from their countries/cities
           region: region || regionOf(uniqueCountries[0]) || '',
+          travelInfo: cleanLegs(flightLegs),
           countries: isEditing ? JSON.stringify(uniqueCountries) : uniqueCountries, // Use countries from cities
           cities: JSON.stringify(citiesData.map(c => c.name)),
           citiesData: transformedCitiesData,
@@ -1092,6 +1110,67 @@ function NewTripContent() {
                     </button>
                   </div>
                   
+                  {/* How did you get here? */}
+                  <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">How did you get to {city.name}?</h4>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {TRAVEL_MODES.map((m) => {
+                        const active = city.arrival?.mode === m.value;
+                        return (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => updateArrival(city.id, 'mode', active ? '' : m.value)}
+                            className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors ${
+                              active ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {m.icon} {m.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {city.arrival?.mode && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">From</label>
+                          <input
+                            value={city.arrival.from}
+                            onChange={(e) => updateArrival(city.id, 'from', e.target.value)}
+                            placeholder={city.arrival.mode === 'flight' ? 'e.g. JFK or New York' : 'e.g. Athens'}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">{modeInfo(city.arrival.mode)?.operatorLabel}</label>
+                          <input
+                            value={city.arrival.operator}
+                            onChange={(e) => updateArrival(city.id, 'operator', e.target.value)}
+                            list={city.arrival.mode === 'flight' ? 'airline-list' : undefined}
+                            placeholder={modeInfo(city.arrival.mode)?.operatorHint}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Details</label>
+                          <textarea
+                            value={city.arrival.details}
+                            onChange={(e) => updateArrival(city.id, 'details', e.target.value)}
+                            rows={2}
+                            placeholder={
+                              city.arrival.mode === 'flight' ? 'e.g. Flight A3 602, 1 hour, aisle seats'
+                              : city.arrival.mode === 'car' ? 'e.g. 3-hour drive, tolls in cash, parking at the hotel'
+                              : city.arrival.mode === 'boat' ? 'e.g. 2-hour ferry from Piraeus, book ahead in summer'
+                              : city.arrival.mode === 'train' ? 'e.g. 4 hours, first class was worth it'
+                              : 'e.g. 5 hours, comfortable, buy tickets at the station'
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Hotel Section - Single Hotel */}
                   <div className="mb-6">
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -1814,6 +1893,74 @@ function NewTripContent() {
                     </>
                   );
                 })()}
+              </div>
+
+              {/* Getting there: flights to the destination */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">✈️ Getting there</label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Your flights to the destination, one line per flight (e.g. YYZ → JFK, then JFK → ATH).
+                </p>
+                {flightLegs.length > 0 && routeText(flightLegs) && (
+                  <p className="mb-2 text-sm font-medium text-[#2F4A5C]">{routeText(flightLegs)}</p>
+                )}
+                <div className="space-y-2">
+                  {flightLegs.map((leg, i) => (
+                    <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center bg-gray-50 border border-gray-200 rounded-lg p-2">
+                      <input
+                        value={leg.from}
+                        onChange={(e) => updateLeg(i, 'from', e.target.value.toUpperCase())}
+                        placeholder="From (YYZ)"
+                        aria-label="From"
+                        className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+                      />
+                      <input
+                        value={leg.to}
+                        onChange={(e) => updateLeg(i, 'to', e.target.value.toUpperCase())}
+                        placeholder="To (JFK)"
+                        aria-label="To"
+                        className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+                      />
+                      <input
+                        value={leg.airline}
+                        onChange={(e) => updateLeg(i, 'airline', e.target.value)}
+                        list="airline-list"
+                        placeholder="Airline"
+                        aria-label="Airline"
+                        className="col-span-2 sm:col-span-5 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900"
+                      />
+                      <input
+                        value={leg.flightNumber || ''}
+                        onChange={(e) => updateLeg(i, 'flightNumber', e.target.value.toUpperCase())}
+                        placeholder="Flight # (opt.)"
+                        aria-label="Flight number"
+                        className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeLeg(i)}
+                        className="sm:col-span-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md p-2 justify-self-end"
+                        title="Remove this flight"
+                        aria-label="Remove this flight"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addLeg}
+                  className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> {flightLegs.length === 0 ? 'Add a flight' : 'Add another flight'}
+                </button>
+                {/* Airline suggestions for every airline box on the page */}
+                <datalist id="airline-list">
+                  {AIRLINES.slice().sort((a, b) => a.localeCompare(b)).map((a) => (
+                    <option key={a} value={a} />
+                  ))}
+                </datalist>
               </div>
 
               {/* Cover photo */}

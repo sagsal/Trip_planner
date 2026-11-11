@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
+import { cleanLegs, cleanArrival } from '@/lib/travel';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -378,7 +379,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('POST /api/trips - Received request body:', JSON.stringify(body, null, 2));
     
-    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl, region } = body;
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl, region, travelInfo } = body;
     // Only accept cover photos served by this site's own photo route
     const safeCover = typeof coverImageUrl === 'string' && coverImageUrl.startsWith('/api/places/photo?') ? coverImageUrl : null;
     
@@ -524,6 +525,7 @@ export async function POST(request: NextRequest) {
         isDraft: isDraft || false,
         coverImageUrl: safeCover,
         region: typeof region === 'string' && region.trim() ? region.trim().slice(0, 60) : null,
+        travelInfo: cleanLegs(travelInfo).length ? JSON.stringify(cleanLegs(travelInfo)) : null,
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {
@@ -550,6 +552,7 @@ export async function POST(request: NextRequest) {
               name: cityData.name,
               country: cityData.country,
               numberOfDays: cityData.numberOfDays || 1,
+              arrival: cleanArrival(cityData.arrival) ? JSON.stringify(cleanArrival(cityData.arrival)) : null,
               hotels: {
                 create: hotels.map((hotel: any) => ({
                   name: hotel.name || '',

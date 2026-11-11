@@ -35,6 +35,7 @@ model Trip {
   isDraft     Boolean   @default(false) // true for draft trips, false for completed/shared trips
   coverImageUrl String? @db.Text // cover photo chosen when adding the trip (Google photo link)
   region      String?   // e.g. "Central America" (chosen when adding the trip)
+  travelInfo  String?   @db.Text // JSON: flights to the destination [{from,to,airline,flightNumber}]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -56,6 +57,7 @@ model City {
   tripId       String
   trip         Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
   numberOfDays Int?   @default(1)
+  arrival      String?  @db.Text // JSON: how they got to this city {mode,from,operator,details}
 
   hotels      Hotel[]
   restaurants Restaurant[]

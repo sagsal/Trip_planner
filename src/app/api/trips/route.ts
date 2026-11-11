@@ -558,6 +558,7 @@ export async function POST(request: NextRequest) {
                   review: placeFields(hotel).review || null,
                   webUrl: safeWebUrl(placeFields(hotel).webUrl),
                   imageUrl: safeImageUrl(placeFields(hotel).imageUrl),
+                  stayType: hotel.stayType === 'rental' ? 'rental' : null,
                   liked: hotel.liked ?? null
                 }))
               },

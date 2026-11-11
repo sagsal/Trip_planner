@@ -7,7 +7,7 @@ import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from '
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
-import { placeFields, linkLabel } from '@/lib/placeDetails';
+import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { REGIONS, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
 
 interface Hotel {
@@ -17,6 +17,7 @@ interface Hotel {
   rating: number;
   review: string;
   liked: boolean | null;
+  stayType?: 'rental' | null; // Airbnb / VRBO etc.
   imageUrl?: string | null; // photo for a place picked from search
   webUrl?: string | null;   // Google Maps / TripAdvisor page
 }
@@ -163,6 +164,40 @@ function NewTripContent() {
   const [addingHotel, setAddingHotel] = useState<string | null>(null);
   const [newHotelName, setNewHotelName] = useState('');
   const [selectedHotelData, setSelectedHotelData] = useState<any>(null);
+  // Adding a rental (Airbnb, VRBO…) instead of a hotel: paste its link
+  const [stayMode, setStayMode] = useState<'hotel' | 'rental'>('hotel');
+  const [rentalUrl, setRentalUrl] = useState('');
+  const [rentalName, setRentalName] = useState('');
+  const [rentalArea, setRentalArea] = useState('');
+  const [rentalImage, setRentalImage] = useState<string | null>(null);
+  const [rentalSite, setRentalSite] = useState('');
+  const [rentalLoading, setRentalLoading] = useState(false);
+  const [rentalMsg, setRentalMsg] = useState('');
+
+  const resetRental = () => {
+    setRentalUrl(''); setRentalName(''); setRentalArea(''); setRentalImage(null);
+    setRentalSite(''); setRentalMsg(''); setRentalLoading(false);
+  };
+
+  const lookUpRental = async (url: string) => {
+    const u = url.trim();
+    if (!/^https?:\/\//i.test(u)) { setRentalMsg('Paste the full link, starting with https://'); return; }
+    setRentalLoading(true);
+    setRentalMsg('');
+    try {
+      const res = await fetch(`/api/link-preview?url=${encodeURIComponent(u)}`);
+      const data = await res.json().catch(() => ({}));
+      if (data.site) setRentalSite(data.site);
+      if (data.url) setRentalUrl(data.url);
+      if (data.imageUrl) setRentalImage(data.imageUrl);
+      if (data.name) setRentalName((prev) => prev || data.name);
+      setRentalMsg(data.ok ? '' : data.error || 'Couldn’t read that link. Please type a name.');
+    } catch {
+      setRentalMsg('Couldn’t read that link. Please type a name.');
+    } finally {
+      setRentalLoading(false);
+    }
+  };
 
   // State for TripAdvisor restaurant search
   const [addingRestaurant, setAddingRestaurant] = useState<{cityId: string; dayId: string} | null>(null);
@@ -312,7 +347,10 @@ function NewTripContent() {
           restaurants.forEach((r: Restaurant, i: number) => place(r, city.restaurants[i], 'restaurants'));
           activities.forEach((a: Activity, i: number) => place(a, city.activities[i], 'activities'));
 
-          const hotels = (city.hotels || []).map((h: any, i: number) => toItem(h, `${cityId}-h-${i}`));
+          const hotels = (city.hotels || []).map((h: any, i: number) => ({
+            ...toItem(h, `${cityId}-h-${i}`),
+            stayType: h?.stayType === 'rental' ? ('rental' as const) : null,
+          }));
           return {
             id: cityId,
             name: city.name ?? '',
@@ -1131,6 +1169,11 @@ function NewTripContent() {
                                     </div>
                                   </div>
                                 )}
+                                {isRental(city.hotel) && (
+                                  <p className="mb-2 inline-flex items-center gap-1 text-xs font-medium bg-[#E3ECEF] text-[#3F5B6A] px-2 py-0.5 rounded-full">
+                                    🏠 Rental
+                                  </p>
+                                )}
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                   <div>
@@ -1199,6 +1242,108 @@ function NewTripContent() {
                         <div className="space-y-3">
                           {addingHotel === city.id ? (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                              {/* Hotel or rental? */}
+                              <div className="inline-flex rounded-lg border border-yellow-300 bg-white p-0.5 mb-3" role="tablist">
+                                {(['hotel', 'rental'] as const).map((m) => (
+                                  <button
+                                    key={m}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={stayMode === m}
+                                    onClick={() => setStayMode(m)}
+                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                      stayMode === m ? 'bg-yellow-600 text-white' : 'text-gray-700 hover:bg-yellow-50'
+                                    }`}
+                                  >
+                                    {m === 'hotel' ? '🏨 Hotel' : '🏠 Rental (Airbnb, VRBO…)'}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {stayMode === 'rental' ? (
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Paste the listing link</label>
+                                    <input
+                                      type="url"
+                                      value={rentalUrl}
+                                      onChange={(e) => setRentalUrl(e.target.value)}
+                                      onPaste={(e) => {
+                                        const t = e.clipboardData.getData('text');
+                                        if (t) setTimeout(() => lookUpRental(t), 0);
+                                      }}
+                                      onBlur={() => { if (rentalUrl && !rentalSite) lookUpRental(rentalUrl); }}
+                                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookUpRental(rentalUrl); } }}
+                                      placeholder="https://www.airbnb.com/rooms/…  or  https://www.vrbo.com/…"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                    />
+                                    {rentalLoading && <p className="mt-1 text-xs text-gray-500">Getting the rental’s details…</p>}
+                                    {rentalMsg && <p className="mt-1 text-xs text-[#8A6D3B]">{rentalMsg}</p>}
+                                  </div>
+                                  {rentalImage && (
+                                    <img
+                                      src={rentalImage}
+                                      alt=""
+                                      className="w-full h-40 object-cover rounded-lg border border-yellow-200"
+                                      onError={() => setRentalImage(null)}
+                                    />
+                                  )}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                                      <input
+                                        type="text"
+                                        value={rentalName}
+                                        onChange={(e) => setRentalName(e.target.value)}
+                                        placeholder="e.g. Sunny loft in Condesa"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">Area (optional)</label>
+                                      <input
+                                        type="text"
+                                        value={rentalArea}
+                                        onChange={(e) => setRentalArea(e.target.value)}
+                                        placeholder="e.g. Roma Norte"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={!rentalName.trim()}
+                                      onClick={() => {
+                                        setHotelForCity(city.id, {
+                                          id: Date.now().toString(),
+                                          name: rentalName.trim(),
+                                          location: rentalArea.trim(),
+                                          rating: 0,
+                                          review: '',
+                                          liked: null,
+                                          imageUrl: rentalImage,
+                                          webUrl: /^https:\/\//.test(rentalUrl.trim()) ? rentalUrl.trim() : null,
+                                          stayType: 'rental',
+                                        });
+                                        resetRental();
+                                        setStayMode('hotel');
+                                        handleCancelHotel();
+                                      }}
+                                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => { resetRental(); setStayMode('hotel'); handleCancelHotel(); }}
+                                      className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (<>
                               <TripAdvisorSearch
                                 value={newHotelName}
                                 onChange={setNewHotelName}
@@ -1237,18 +1382,19 @@ function NewTripContent() {
                                   Cancel
                                 </button>
                               </div>
+                              </>)}
                             </div>
                           ) : (
                             <>
                               <div className="text-center py-4">
-                                <p className="text-gray-600 mb-3">No hotel added</p>
+                                <p className="text-gray-600 mb-3">No hotel or rental added</p>
                                 <button
                                   type="button"
                                   onClick={() => setAddingHotel(city.id)}
                                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                                 >
                                   <Plus className="w-4 h-4 inline mr-2" />
-                                  Add Hotel
+                                  Add hotel or rental
                                 </button>
                               </div>
                             </>

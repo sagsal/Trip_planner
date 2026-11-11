@@ -6,7 +6,7 @@
  * (5,000 free a month); photos themselves are only fetched when viewed.
  */
 import { searchGooglePlaces, GOOGLE_PLACES_API_KEY } from '@/lib/googlePlaces';
-import { placeFields } from '@/lib/placeDetails';
+import { placeFields, isRental } from '@/lib/placeDetails';
 
 const STOP = new Set(['the', 'a', 'an', 'de', 'la', 'le', 'el', 'and', 'y', 'et', '&', 'hotel', 'restaurant', 'cafe', 'bar', 'museum', 'museo']);
 const tokens = (s: string) =>
@@ -57,7 +57,7 @@ export async function enrichCitiesData(citiesData: any[], limit = 40): Promise<v
   const add = (place: any, city: any, kind: Kind) => {
     if (!place || typeof place !== 'object') return;
     const f = placeFields(place);
-    if (f.imageUrl) return;
+    if (f.imageUrl || isRental(place)) return; // rentals keep the photo from their own link
     jobs.push(async () => {
       const found = await findPlace(place, city, kind);
       if (found) {

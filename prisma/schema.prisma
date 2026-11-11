@@ -74,6 +74,7 @@ model Hotel {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  stayType  String?  // "rental" for Airbnb/VRBO-style stays; null = hotel
   imageUrl  String? @db.Text // photo link for a place picked from search
   webUrl    String? @db.Text // Google Maps / TripAdvisor page for the place
   cityId String

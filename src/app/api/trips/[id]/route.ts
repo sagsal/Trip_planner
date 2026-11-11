@@ -621,6 +621,7 @@ export async function PUT(
                   review: placeFields(hotel).review || null,
                   webUrl: safeWebUrl(placeFields(hotel).webUrl),
                   imageUrl: safeImageUrl(placeFields(hotel).imageUrl),
+                  stayType: hotel.stayType === 'rental' ? 'rental' : null,
                   liked: hotel.liked
                 }))
               },

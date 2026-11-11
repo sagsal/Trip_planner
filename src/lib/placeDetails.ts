@@ -56,5 +56,15 @@ export function safeWebUrl(u: unknown): string | null {
 export function linkLabel(webUrl: string): string {
   if (/google\.[a-z.]+\/maps|maps\.google|goo\.gl\/maps/.test(webUrl)) return 'View on Google Maps';
   if (/tripadvisor\./.test(webUrl)) return 'Reviews on TripAdvisor';
+  if (/airbnb\.|abnb\.me/.test(webUrl)) return 'View on Airbnb';
+  if (/vrbo\.com|homeaway\./.test(webUrl)) return 'View on VRBO';
+  if (/booking\.com/.test(webUrl)) return 'View on Booking.com';
+  if (/expedia\./.test(webUrl)) return 'View on Expedia';
   return 'More info';
+}
+
+/** True for Airbnb/VRBO-style stays (stored type, or a link to a rental site). */
+export function isRental(p: { stayType?: unknown; webUrl?: unknown } | null | undefined): boolean {
+  if (p?.stayType === 'rental') return true;
+  return typeof p?.webUrl === 'string' && /airbnb\.|abnb\.me|vrbo\.com|homeaway\./.test(p.webUrl);
 }

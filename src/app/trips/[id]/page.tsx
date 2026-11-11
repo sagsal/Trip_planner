@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X, ExternalLink } from 'lucide-react';
-import { placeFields, linkLabel } from '@/lib/placeDetails';
+import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -48,6 +48,7 @@ interface Hotel {
   imageUrl?: string | null;
   webUrl?: string | null;
   dayNumber?: number | null;
+  stayType?: string | null;
 }
 
 interface Restaurant {
@@ -60,6 +61,7 @@ interface Restaurant {
   imageUrl?: string | null;
   webUrl?: string | null;
   dayNumber?: number | null;
+  stayType?: string | null;
 }
 
 interface Activity {
@@ -72,6 +74,7 @@ interface Activity {
   imageUrl?: string | null;
   webUrl?: string | null;
   dayNumber?: number | null;
+  stayType?: string | null;
 }
 
 interface DraftTrip {
@@ -91,7 +94,7 @@ interface DraftTrip {
 }
 
 // One hotel / restaurant / activity: photo, name, address, rating, the traveller's review and a link
-function PlaceCard({ place }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null } }) {
+function PlaceCard({ place }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null } }) {
   const details = placeFields(place);
   const rating = Number(place.rating) || 0;
   return (
@@ -109,7 +112,12 @@ function PlaceCard({ place }: { place: { name: string; location?: string; rating
         <div className="p-4 flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h4 className="text-lg font-semibold text-gray-900">{place.name}</h4>
+              <h4 className="text-lg font-semibold text-gray-900">
+                {place.name}
+                {isRental(place) && (
+                  <span className="ml-2 align-middle text-xs font-medium bg-[#E3ECEF] text-[#3F5B6A] px-2 py-0.5 rounded-full">🏠 Rental</span>
+                )}
+              </h4>
               {place.location && <p className="text-gray-600 text-sm">{place.location}</p>}
             </div>
             <div className="flex items-center gap-2 shrink-0">

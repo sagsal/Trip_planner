@@ -115,7 +115,7 @@ jobs:
             echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
           fi
           echo "--- describe a restaurant (test; public place names only)"
-          for t in "restaurants|the vegetarian restaurant on Parque Espana" "attractions|the big park with the castle on the hill"; do
+          for t in "restaurants|the vegetarian restaurant on Parque Espana" "attractions|the big park with the castle on the hill" "hotels|the boutique hotel with a rooftop pool in Condesa"; do
             cat_="${t%%|*}"; d="${t#*|}"
             printf '{"text":"%s","city":"Mexico City","country":"Mexico","category":"%s"}' "$d" "$cat_" \
               | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \

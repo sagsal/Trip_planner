@@ -1498,6 +1498,7 @@ function NewTripContent() {
                                 onSelect={handleHotelSelect}
                                 placeholder={`Search hotels in ${city.name}...`}
                                 category="hotels"
+                                allowDescribe
                                 className="mb-2"
                                 cityName={city.name}
                                 countryName={city.country}

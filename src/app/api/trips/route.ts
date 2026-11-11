@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
+import { enrichCitiesData } from '@/lib/placeEnrich';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -505,6 +506,9 @@ export async function POST(request: NextRequest) {
     } else {
       citiesString = JSON.stringify([]);
     }
+
+    // Look up a photo and Google Maps link for places that don't have one (bounded, ~10s max)
+    await enrichCitiesData(citiesData || []);
 
     // Create trip in database with hierarchical structure
     // Handle both old structure (hotels/restaurants/activities arrays) and new structure (days array)

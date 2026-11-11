@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
+import { enrichCitiesData } from '@/lib/placeEnrich';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -554,6 +555,9 @@ export async function PUT(
     }
 
     // Update the trip using a transaction
+    // Look up a photo and Google Maps link for places that don't have one (bounded, ~10s max)
+    if (Array.isArray(citiesData)) await enrichCitiesData(citiesData);
+
     const updatedTrip = await prisma.$transaction(async (tx: any) => {
       // Update the main trip
       // For tripReview, append to description if provided (same as share trip)

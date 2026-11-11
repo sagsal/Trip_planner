@@ -840,29 +840,6 @@ function TripDetailContent() {
             </div>
           )}
 
-          {/* Call to Action */}
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Inspired by this trip?</h2>
-            <p className="text-gray-600 mb-6">
-              Build your own trip using ideas from this one, or share your own travel experiences with the community.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/trips/build"
-                className="inline-flex items-center px-8 py-4 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors text-lg font-semibold"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Build Your Trip
-              </Link>
-              <Link
-                href="/trips/new"
-                className="inline-flex items-center px-8 py-4 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors text-lg font-semibold"
-              >
-                <Heart className="w-5 h-5 mr-2" />
-                Share Your Trip
-              </Link>
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>

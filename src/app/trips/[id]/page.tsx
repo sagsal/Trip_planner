@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X, ExternalLink } from 'lucide-react';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
-import { cleanLegs, cleanArrival, parseJson, routeText, modeInfo } from '@/lib/travel';
+import { cleanArrival, cleanTravel, parseJson, routeText, modeInfo, type FlightLeg } from '@/lib/travel';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -784,26 +784,33 @@ function TripDetailContent() {
               </div>
             </div>
 
-            {/* Getting there: flights */}
+            {/* Flights there and back */}
             {(() => {
-              const legs = cleanLegs(parseJson(trip.travelInfo, []));
-              if (legs.length === 0) return null;
-              return (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center text-gray-600 mb-2">
-                    <span className="mr-2">✈️</span>
-                    <span className="font-medium">Getting there</span>
+              const t = cleanTravel(trip.travelInfo);
+              if (t.outbound.length === 0 && t.return.length === 0) return null;
+              const block = (title: string, icon: string, legs: FlightLeg[]) =>
+                legs.length > 0 && (
+                  <div>
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <span className="mr-2">{icon}</span>
+                      <span className="font-medium">{title}</span>
+                    </div>
+                    {routeText(legs) && <p className="text-gray-900 font-semibold mb-2">{routeText(legs)}</p>}
+                    <ul className="space-y-1 text-sm text-gray-700">
+                      {legs.map((l, i) => (
+                        <li key={i}>
+                          <span className="font-medium">{[l.from, l.to].filter(Boolean).join(' → ')}</span>
+                          {l.airline && <span> · {l.airline}</span>}
+                          {l.flightNumber && <span className="text-gray-500"> · {l.flightNumber}</span>}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  {routeText(legs) && <p className="text-gray-900 font-semibold mb-2">{routeText(legs)}</p>}
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    {legs.map((l, i) => (
-                      <li key={i}>
-                        <span className="font-medium">{[l.from, l.to].filter(Boolean).join(' → ')}</span>
-                        {l.airline && <span> · {l.airline}</span>}
-                        {l.flightNumber && <span className="text-gray-500"> · {l.flightNumber}</span>}
-                      </li>
-                    ))}
-                  </ul>
+                );
+              return (
+                <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {block('Getting there', '✈️', t.outbound)}
+                  {block('Getting home', '🛬', t.return)}
                 </div>
               );
             })()}

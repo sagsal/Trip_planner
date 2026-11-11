@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
-import { cleanLegs, cleanArrival } from '@/lib/travel';
+import { cleanArrival, travelToStore } from '@/lib/travel';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -600,7 +600,7 @@ export async function PUT(
           isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft,
           ...coverUpdate,
           ...(typeof region === 'string' ? { region: region.trim() ? region.trim().slice(0, 60) : null } : {}),
-          ...(travelInfo !== undefined ? { travelInfo: cleanLegs(travelInfo).length ? JSON.stringify(cleanLegs(travelInfo)) : null } : {})
+          ...(travelInfo !== undefined ? { travelInfo: travelToStore(travelInfo) } : {})
         }
       });
 

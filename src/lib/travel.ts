@@ -108,3 +108,22 @@ export function airlinesText(legs: FlightLeg[]): string {
   const names = legs.map((l) => l.airline.replace(/\s*\([A-Z0-9]{2}\)\s*$/, '').trim()).filter(Boolean);
   return Array.from(new Set(names)).join(', ');
 }
+
+/** Flights for a trip: to the destination and back home. */
+export interface TravelInfo {
+  outbound: FlightLeg[];
+  return: FlightLeg[];
+}
+
+/** Accepts the stored value in either form: an array (older trips: flights there) or {outbound, return}. */
+export function cleanTravel(input: unknown): TravelInfo {
+  const v: any = typeof input === 'string' ? parseJson(input, null) : input;
+  if (Array.isArray(v)) return { outbound: cleanLegs(v), return: [] };
+  return { outbound: cleanLegs(v?.outbound), return: cleanLegs(v?.return) };
+}
+
+/** JSON to store, or null when there are no flights. */
+export function travelToStore(input: unknown): string | null {
+  const t = cleanTravel(input);
+  return t.outbound.length || t.return.length ? JSON.stringify(t) : null;
+}

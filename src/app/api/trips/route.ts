@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
-import { cleanLegs, cleanArrival } from '@/lib/travel';
+import { cleanArrival, travelToStore } from '@/lib/travel';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -525,7 +525,7 @@ export async function POST(request: NextRequest) {
         isDraft: isDraft || false,
         coverImageUrl: safeCover,
         region: typeof region === 'string' && region.trim() ? region.trim().slice(0, 60) : null,
-        travelInfo: cleanLegs(travelInfo).length ? JSON.stringify(cleanLegs(travelInfo)) : null,
+        travelInfo: travelToStore(travelInfo),
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {

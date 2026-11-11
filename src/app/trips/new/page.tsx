@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
+import { useState, useEffect, Suspense, useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from 'lucide-react';
@@ -9,7 +9,7 @@ import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { REGIONS, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
-import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, type FlightLeg, type Arrival } from '@/lib/travel';
+import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, cleanTravel, type FlightLeg, type Arrival } from '@/lib/travel';
 
 interface Hotel {
   id: string;
@@ -96,12 +96,22 @@ function NewTripContent() {
   const [tripCountries, setTripCountries] = useState<string[]>([]);
   const [addingCityFor, setAddingCityFor] = useState<string | null>(null); // country whose "Add a city" form is in use
   // Flights to the destination, e.g. YYZ → JFK (Air Canada), JFK → ATH (Delta)
-  const [flightLegs, setFlightLegs] = useState<FlightLeg[]>([]);
-  const updateLeg = (i: number, field: keyof FlightLeg, value: string) =>
-    setFlightLegs((prev) => prev.map((l, j) => (j === i ? { ...l, [field]: value } : l)));
-  const addLeg = () =>
-    setFlightLegs((prev) => [...prev, { from: prev.length ? prev[prev.length - 1].to : '', to: '', airline: prev.length ? prev[prev.length - 1].airline : '', flightNumber: '' }]);
-  const removeLeg = (i: number) => setFlightLegs((prev) => prev.filter((_, j) => j !== i));
+  const [flightLegs, setFlightLegs] = useState<FlightLeg[]>([]);  // getting there
+  const [returnLegs, setReturnLegs] = useState<FlightLeg[]>([]);  // getting home
+  type SetLegs = Dispatch<SetStateAction<FlightLeg[]>>;
+  const updateLeg = (set: SetLegs, i: number, field: keyof FlightLeg, value: string) =>
+    set((prev) => prev.map((l, j) => (j === i ? { ...l, [field]: value } : l)));
+  const addLeg = (set: SetLegs, startFrom?: string) =>
+    set((prev) => [
+      ...prev,
+      {
+        from: prev.length ? prev[prev.length - 1].to : startFrom || '',
+        to: '',
+        airline: prev.length ? prev[prev.length - 1].airline : '',
+        flightNumber: '',
+      },
+    ]);
+  const removeLeg = (set: SetLegs, i: number) => set((prev) => prev.filter((_, j) => j !== i));
   // How they got to a city
   const updateArrival = (cityId: string, field: keyof Arrival, value: string) =>
     setCitiesData((prev) =>
@@ -330,7 +340,11 @@ function NewTripContent() {
           setRegion(trip.region || regionOf((all as string[])[0] || '') || '');
         }
         setCoverImageUrl(trip.coverImageUrl || null);
-        setFlightLegs(cleanLegs(parseJson(trip.travelInfo, [])));
+        {
+          const t = cleanTravel(trip.travelInfo);
+          setFlightLegs(t.outbound);
+          setReturnLegs(t.return);
+        }
         setFormData(prev => ({
           ...prev,
           title: trip.title ?? '',
@@ -1023,7 +1037,7 @@ function NewTripContent() {
           ...formData,
           title: autoTitle, // trips are named from their countries/cities
           region: region || regionOf(uniqueCountries[0]) || '',
-          travelInfo: cleanLegs(flightLegs),
+          travelInfo: { outbound: cleanLegs(flightLegs), return: cleanLegs(returnLegs) },
           countries: isEditing ? JSON.stringify(uniqueCountries) : uniqueCountries, // Use countries from cities
           cities: JSON.stringify(citiesData.map(c => c.name)),
           citiesData: transformedCitiesData,
@@ -1086,6 +1100,66 @@ function NewTripContent() {
       setIsLoading(false);
     }
   };
+
+  // Flight list editor (used for "Getting there" and "Getting home")
+  const renderFlights = (legs: FlightLeg[], set: SetLegs, title: string, hint: string, startFrom = '') => (
+    <div className="mt-6">
+      <label className="block text-sm font-medium text-gray-700 mb-1">{title}</label>
+      <p className="text-xs text-gray-500 mb-2">{hint}</p>
+      {legs.length > 0 && routeText(legs) && <p className="mb-2 text-sm font-medium text-[#2F4A5C]">{routeText(legs)}</p>}
+      <div className="space-y-2">
+        {legs.map((leg, i) => (
+          <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center bg-gray-50 border border-gray-200 rounded-lg p-2">
+            <input
+              value={leg.from}
+              onChange={(e) => updateLeg(set, i, 'from', e.target.value.toUpperCase())}
+              placeholder="From (YYZ)"
+              aria-label="From"
+              className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+            />
+            <input
+              value={leg.to}
+              onChange={(e) => updateLeg(set, i, 'to', e.target.value.toUpperCase())}
+              placeholder="To (JFK)"
+              aria-label="To"
+              className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+            />
+            <input
+              value={leg.airline}
+              onChange={(e) => updateLeg(set, i, 'airline', e.target.value)}
+              list="airline-list"
+              placeholder="Airline"
+              aria-label="Airline"
+              className="col-span-2 sm:col-span-5 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900"
+            />
+            <input
+              value={leg.flightNumber || ''}
+              onChange={(e) => updateLeg(set, i, 'flightNumber', e.target.value.toUpperCase())}
+              placeholder="Flight # (opt.)"
+              aria-label="Flight number"
+              className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+            />
+            <button
+              type="button"
+              onClick={() => removeLeg(set, i)}
+              className="sm:col-span-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md p-2 justify-self-end"
+              title="Remove this flight"
+              aria-label="Remove this flight"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => addLeg(set, startFrom)}
+        className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+      >
+        <Plus className="w-4 h-4 mr-1" /> {legs.length === 0 ? 'Add a flight' : 'Add another flight'}
+      </button>
+    </div>
+  );
 
   // One city's box (hotel, days, restaurants, activities); shown inside its country's section
   const renderCityCard = (city: CityData, cityIndex: number) => (
@@ -1895,73 +1969,27 @@ function NewTripContent() {
                 })()}
               </div>
 
-              {/* Getting there: flights to the destination */}
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">✈️ Getting there</label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Your flights to the destination, one line per flight (e.g. YYZ → JFK, then JFK → ATH).
-                </p>
-                {flightLegs.length > 0 && routeText(flightLegs) && (
-                  <p className="mb-2 text-sm font-medium text-[#2F4A5C]">{routeText(flightLegs)}</p>
-                )}
-                <div className="space-y-2">
-                  {flightLegs.map((leg, i) => (
-                    <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center bg-gray-50 border border-gray-200 rounded-lg p-2">
-                      <input
-                        value={leg.from}
-                        onChange={(e) => updateLeg(i, 'from', e.target.value.toUpperCase())}
-                        placeholder="From (YYZ)"
-                        aria-label="From"
-                        className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
-                      />
-                      <input
-                        value={leg.to}
-                        onChange={(e) => updateLeg(i, 'to', e.target.value.toUpperCase())}
-                        placeholder="To (JFK)"
-                        aria-label="To"
-                        className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
-                      />
-                      <input
-                        value={leg.airline}
-                        onChange={(e) => updateLeg(i, 'airline', e.target.value)}
-                        list="airline-list"
-                        placeholder="Airline"
-                        aria-label="Airline"
-                        className="col-span-2 sm:col-span-5 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900"
-                      />
-                      <input
-                        value={leg.flightNumber || ''}
-                        onChange={(e) => updateLeg(i, 'flightNumber', e.target.value.toUpperCase())}
-                        placeholder="Flight # (opt.)"
-                        aria-label="Flight number"
-                        className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeLeg(i)}
-                        className="sm:col-span-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md p-2 justify-self-end"
-                        title="Remove this flight"
-                        aria-label="Remove this flight"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={addLeg}
-                  className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
-                >
-                  <Plus className="w-4 h-4 mr-1" /> {flightLegs.length === 0 ? 'Add a flight' : 'Add another flight'}
-                </button>
-                {/* Airline suggestions for every airline box on the page */}
-                <datalist id="airline-list">
-                  {AIRLINES.slice().sort((a, b) => a.localeCompare(b)).map((a) => (
-                    <option key={a} value={a} />
-                  ))}
-                </datalist>
-              </div>
+              {/* Flights: getting there and getting home */}
+              {renderFlights(
+                flightLegs,
+                setFlightLegs,
+                '✈️ Getting there',
+                'Your flights to the destination, one line per flight (e.g. YYZ → JFK, then JFK → ATH).'
+              )}
+              {renderFlights(
+                returnLegs,
+                setReturnLegs,
+                '🛬 Getting home',
+                'Your flights back, one line per flight (e.g. ATH → JFK, then JFK → YYZ).',
+                // start the first return flight from where the outbound trip ended
+                flightLegs.length ? flightLegs[flightLegs.length - 1].to : ''
+              )}
+              {/* Airline suggestions for every airline box on the page */}
+              <datalist id="airline-list">
+                {AIRLINES.slice().sort((x, y) => x.localeCompare(y)).map((x) => (
+                  <option key={x} value={x} />
+                ))}
+              </datalist>
 
               {/* Cover photo */}
               <div className="mt-6">

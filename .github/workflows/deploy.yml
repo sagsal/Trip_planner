@@ -123,14 +123,6 @@ jobs:
             | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{for(const r of JSON.parse(d).results||[])console.log(" - "+r.name+" | photo: "+((r.photos||[]).length?"yes":"none"))}catch(e){console.log("unreadable")}})'
 
-          echo "--- DEBUG Falasarna direct to Google (key hidden)"
-          G=$(grep '^GOOGLE_PLACES_API_KEY=' .env.local | tail -1 | cut -d= -f2- | tr -d '"\r ')
-          for body in '{"textQuery":"Falasarna beach Chania Greece","pageSize":3}' '{"textQuery":"Falasarna Chania Greece","includedType":"tourist_attraction","pageSize":3}'; do
-            curl -s -m 30 -X POST 'https://places.googleapis.com/v1/places:searchText' -H 'Content-Type: application/json' -H "X-Goog-Api-Key: $G" \
-              -H 'X-Goog-FieldMask: places.id,places.displayName,places.primaryType' -d "$body" | tr -d '\n' | head -c 600 | sed "s/$G/<KEY>/g"; echo
-          done
-          echo "--- DEBUG Falasarna via the site (full reply, first 400 chars)"
-          curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Falasarna%20beach%20Chania%20Greece&category=attractions" | head -c 400; echo
           echo "--- activity name search: Falasarna, Chania Greece"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Falasarna%20Chania%20Greece&category=attractions" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(" -> "+(JSON.parse(d).results||[]).slice(0,4).map(r=>r.name).join(" | "))}catch(e){console.log("unreadable")}})'
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Falasarna%20beach%20Chania%20Greece&category=attractions" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(" -> "+(JSON.parse(d).results||[]).slice(0,4).map(r=>r.name).join(" | "))}catch(e){console.log("unreadable")}})'

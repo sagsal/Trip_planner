@@ -108,9 +108,9 @@ async function searchGooglePlacesOnce(
   const includedType = category ? TYPE_FOR_CATEGORY[category] : undefined;
   // Strict pass: only that type (attractions: related types allowed too).
   // Loose pass: no type at all, so places Google files differently (lodges, farm stays) still show.
-  if (includedType && (strictType || category === 'attractions')) {
+  if (includedType && strictType) {
     body.includedType = includedType;
-    body.strictTypeFiltering = strictType && category !== 'attractions';
+    body.strictTypeFiltering = category !== 'attractions';
   }
 
   const controller = new AbortController();

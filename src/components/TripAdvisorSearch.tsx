@@ -372,7 +372,13 @@ export default function TripAdvisorSearch({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); runDescribe(); }
                 }}
-                placeholder={'e.g. the vegetarian restaurant on Parque España, or one directly across from the Hyatt Regency Polanco'}
+                placeholder={
+                  category === 'attractions'
+                    ? 'e.g. the big park with the castle on the hill, or the museum next to the cathedral'
+                    : category === 'hotels'
+                    ? 'e.g. the boutique hotel with a rooftop pool in Condesa'
+                    : 'e.g. the vegetarian restaurant on Parque España, or one directly across from the Hyatt Regency Polanco'
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#4A6878] focus:border-transparent"
               />
               <div className="mt-2 flex items-center gap-3">

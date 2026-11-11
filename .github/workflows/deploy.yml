@@ -115,8 +115,9 @@ jobs:
             echo "ANTHROPIC_API_KEY not set - AI import off (template import still works)"
           fi
           echo "--- describe a restaurant (test; public place names only)"
-          for d in "the vegetarian restaurant on Parque Espana" "one of the restaurants directly across from the Hyatt Regency Polanco"; do
-            printf '{"text":"%s","city":"Mexico City","country":"Mexico","category":"restaurants"}' "$d" \
+          for t in "restaurants|the vegetarian restaurant on Parque Espana" "attractions|the big park with the castle on the hill"; do
+            cat_="${t%%|*}"; d="${t#*|}"
+            printf '{"text":"%s","city":"Mexico City","country":"Mexico","category":"%s"}' "$d" "$cat_" \
               | curl -s -m 60 -X POST -H 'Content-Type: application/json' --data-binary @- http://localhost:3000/api/places/describe \
               | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("ai="+j.usedAi+" note="+(j.note||"-")+" photos="+(j.results||[]).filter(r=>r.photos&&r.photos.length).length+"/"+(j.results||[]).length+" -> "+(j.results||[]).slice(0,4).map(r=>r.name).join(" | ")+(j.error?" error="+j.error:""))}catch(e){console.log("unreadable")}})'
           done

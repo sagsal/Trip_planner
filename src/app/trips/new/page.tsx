@@ -1880,6 +1880,7 @@ function NewTripContent() {
                                           }}
                                           placeholder={`Search activities in ${city.name}...`}
                                           category="attractions"
+                                          allowDescribe
                                           cityName={city.name}
                                           countryName={city.country}
                                         />

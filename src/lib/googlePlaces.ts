@@ -50,10 +50,34 @@ export async function searchGooglePlaces(
   near?: { center: { lat: number; lng: number }; radiusMeters: number } // only look close to a point
 ): Promise<PlaceResultInTripAdvisorShape[]> {
   const strict = await searchGooglePlacesOnce(query, category, near, true);
-  if (strict.length >= 3 || !category || category === 'attractions') return strict;
+  if (strict.length >= 3 || !category || category === 'attractions') return borrowPhotos(strict);
   const loose = await searchGooglePlacesOnce(query, category, near, false).catch(() => []);
   const seen = new Set(strict.map((r) => r.location_id));
-  return [...strict, ...loose.filter((r) => !seen.has(r.location_id))].slice(0, 10);
+  return borrowPhotos([...strict, ...loose.filter((r) => !seen.has(r.location_id))].slice(0, 10));
+}
+
+/**
+ * Some Google listings have no photo, while another listing for the same place does
+ * (e.g. "Totoco Eco Resort - Bungalow" vs "Totoco Eco-Project"). If a result has no photo
+ * and another result shares its distinctive first word, use that result's photo.
+ */
+const GENERIC = new Set(['hotel', 'hostal', 'hostel', 'casa', 'the', 'restaurant', 'restaurante', 'cafe', 'bar', 'grand', 'royal', 'park', 'city', 'eco', 'lodge', 'resort', 'villa', 'posada', 'museo', 'museum']);
+function keyWord(name: string): string {
+  const words = (name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 3 && !GENERIC.has(w));
+  return words[0] || '';
+}
+function borrowPhotos(results: PlaceResultInTripAdvisorShape[]): PlaceResultInTripAdvisorShape[] {
+  return results.map((r) => {
+    if (r.photo_url) return r;
+    const k = keyWord(r.name);
+    const donor = k && results.find((o) => o !== r && o.photo_url && keyWord(o.name) === k);
+    return donor ? { ...r, photo_url: donor.photo_url } : r;
+  });
 }
 
 async function searchGooglePlacesOnce(

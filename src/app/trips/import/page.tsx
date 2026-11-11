@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Upload, Download, FileSpreadsheet, AlertTriangle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertTriangle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import { readSpreadsheet, readFileAsText, rowsToTrip, IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 
 export default function ImportTripPage() {
@@ -133,33 +133,11 @@ export default function ImportTripPage() {
             : 'Upload an Excel or CSV file with one row per hotel, restaurant or activity. We’ll fill in the trip form for you to check, and nothing is saved until you click Save.'}
         </p>
 
-        {/* Step 1: template */}
-        <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-4">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <p className="font-medium text-[#2F4A5C] mb-1">
-                {aiAvailable ? 'Optional: a template if you’re starting from scratch' : '1. Start from the template (optional)'}
-              </p>
-              <p className="text-sm text-[#6B7A83]">
-                Columns: Trip Title, Start Date, End Date, City, Country, Day, Type (Hotel / Restaurant / Activity),
-                Name, Address, Rating (1–5), Review. Title and dates only need to be on the first row.
-              </p>
-            </div>
-            <a
-              href="/trip-import-template.csv"
-              download
-              className="inline-flex items-center px-4 py-2 border border-[#D9D2C7] text-[#2F4A5C] rounded-lg hover:bg-[#FBF9F5] text-sm shrink-0"
-            >
-              <Download className="w-4 h-4 mr-2" /> Download template
-            </a>
-          </div>
-        </div>
-
         {/* Step 2: upload */}
         <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-4">
           <p className="font-medium text-[#2F4A5C] mb-3 flex items-center">
             {aiAvailable && <Sparkles className="w-4 h-4 mr-1.5 text-[#4A6878]" />}
-            {aiAvailable ? 'Upload your trip notes' : '2. Upload your spreadsheet'}
+            {aiAvailable ? 'Upload your trip notes' : 'Upload your spreadsheet'}
           </p>
           <label
             onDragOver={(e) => e.preventDefault()}

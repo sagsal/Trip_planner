@@ -40,9 +40,10 @@ export interface PlaceResultInTripAdvisorShape {
 }
 
 /**
- * Search Google Places. Hotels and restaurants first search strictly by type; if that finds
- * fewer than 3 places (e.g. an eco-lodge Google files as a "farm stay"), it searches again
- * without the strict type filter and adds those results after the strict ones.
+ * Search Google Places. First searches by type (hotels/restaurants strictly; activities
+ * preferring tourist attractions); if that finds fewer than 3 places (e.g. an eco-lodge Google
+ * files as a "farm stay", or a beach that isn't tagged as an attraction), it searches again
+ * without any type and adds those results after the first ones.
  */
 export async function searchGooglePlaces(
   query: string,
@@ -50,7 +51,7 @@ export async function searchGooglePlaces(
   near?: { center: { lat: number; lng: number }; radiusMeters: number } // only look close to a point
 ): Promise<PlaceResultInTripAdvisorShape[]> {
   const strict = await searchGooglePlacesOnce(query, category, near, true);
-  if (strict.length >= 3 || !category || category === 'attractions') return borrowPhotos(strict);
+  if (strict.length >= 3 || !category) return borrowPhotos(strict);
   const loose = await searchGooglePlacesOnce(query, category, near, false).catch(() => []);
   const seen = new Set(strict.map((r) => r.location_id));
   return borrowPhotos([...strict, ...loose.filter((r) => !seen.has(r.location_id))].slice(0, 10));

@@ -116,7 +116,7 @@ export default function TripAdvisorSearch({
           params.append('category', category);
         }
 
-        console.log('TripAdvisor search query:', query);
+        
         const response = await fetch(`/api/tripadvisor/search?${params.toString()}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -132,7 +132,7 @@ export default function TripAdvisorSearch({
         }
 
         const data = await response.json();
-        console.log('TripAdvisor search response:', data);
+        
         console.log('Results count:', data.results?.length || 0);
         
         // Check for error in response
@@ -174,7 +174,7 @@ export default function TripAdvisorSearch({
           cityName
         ];
         
-        // Try simpler query format - just city name works better with TripAdvisor API
+        // Simple query format: just the city name
         const query = cityName + (countryName ? `, ${countryName}` : '');
         setIsSearching(true);
         fetch(`/api/tripadvisor/search?query=${encodeURIComponent(query)}&category=hotels`)
@@ -499,30 +499,13 @@ export default function TripAdvisorSearch({
 
       {showResults && results.length === 0 && !isSearching && (
         <div className="relative z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
-          <p className="text-center text-gray-500 mb-2">
-            {cityName && category === 'hotels' 
-              ? `No hotels found in ${cityName}`
-              : 'No results found'}
+          <p className="text-center text-gray-700 mb-1">
+            No matches for “{searchQuery.trim()}”{cityName ? ` near ${cityName}` : ''}
           </p>
-          <div className="text-xs text-gray-400 text-center">
-            {searchQuery.trim().length < 2 && cityName && category === 'hotels' 
-              ? (
-                <p>Try typing a hotel name to search, or check the browser console for API errors</p>
-              ) : (
-                <>
-                  <p className="mb-2">This may be because:</p>
-                  <ul className="list-disc list-inside mt-2 text-left max-w-md mx-auto">
-                    <li>Your TripAdvisor API key needs to be activated</li>
-                    <li>Your IP address needs to be whitelisted in TripAdvisor Developer Portal</li>
-                    <li>The server needs to be restarted to load the API key</li>
-                    <li>There are no results for this search</li>
-                  </ul>
-                  <p className="mt-3">
-                    <a href="https://www.tripadvisor.com/developers" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Visit TripAdvisor Developer Portal</a> to check your API settings.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">Check browser console (F12) for detailed error messages</p>
-                </>
-              )}
+          <div className="text-xs text-gray-500 text-center space-y-1">
+            <p>Try a shorter or differently spelled name (e.g. just “Falasarna”), or add the area.</p>
+            {allowDescribe && <p>Or use <span className="font-medium">✨ Describe it</span> below.</p>}
+            <p>You can also keep the name as you typed it — it will still be saved.</p>
           </div>
         </div>
       )}

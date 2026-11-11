@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Star, Loader2, X } from 'lucide-react';
+import { Search, MapPin, Star, Loader2, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TripAdvisorResult {
@@ -37,6 +37,7 @@ interface TripAdvisorSearchProps {
   className?: string;
   cityName?: string; // City name to include in search
   countryName?: string; // Country name to include in search
+  allowDescribe?: boolean; // show "Can't remember the name? Describe it"
 }
 
 export default function TripAdvisorSearch({
@@ -47,8 +48,14 @@ export default function TripAdvisorSearch({
   category,
   className = '',
   cityName,
-  countryName
+  countryName,
+  allowDescribe = false
 }: TripAdvisorSearchProps) {
+  // "Describe it" mode: find a place from a description like "vegetarian restaurant on Parque España"
+  const [describeOpen, setDescribeOpen] = useState(false);
+  const [describeText, setDescribeText] = useState('');
+  const [describing, setDescribing] = useState(false);
+  const [describeMsg, setDescribeMsg] = useState('');
   const [searchQuery, setSearchQuery] = useState(value);
   const [results, setResults] = useState<TripAdvisorResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -215,6 +222,8 @@ export default function TripAdvisorSearch({
 
   const handleSelect = (result: TripAdvisorResult) => {
     userTypedRef.current = false; // picking a result shouldn't start a new search
+    setDescribeOpen(false);
+    setDescribeMsg('');
     setSearchQuery(result.name);
     onChange(result.name);
     onSelect(result);
@@ -258,6 +267,38 @@ export default function TripAdvisorSearch({
     return parts.join(', ');
   };
 
+  const runDescribe = async () => {
+    const text = describeText.trim();
+    if (text.length < 3) {
+      setDescribeMsg('Please describe the place a bit more.');
+      return;
+    }
+    setDescribing(true);
+    setDescribeMsg('');
+    try {
+      const res = await fetch('/api/places/describe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, city: cityName, country: countryName, category }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const found: TripAdvisorResult[] = data.results || [];
+      setResults(found);
+      setShowResults(found.length > 0);
+      setSelectedIndex(-1);
+      setDescribeMsg(
+        data.error ||
+          (found.length === 0
+            ? 'Nothing matched. Try adding a detail, like the street, a nearby landmark or the type of food.'
+            : `Here are the best matches${data.note ? ` (${data.note.toLowerCase()})` : ''}. Pick the right one below.`)
+      );
+    } catch {
+      setDescribeMsg('Couldn’t search right now. Please try again.');
+    } finally {
+      setDescribing(false);
+    }
+  };
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className="relative">
@@ -299,6 +340,54 @@ export default function TripAdvisorSearch({
           </button>
         )}
       </div>
+
+      {allowDescribe && (
+        <div className="mt-1.5">
+          {!describeOpen ? (
+            <button
+              type="button"
+              onClick={() => { setDescribeOpen(true); setDescribeMsg(''); }}
+              className="inline-flex items-center text-xs text-[#3F5B6A] hover:text-[#2F4A5C] underline"
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1" />
+              Can’t remember the name? Describe it
+            </button>
+          ) : (
+            <div className="rounded-lg border border-[#C9D9DF] bg-[#F3F7F8] p-3">
+              <label className="block text-xs font-medium text-[#2F4A5C] mb-1">Describe the place</label>
+              <input
+                type="text"
+                value={describeText}
+                onChange={(e) => setDescribeText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); runDescribe(); }
+                }}
+                placeholder={'e.g. the vegetarian restaurant on Parque España, or one directly across from the Hyatt Regency Polanco'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#4A6878] focus:border-transparent"
+              />
+              <div className="mt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={runDescribe}
+                  disabled={describing}
+                  className="inline-flex items-center px-3 py-1.5 bg-[#4A6878] text-white rounded-lg text-sm hover:bg-[#3F5B6A] disabled:opacity-50"
+                >
+                  {describing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  {describing ? 'Looking…' : 'Find it'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDescribeOpen(false); setDescribeMsg(''); }}
+                  className="text-xs text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+              {describeMsg && <p className="mt-2 text-xs text-[#3F5B6A]">{describeMsg}</p>}
+            </div>
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         {showResults && results.length > 0 && (

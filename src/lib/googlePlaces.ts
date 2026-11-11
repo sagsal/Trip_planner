@@ -41,7 +41,8 @@ export interface PlaceResultInTripAdvisorShape {
 
 export async function searchGooglePlaces(
   query: string,
-  category?: 'hotels' | 'restaurants' | 'attractions'
+  category?: 'hotels' | 'restaurants' | 'attractions',
+  near?: { center: { lat: number; lng: number }; radiusMeters: number } // only look close to a point
 ): Promise<PlaceResultInTripAdvisorShape[]> {
   if (!GOOGLE_PLACES_API_KEY) throw new Error('GOOGLE_PLACES_API_KEY is not set');
 
@@ -50,6 +51,17 @@ export async function searchGooglePlaces(
     languageCode: 'en',
     pageSize: 10,
   };
+  if (near) {
+    // Text Search can only *restrict* to a rectangle, so use a box around the point
+    const dLat = near.radiusMeters / 111_320;
+    const dLng = near.radiusMeters / (111_320 * Math.max(0.2, Math.cos((near.center.lat * Math.PI) / 180)));
+    body.locationRestriction = {
+      rectangle: {
+        low: { latitude: near.center.lat - dLat, longitude: near.center.lng - dLng },
+        high: { latitude: near.center.lat + dLat, longitude: near.center.lng + dLng },
+      },
+    };
+  }
   const includedType = category ? TYPE_FOR_CATEGORY[category] : undefined;
   if (includedType) {
     body.includedType = includedType;

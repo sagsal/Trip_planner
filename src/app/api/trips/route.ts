@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
 import { cleanArrival, travelToStore } from '@/lib/travel';
+import { cleanTripType } from '@/lib/regions';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -379,7 +380,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('POST /api/trips - Received request body:', JSON.stringify(body, null, 2));
     
-    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl, region, travelInfo } = body;
+    const { title, description, startDate, endDate, countries, cities, citiesData, userId, userName, userEmail, isDraft, coverImageUrl, region, travelInfo, tripType } = body;
     // Only accept cover photos served by this site's own photo route
     const safeCover = typeof coverImageUrl === 'string' && coverImageUrl.startsWith('/api/places/photo?') ? coverImageUrl : null;
     
@@ -526,6 +527,7 @@ export async function POST(request: NextRequest) {
         coverImageUrl: safeCover,
         region: typeof region === 'string' && region.trim() ? region.trim().slice(0, 60) : null,
         travelInfo: travelToStore(travelInfo),
+        tripType: cleanTripType(tripType),
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {

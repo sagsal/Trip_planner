@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
 import { cleanArrival, travelToStore } from '@/lib/travel';
+import { cleanTripType } from '@/lib/regions';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -513,7 +514,8 @@ export async function PUT(
       tripReview,
       coverImageUrl,
       region,
-      travelInfo
+      travelInfo,
+      tripType
     } = body;
     // Only accept cover photos served by this site's own photo route; null removes it
     const coverUpdate =
@@ -600,7 +602,8 @@ export async function PUT(
           isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft,
           ...coverUpdate,
           ...(typeof region === 'string' ? { region: region.trim() ? region.trim().slice(0, 60) : null } : {}),
-          ...(travelInfo !== undefined ? { travelInfo: travelToStore(travelInfo) } : {})
+          ...(travelInfo !== undefined ? { travelInfo: travelToStore(travelInfo) } : {}),
+          ...(tripType !== undefined ? { tripType: cleanTripType(tripType) } : {})
         }
       });
 

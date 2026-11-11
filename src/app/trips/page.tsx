@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { tripTypeIcon } from '@/lib/regions';
 import { MapPin, Calendar, Star, User, Heart, Filter, Search } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrips } from '@/utils/api';
@@ -18,6 +19,7 @@ interface Trip {
   isPublic: boolean;
   isDraft?: boolean; // Add isDraft to interface
   coverImageUrl?: string | null;
+  tripType?: string | null;
   createdAt: string;
   cities_data: CityData[];
   user: {
@@ -300,7 +302,14 @@ function TripsContent() {
                 )}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-[#2F4A5C] line-clamp-2">{trip.title}</h3>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-semibold text-[#2F4A5C] line-clamp-2">{trip.title}</h3>
+                      {trip.tripType && (
+                        <span className="inline-block mt-1 text-xs font-medium bg-[#E3ECEF] text-[#3F5B6A] px-2 py-0.5 rounded-full">
+                          {tripTypeIcon(trip.tripType)} {trip.tripType}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center text-sm text-gray-500 ml-2">
                       <User className="w-4 h-4 mr-1" />
                       {trip.user.name}

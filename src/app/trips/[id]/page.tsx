@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X, ExternalLink } from 'lucide-react';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { cleanArrival, cleanTravel, parseJson, routeText, modeInfo, type FlightLeg } from '@/lib/travel';
+import { tripTypeIcon } from '@/lib/regions';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -15,6 +16,8 @@ interface Trip {
   title: string;
   coverImageUrl?: string | null;
   travelInfo?: string | null;
+  tripType?: string | null;
+  region?: string | null;
   description: string | null;
   startDate: string;
   endDate: string;
@@ -756,6 +759,18 @@ function TripDetailContent() {
               </div>
             </div>
 
+            {(trip.tripType || trip.region) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {trip.tripType && (
+                  <span className="text-sm font-medium bg-[#E3ECEF] text-[#3F5B6A] px-3 py-1 rounded-full">
+                    {tripTypeIcon(trip.tripType)} {trip.tripType}
+                  </span>
+                )}
+                {trip.region && (
+                  <span className="text-sm font-medium bg-[#F3EBDD] text-[#8A6D3B] px-3 py-1 rounded-full">🌎 {trip.region}</span>
+                )}
+              </div>
+            )}
             {trip.description && (
               <p className="text-gray-700 text-lg mb-6 leading-relaxed">{trip.description}</p>
             )}

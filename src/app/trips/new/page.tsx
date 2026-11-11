@@ -8,7 +8,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
-import { REGIONS, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
+import { REGIONS, TRIP_TYPES, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
 import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, cleanTravel, type FlightLeg, type Arrival } from '@/lib/travel';
 
 interface Hotel {
@@ -93,6 +93,7 @@ function NewTripContent() {
   const [citiesData, setCitiesData] = useState<CityData[]>([]);
   // Trip organised as Region → Countries → Cities
   const [region, setRegion] = useState('');
+  const [tripType, setTripType] = useState('');
   const [tripCountries, setTripCountries] = useState<string[]>([]);
   const [addingCityFor, setAddingCityFor] = useState<string | null>(null); // country whose "Add a city" form is in use
   // Flights to the destination, e.g. YYZ → JFK (Air Canada), JFK → ATH (Delta)
@@ -340,6 +341,7 @@ function NewTripContent() {
           setRegion(trip.region || regionOf((all as string[])[0] || '') || '');
         }
         setCoverImageUrl(trip.coverImageUrl || null);
+        setTripType(trip.tripType || '');
         {
           const t = cleanTravel(trip.travelInfo);
           setFlightLegs(t.outbound);
@@ -1038,6 +1040,7 @@ function NewTripContent() {
           title: autoTitle, // trips are named from their countries/cities
           region: region || regionOf(uniqueCountries[0]) || '',
           travelInfo: { outbound: cleanLegs(flightLegs), return: cleanLegs(returnLegs) },
+          tripType: tripType || null,
           countries: isEditing ? JSON.stringify(uniqueCountries) : uniqueCountries, // Use countries from cities
           cities: JSON.stringify(citiesData.map(c => c.name)),
           citiesData: transformedCitiesData,
@@ -1908,6 +1911,22 @@ function NewTripContent() {
                       Your trip will be listed as <span className="font-medium text-gray-700">{autoTitle}</span>
                     </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type of trip
+                  </label>
+                  <select
+                    value={tripType}
+                    onChange={(e) => setTripType(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                  >
+                    <option value="">Choose a type…</option>
+                    {TRIP_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>{t.icon} {t.value}</option>
+                    ))}
+                  </select>
                 </div>
 
               </div>

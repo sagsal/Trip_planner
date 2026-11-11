@@ -49,3 +49,23 @@ export function tripNameFrom(countries: string[], citiesByCountry: Record<string
   }
   return list.length <= 4 ? join(list) : `${list.slice(0, 3).join(', ')} & ${list.length - 3} more`;
 }
+
+/** "Type of trip" choices in Add your trip. */
+export const TRIP_TYPES: { value: string; icon: string }[] = [
+  { value: 'Solo', icon: '🧳' },
+  { value: 'Couple', icon: '💑' },
+  { value: 'Honeymoon', icon: '💍' },
+  { value: 'Family', icon: '👨‍👩‍👧' },
+  { value: 'Family with young kids', icon: '🧸' },
+  { value: 'Family with teens', icon: '🎧' },
+  { value: 'Multi-generational', icon: '👵' },
+  { value: 'Friends', icon: '🥂' },
+  { value: 'Girls’ / guys’ trip', icon: '🎉' },
+  { value: 'Group tour', icon: '🚌' },
+  { value: 'Business + leisure', icon: '💼' },
+  { value: 'Backpacking', icon: '🎒' },
+  { value: 'Road trip', icon: '🚗' },
+];
+export const tripTypeIcon = (t?: string | null) => TRIP_TYPES.find((x) => x.value === t)?.icon || '';
+export const cleanTripType = (t: unknown) =>
+  typeof t === 'string' && TRIP_TYPES.some((x) => x.value === t.trim()) ? t.trim() : null;

@@ -90,6 +90,8 @@ jobs:
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
+          echo "--- ONE-TIME assistant test"
+          node scripts/test-assistant.js || true
           echo "--- recent server errors (types only, no user data)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
             [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|Google Places search failed|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6

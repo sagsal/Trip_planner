@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { tripTypeIcon } from '@/lib/regions';
 import { MapPin, Calendar, Star, User, Heart, Filter, Search } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import TripFinder from '@/components/TripFinder';
 import { fetchTrips } from '@/utils/api';
 
 interface Trip {
@@ -217,6 +218,9 @@ function TripsContent() {
             Explore travel experiences shared by fellow adventurers
           </p>
         </div>
+
+        {/* AI assistant: find trips by describing what you want */}
+        <TripFinder />
 
         {/* Search and Filter */}
         <div className="bg-white/75 backdrop-blur-sm rounded-xl shadow-sm p-6 mb-8 border border-[#E4DED4]">

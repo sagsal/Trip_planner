@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import FillWithAI from '@/components/FillWithAI';
 import {
   Package, Plus, Inbox, Map as MapIcon, Trash2, Star, ExternalLink, ArrowRight, Loader2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { REGIONS, TRIP_TYPES, tripTypeIcon } from '@/lib/regions';
 import { linkLabel } from '@/lib/placeDetails';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
-import { SANDBOX_EVENT, type SandboxTripData, type SavedPlaceData, type PlaceKind } from '@/lib/sandbox';
+import { SANDBOX_EVENT, AI_SUGGESTION, type SandboxTripData, type SavedPlaceData, type PlaceKind } from '@/lib/sandbox';
 
 const KIND_LABEL: Record<PlaceKind, { one: string; many: string; icon: string }> = {
   hotel: { one: 'Hotel', many: 'Where to stay', icon: '🏨' },
@@ -27,8 +29,11 @@ function getUser(): { id: string; name?: string } | null {
   }
 }
 
-export default function SandboxPage() {
+function SandboxContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [fillOpen, setFillOpen] = useState(false);
+  const [fillAsk, setFillAsk] = useState('');
   const [user, setUser] = useState<{ id: string; name?: string } | null>(null);
   const [checked, setChecked] = useState(false);
   const [trips, setTrips] = useState<SandboxTripData[]>([]);
@@ -67,6 +72,20 @@ export default function SandboxPage() {
     if (user) load(user);
     else if (checked) setLoading(false);
   }, [user, checked, load]);
+
+  // /sandbox?trip=ID&fill=1&ask=… opens that trip with "Fill with AI" ready
+  useEffect(() => {
+    const t = searchParams.get('trip');
+    if (t && trips.some((x) => x.id === t)) {
+      setSelected(t);
+      if (searchParams.get('fill')) {
+        setFillAsk(searchParams.get('ask') || '');
+        setFillOpen(true);
+      }
+      router.replace('/sandbox');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trips]);
 
   const announce = (count: number) => window.dispatchEvent(new CustomEvent(SANDBOX_EVENT, { detail: { count } }));
 
@@ -308,13 +327,27 @@ export default function SandboxPage() {
             {/* Selected trip (or Unsorted) */}
             <main className="min-w-0">
               {current ? (
-                <TripHeader
-                  trip={current}
-                  count={countFor(current.id)}
-                  onChange={(f) => patchTrip(current.id, f)}
-                  onDelete={() => deleteTrip(current)}
-                  onFinalize={() => turnIntoTrip(current)}
-                />
+                <>
+                  <TripHeader
+                    trip={current}
+                    count={countFor(current.id)}
+                    onChange={(f) => patchTrip(current.id, f)}
+                    onDelete={() => deleteTrip(current)}
+                    onFinalize={() => turnIntoTrip(current)}
+                    onFill={() => { setFillAsk(''); setFillOpen(true); }}
+                  />
+                  {fillOpen && user && (
+                    <FillWithAI
+                      key={current.id}
+                      userId={user.id}
+                      sandboxTripId={current.id}
+                      tripTitle={current.title}
+                      initialRequest={fillAsk}
+                      onAdded={() => { setFillOpen(false); load(user); }}
+                      onClose={() => setFillOpen(false)}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="bg-white rounded-xl border border-[#E4DED4] p-5 mb-5">
                   <h2 className="text-xl font-semibold text-[#2F4A5C] flex items-center gap-2"><Inbox className="w-5 h-5" /> Unsorted</h2>
@@ -398,12 +431,14 @@ function TripHeader({
   onChange,
   onDelete,
   onFinalize,
+  onFill,
 }: {
   trip: SandboxTripData;
   count: number;
   onChange: (f: Partial<SandboxTripData>) => void;
   onDelete: () => void;
   onFinalize: () => void;
+  onFill: () => void;
 }) {
   const [title, setTitle] = useState(trip.title);
   const [notes, setNotes] = useState(trip.notes || '');
@@ -420,6 +455,13 @@ function TripHeader({
           aria-label="Trip title"
         />
         <div className="flex gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onFill}
+            className="inline-flex items-center px-4 py-2 bg-[#F3F7F8] border border-[#C9D9DF] text-[#2F4A5C] rounded-lg hover:bg-[#E3ECEF] text-sm font-medium"
+          >
+            ✨ Fill with AI
+          </button>
           <button
             type="button"
             onClick={onFinalize}
@@ -523,6 +565,11 @@ function SavedCard({
             </button>
           </div>
           {place.location && <p className="text-xs text-[#6B7A83] truncate">{place.location}</p>}
+          {!place.sourceTripId && place.sourceUserName === AI_SUGGESTION && (
+            <p className="text-xs mt-1">
+              <span className="bg-[#F3EBDD] text-[#8A6D3B] px-1.5 py-0.5 rounded-full">✨ Suggested by AI (Google)</span>
+            </p>
+          )}
           {place.sourceTripId && (
             <p className="text-xs text-[#6B7A83] mt-1">
               From{' '}
@@ -592,5 +639,13 @@ function SavedCard({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SandboxPage() {
+  return (
+    <Suspense fallback={null}>
+      <SandboxContent />
+    </Suspense>
   );
 }

@@ -49,7 +49,12 @@ export interface PlaceToSave {
   sourceUserName?: string | null;
   sourceRating?: number | null;
   sourceReview?: string | null;
+  dayNumber?: number | null; // e.g. from "Fill with AI"
+  note?: string | null;
 }
+
+/** Marks places suggested by "Fill with AI" from Google (not from a trip on the site). */
+export const AI_SUGGESTION = 'AI suggestion';
 
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 const isoDate = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : null);
@@ -75,6 +80,8 @@ export function cleanPlace(p: any): Omit<PlaceToSave, 'kind'> & { kind: PlaceKin
     sourceUserName: str(p?.sourceUserName, 120),
     sourceRating: rating >= 1 && rating <= 5 ? rating : null,
     sourceReview: str(p?.sourceReview, 4000),
+    dayNumber: Math.round(Number(p?.dayNumber)) >= 1 && Math.round(Number(p?.dayNumber)) <= 90 ? Math.round(Number(p.dayNumber)) : null,
+    note: str(p?.note, 4000),
   };
 }
 

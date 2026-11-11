@@ -211,6 +211,9 @@ export default function TripAdvisorSearch({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (previewOpenRef.current) return; // clicks in the photo preview shouldn't close the list
+      // Dragging the page's scrollbar also fires mousedown: don't treat that as clicking away
+      const root = document.documentElement;
+      if (event.target === root || event.clientX >= root.clientWidth || event.clientY >= root.clientHeight) return;
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setShowResults(false);
       }
@@ -402,7 +405,7 @@ export default function TripAdvisorSearch({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto"
+            className="relative z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto"
           >
             {results.map((result, index) => {
               const imageUrl = getImageUrl(result);
@@ -489,7 +492,7 @@ export default function TripAdvisorSearch({
       </AnimatePresence>
 
       {showResults && results.length === 0 && !isSearching && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+        <div className="relative z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
           <p className="text-center text-gray-500 mb-2">
             {cityName && category === 'hotels' 
               ? `No hotels found in ${cityName}`

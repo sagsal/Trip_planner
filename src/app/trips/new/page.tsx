@@ -125,7 +125,7 @@ function NewTripContent() {
     for (const c of citiesData) if (c.country?.trim()) counts.set(c.country.trim(), (counts.get(c.country.trim()) || 0) + 1);
     let best = '';
     for (const [country, n] of counts) if (!best || n > (counts.get(best) || 0)) best = country;
-    return best || tripCountries[0] || citiesData[0]?.name || '';
+    return best || countryList[0] || citiesData[0]?.name || '';
   })();
 
   // If the trip's country changes, offer fresh choices for the new country
@@ -1693,9 +1693,9 @@ function NewTripContent() {
                       </button>
                     </div>
                   </div>
-                ) : citiesData.length === 0 ? (
+                ) : !coverPlace ? (
                   <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400 text-sm">
-                    Add a city below, then choose a photo of its country for your trip
+                    Choose a country below, then pick a photo of it for your trip's cover
                   </div>
                 ) : coverChoices.length === 0 ? (
                   <div>

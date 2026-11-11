@@ -7,6 +7,7 @@ import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from '
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
+import { placeFields, linkLabel } from '@/lib/placeDetails';
 
 interface Hotel {
   id: string;
@@ -15,6 +16,8 @@ interface Hotel {
   rating: number;
   review: string;
   liked: boolean | null;
+  imageUrl?: string | null; // photo for a place picked from search
+  webUrl?: string | null;   // Google Maps / TripAdvisor page
 }
 
 interface Restaurant {
@@ -24,6 +27,8 @@ interface Restaurant {
   rating: number;
   review: string;
   liked: boolean | null;
+  imageUrl?: string | null; // photo for a place picked from search
+  webUrl?: string | null;   // Google Maps / TripAdvisor page
   dayNumber?: number;
 }
 
@@ -36,6 +41,7 @@ interface Activity {
   liked: boolean | null;
   dayNumber?: number;
   imageUrl?: string | null;
+  webUrl?: string | null;
 }
 
 interface Day {
@@ -209,8 +215,8 @@ function NewTripContent() {
       name: x?.name ?? '',
       location: x?.location ?? '',
       rating: typeof x?.rating === 'number' ? x.rating : 0,
-      review: x?.review ?? '',
       liked: typeof x?.liked === 'boolean' ? x.liked : null,
+      ...placeFields(x), // review text, imageUrl, webUrl (also unpacks old-style reviews)
     });
     const toDateInput = (d: any) => {
       if (!d) return '';
@@ -243,7 +249,6 @@ function NewTripContent() {
           const restaurants = (city.restaurants || []).map((r: any, i: number) => toItem(r, `${cityId}-r-${i}`));
           const activities = (city.activities || []).map((a: any, i: number) => ({
             ...toItem(a, `${cityId}-a-${i}`),
-            imageUrl: a?.imageUrl ?? null,
           }));
           const n = Math.max(1, Number(city.numberOfDays) || 1);
           const days: Day[] = Array.from({ length: n }, (_, i) => ({
@@ -634,7 +639,7 @@ function NewTripContent() {
         name: newHotelName.trim(),
         location: location,
         rating: rating || 0,
-        review: review,
+        ...placeFields({ review }), // review = own words; photo/link in their own fields
         liked: null
       };
 
@@ -712,7 +717,7 @@ function NewTripContent() {
       name: newRestaurantName.trim(),
       location: location,
       rating: rating,
-      review: review,
+      ...placeFields({ review }), // review = own words; photo/link in their own fields
       liked: null
     };
 
@@ -1305,7 +1310,7 @@ function NewTripContent() {
                                 name: result.name,
                                 location: location,
                                 rating: rating,
-                                review: review,
+                                ...placeFields({ review }), // review = own words; photo/link in their own fields
                                 liked: null
                               });
                             }}
@@ -1425,16 +1430,10 @@ function NewTripContent() {
                             let imageUrl: string | null = null;
                             let tripadvisorWebUrl: string | null = null;
                             let numReviews: string | null = null;
-                            try {
-                              if (city.hotel.review) {
-                                tripadvisorData = JSON.parse(city.hotel.review);
-                                imageUrl = tripadvisorData.imageUrl || null;
-                                tripadvisorWebUrl = tripadvisorData.webUrl || null;
-                                numReviews = tripadvisorData.numReviews || null;
-                              }
-                            } catch (e) {
-                              // review is not JSON, treat as regular review text
-                            }
+                            const details = placeFields(city.hotel);
+                            imageUrl = details.imageUrl;
+                            tripadvisorWebUrl = details.webUrl;
+                            void tripadvisorData;
                             
                             return (
                               <>
@@ -1486,7 +1485,7 @@ function NewTripContent() {
                                           rel="noopener noreferrer"
                                           className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
                                         >
-                                          View on TripAdvisor
+                                          {linkLabel(tripadvisorWebUrl)}
                                           <Eye className="w-3 h-3" />
                                         </a>
                                       )}
@@ -1515,6 +1514,36 @@ function NewTripContent() {
                                       placeholder="Address"
                                     />
                                   </div>
+                                </div>
+                                <div className="mb-3">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Your rating</label>
+                                  <div className="flex items-center gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() => updateHotel(city.id, 'rating', city.hotel && city.hotel.rating === star ? 0 : star)}
+                                        className="p-0.5"
+                                        title={`${star} star${star > 1 ? 's' : ''}`}
+                                      >
+                                        <Star
+                                          className={`w-5 h-5 ${
+                                            city.hotel && star <= (city.hotel.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                                          }`}
+                                        />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Your review</label>
+                                  <textarea
+                                    value={city.hotel.review}
+                                    onChange={(e) => updateHotel(city.id, 'review', e.target.value)}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                    placeholder="What was it like? Would you stay again?"
+                                  />
                                 </div>
                                 <button
                                   type="button"
@@ -1682,14 +1711,8 @@ function NewTripContent() {
                                   // Parse TripAdvisor data from review field if available
                                   let tripadvisorData: any = null;
                                   let imageUrl: string | null = null;
-                                  try {
-                                    if (restaurant.review) {
-                                      tripadvisorData = JSON.parse(restaurant.review);
-                                      imageUrl = tripadvisorData.imageUrl || null;
-                                    }
-                                  } catch (e) {
-                                    // review is not JSON, treat as regular review text
-                                  }
+                                  imageUrl = placeFields(restaurant).imageUrl;
+                                  void tripadvisorData;
                                   
                                   return (
                                     <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 mb-3 border border-green-200">
@@ -1837,6 +1860,7 @@ function NewTripContent() {
                                               : '';
                                             if (location) updateActivity(city.id, day.id, activity.id, 'location', location);
                                             updateActivity(city.id, day.id, activity.id, 'imageUrl', result.photo_url || null);
+                                            updateActivity(city.id, day.id, activity.id, 'webUrl', result.web_url || null);
                                           }}
                                           placeholder={`Search activities in ${city.name}...`}
                                           category="attractions"

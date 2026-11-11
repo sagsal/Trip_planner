@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { prisma } from '@/lib/prisma';
 
 // Set route runtime config to ensure proper timeout handling
@@ -549,7 +550,9 @@ export async function POST(request: NextRequest) {
                   name: hotel.name || '',
                   location: hotel.location || '',
                   rating: hotel.rating || null,
-                  review: hotel.review || null,
+                  review: placeFields(hotel).review || null,
+                  webUrl: safeWebUrl(placeFields(hotel).webUrl),
+                  imageUrl: safeImageUrl(placeFields(hotel).imageUrl),
                   liked: hotel.liked ?? null
                 }))
               },
@@ -558,7 +561,9 @@ export async function POST(request: NextRequest) {
                   name: restaurant.name || '',
                   location: restaurant.location || '',
                   rating: restaurant.rating || null,
-                  review: restaurant.review || null,
+                  review: placeFields(restaurant).review || null,
+                  webUrl: safeWebUrl(placeFields(restaurant).webUrl),
+                  imageUrl: safeImageUrl(placeFields(restaurant).imageUrl),
                   liked: restaurant.liked ?? null,
                   dayNumber: Number.isInteger(Number(restaurant.dayNumber)) && Number(restaurant.dayNumber) > 0 ? Number(restaurant.dayNumber) : null
                 }))
@@ -568,10 +573,11 @@ export async function POST(request: NextRequest) {
                   name: activity.name || '',
                   location: activity.location || '',
                   rating: activity.rating || null,
-                  review: activity.review || null,
+                  review: placeFields(activity).review || null,
+                  webUrl: safeWebUrl(placeFields(activity).webUrl),
                   liked: activity.liked ?? null,
                   dayNumber: Number.isInteger(Number(activity.dayNumber)) && Number(activity.dayNumber) > 0 ? Number(activity.dayNumber) : null,
-                  imageUrl: typeof activity.imageUrl === 'string' && activity.imageUrl ? activity.imageUrl : null
+                  imageUrl: safeImageUrl(placeFields(activity).imageUrl)
                 }))
               }
             };

@@ -63,6 +63,8 @@ jobs:
 
           npm install
           npx prisma db push --skip-generate
+          # One-off data fixes (safe to repeat; print counts only)
+          node scripts/fix-place-details.js || echo "place details fix skipped"
           npm run build
 
           # Exactly one copy of the site: remove any old/duplicate processes, start fresh

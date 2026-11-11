@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X } from 'lucide-react';
+import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X, ExternalLink } from 'lucide-react';
+import { placeFields, linkLabel } from '@/lib/placeDetails';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
 
@@ -31,6 +32,7 @@ interface CityData {
   id: string;
   name: string;
   country: string;
+  numberOfDays?: number;
   hotels: Hotel[];
   restaurants: Restaurant[];
   activities: Activity[];
@@ -43,6 +45,9 @@ interface Hotel {
   rating?: number;
   review?: string;
   liked?: boolean;
+  imageUrl?: string | null;
+  webUrl?: string | null;
+  dayNumber?: number | null;
 }
 
 interface Restaurant {
@@ -52,6 +57,9 @@ interface Restaurant {
   rating?: number;
   review?: string;
   liked?: boolean;
+  imageUrl?: string | null;
+  webUrl?: string | null;
+  dayNumber?: number | null;
 }
 
 interface Activity {
@@ -61,6 +69,9 @@ interface Activity {
   rating?: number;
   review?: string;
   liked?: boolean;
+  imageUrl?: string | null;
+  webUrl?: string | null;
+  dayNumber?: number | null;
 }
 
 interface DraftTrip {
@@ -77,6 +88,60 @@ interface DraftTrip {
       dayNumber: number;
     }[];
   }[];
+}
+
+// One hotel / restaurant / activity: photo, name, address, rating, the traveller's review and a link
+function PlaceCard({ place }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null } }) {
+  const details = placeFields(place);
+  const rating = Number(place.rating) || 0;
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="flex flex-col sm:flex-row">
+        {details.imageUrl && (
+          <img
+            src={details.imageUrl}
+            alt={place.name}
+            loading="lazy"
+            className="w-full sm:w-48 h-40 sm:h-auto object-cover shrink-0"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
+        <div className="p-4 flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h4 className="text-lg font-semibold text-gray-900">{place.name}</h4>
+              {place.location && <p className="text-gray-600 text-sm">{place.location}</p>}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {rating > 0 && (
+                <span className="flex items-center" title={`${rating} out of 5`}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star key={n} className={`w-4 h-4 ${n <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                  ))}
+                </span>
+              )}
+              {place.liked === true && <ThumbsUp className="w-4 h-4 text-green-600" />}
+              {place.liked === false && <ThumbsDown className="w-4 h-4 text-red-500" />}
+            </div>
+          </div>
+          {details.review && (
+            <p className="mt-2 text-gray-700 text-sm leading-relaxed whitespace-pre-line">{details.review}</p>
+          )}
+          {details.webUrl && (
+            <a
+              href={details.webUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center text-sm text-[#3F5B6A] hover:text-[#2F4A5C] underline"
+            >
+              {linkLabel(details.webUrl)}
+              <ExternalLink className="w-3.5 h-3.5 ml-1" />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function TripDetailContent() {
@@ -709,134 +774,92 @@ function TripDetailContent() {
             </div>
           </div>
 
-          {/* Cities and their details */}
+          {/* Cities, day by day */}
           {trip.cities_data && trip.cities_data.length > 0 && (
             <div className="space-y-8">
-              {trip.cities_data.map((city) => (
-                <div key={city.id} className="bg-white rounded-lg shadow-lg p-8">
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{city.name}</h2>
-                    <p className="text-gray-600">{city.country}</p>
+              {trip.cities_data.map((city) => {
+                // Group restaurants and activities by the day they were entered on
+                const dayNumbers = new Set<number>();
+                city.restaurants.forEach((r) => r.dayNumber && dayNumbers.add(r.dayNumber));
+                city.activities.forEach((a) => a.dayNumber && dayNumbers.add(a.dayNumber));
+                const days = Array.from(dayNumbers).sort((a, b) => a - b);
+                const noDayRestaurants = city.restaurants.filter((r) => !r.dayNumber);
+                const noDayActivities = city.activities.filter((a) => !a.dayNumber);
+                const totalDays = Math.max(city.numberOfDays || 0, days.length ? days[days.length - 1] : 0);
+
+                return (
+                  <div key={city.id} className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-1">{city.name}</h2>
+                      <p className="text-gray-600">
+                        {city.country}
+                        {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
+                      </p>
+                    </div>
+
+                    {city.hotels.length > 0 && (
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">🏨 Where we stayed</h3>
+                        <div className="space-y-4">
+                          {city.hotels.map((hotel) => (
+                            <PlaceCard key={hotel.id} place={hotel} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {days.map((dayNumber) => {
+                      const rs = city.restaurants.filter((r) => r.dayNumber === dayNumber);
+                      const as = city.activities.filter((a) => a.dayNumber === dayNumber);
+                      return (
+                        <div key={dayNumber} className="mb-8 last:mb-0">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Day {dayNumber}</h3>
+                          {as.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm font-medium text-gray-500 mb-2">🎯 Activities</p>
+                              <div className="space-y-4">
+                                {as.map((a) => <PlaceCard key={a.id} place={a} />)}
+                              </div>
+                            </div>
+                          )}
+                          {rs.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-500 mb-2">🍽️ Restaurants</p>
+                              <div className="space-y-4">
+                                {rs.map((r) => <PlaceCard key={r.id} place={r} />)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {(noDayActivities.length > 0 || noDayRestaurants.length > 0) && (
+                      <div className="mb-2">
+                        {days.length > 0 && (
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Also in {city.name}</h3>
+                        )}
+                        {noDayActivities.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-500 mb-2">🎯 Activities</p>
+                            <div className="space-y-4">
+                              {noDayActivities.map((a) => <PlaceCard key={a.id} place={a} />)}
+                            </div>
+                          </div>
+                        )}
+                        {noDayRestaurants.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-500 mb-2">🍽️ Restaurants</p>
+                            <div className="space-y-4">
+                              {noDayRestaurants.map((r) => <PlaceCard key={r.id} place={r} />)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {/* Hotels for this city */}
-                  {city.hotels.length > 0 && (
-                    <div className="mb-8">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">🏨 Hotels</h3>
-                      <div className="space-y-4">
-                        {city.hotels.map((hotel) => {
-                          const hotelId = hotel.id || `${city.id}-hotel-${hotel.name || 'unnamed'}`;
-                          const isSelected = selectedItems.hotels.has(hotelId);
-                          return (
-                          <div 
-                            key={hotel.id} 
-                            className={`border rounded-lg p-4 transition-all ${
-                              'border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center flex-1">
-                                <div className="flex-1">
-                                  <h4 className="text-lg font-semibold text-gray-900">{hotel.name}</h4>
-                                  {hotel.location && (
-                                    <p className="text-gray-600 text-sm">{hotel.location}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                {hotel.rating && hotel.rating > 0 && renderStars(hotel.rating)}
-                                {renderLikeButton(hotel.liked ?? null)}
-                              </div>
-                            </div>
-                            {hotel.review && (
-                              <p className="text-gray-700 text-sm leading-relaxed">{hotel.review}</p>
-                            )}
-                          </div>
-                        );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Restaurants for this city */}
-                  {city.restaurants.length > 0 && (
-                    <div className="mb-8">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">🍽️ Restaurants</h3>
-                      <div className="space-y-4">
-                        {city.restaurants.map((restaurant) => {
-                          const restaurantId = restaurant.id || `${city.id}-restaurant-${restaurant.name || 'unnamed'}`;
-                          const isSelected = selectedItems.restaurants.has(restaurantId);
-                          return (
-                          <div 
-                            key={restaurant.id} 
-                            className={`border rounded-lg p-4 transition-all ${
-                              'border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center flex-1">
-                                <div className="flex-1">
-                                  <h4 className="text-lg font-semibold text-gray-900">{restaurant.name}</h4>
-                                  {restaurant.location && (
-                                    <p className="text-gray-600 text-sm">{restaurant.location}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                {restaurant.rating && restaurant.rating > 0 && renderStars(restaurant.rating)}
-                                {renderLikeButton(restaurant.liked ?? null)}
-                              </div>
-                            </div>
-                            {restaurant.review && (
-                              <p className="text-gray-700 text-sm leading-relaxed">{restaurant.review}</p>
-                            )}
-                          </div>
-                        );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Activities for this city */}
-                  {city.activities.length > 0 && (
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4">🎯 Activities</h3>
-                      <div className="space-y-4">
-                        {city.activities.map((activity, activityIndex) => {
-                          const activityId = activity.id || `${city.id || 'city'}-activity-${activityIndex}-${activity.name || 'unnamed'}`;
-                          const isSelected = selectedItems.activities.has(activityId);
-                          return (
-                          <div 
-                            key={activity.id} 
-                            className={`border rounded-lg p-4 transition-all ${
-                              'border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center flex-1">
-                                <div className="flex-1">
-                                  <h4 className="text-lg font-semibold text-gray-900">{activity.name}</h4>
-                                  {activity.location && (
-                                    <p className="text-gray-600 text-sm">{activity.location}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                {activity.rating && activity.rating > 0 && renderStars(activity.rating)}
-                                {renderLikeButton(activity.liked ?? null)}
-                              </div>
-                            </div>
-                            {activity.review && (
-                              <p className="text-gray-700 text-sm leading-relaxed">{activity.review}</p>
-                            )}
-                          </div>
-                        );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

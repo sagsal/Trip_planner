@@ -467,6 +467,9 @@ export default function TripAdvisorSearch({
                           {result.category.name}
                         </p>
                       )}
+                      {(result as any).ai_reason && (
+                        <p className="text-xs text-[#3F5B6A] mt-1">✨ {(result as any).ai_reason}</p>
+                      )}
                       {address && (
                         <div className="flex items-center text-sm text-gray-600 mt-1">
                           <MapPin className="w-4 h-4 mr-1" />

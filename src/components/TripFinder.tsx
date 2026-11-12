@@ -145,7 +145,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
         setAsked(askedSoFar + 1);
       } else {
         setResults(data.results || []);
-        setNote(data.note || '');
+        setNote(data.collect && (data.results || []).length ? '' : data.note || '');
         setFilters(data.filters || null);
         setSummary(data.filters?.summary || msgs[0]?.content || '');
         // They asked to create a sandbox trip from these trips: open the confirmation

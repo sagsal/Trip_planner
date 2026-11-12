@@ -225,7 +225,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
   const conversation = messages.length > 0;
 
   return (
-    <div className="bg-white/85 backdrop-blur-sm rounded-2xl border border-[#E4DED4] shadow-sm p-5 sm:p-6 mb-8">
+    <div data-tour="finder" className="bg-white/85 backdrop-blur-sm rounded-2xl border border-[#E4DED4] shadow-sm p-5 sm:p-6 mb-8">
       <div className="flex items-center justify-between gap-3 mb-3">
         <h2 className="text-xl font-semibold text-[#2F4A5C] flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#4A6878]" /> Find a trip for you

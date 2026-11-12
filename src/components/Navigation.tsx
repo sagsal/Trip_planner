@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { startSiteTour } from '@/components/SiteTour';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle,
+  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle,
 } from 'lucide-react';
 import { SANDBOX_EVENT } from '@/lib/sandbox';
 
@@ -28,6 +29,7 @@ const SIGNED_IN: { title: string; items: Item[] }[] = [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
       { href: '/', label: 'Home', icon: Home },
       { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
+      { href: '/?tour=1', label: 'Take the tour', hint: 'A guided walk-through with voiceover', icon: PlayCircle },
       { href: '/about', label: 'About', icon: Info },
     ],
   },
@@ -40,6 +42,7 @@ const SIGNED_OUT: { title: string; items: Item[] }[] = [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
       { href: '/', label: 'Home', icon: Home },
       { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
+      { href: '/?tour=1', label: 'Take the tour', hint: 'A guided walk-through with voiceover', icon: PlayCircle },
       { href: '/about', label: 'About', icon: Info },
     ],
   },
@@ -190,6 +193,7 @@ export default function Navigation() {
             <div ref={menuRef} className="relative">
               <button
                 type="button"
+                data-tour="menu"
                 onClick={() => setIsOpen((o) => !o)}
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
@@ -230,7 +234,10 @@ export default function Navigation() {
                               href={href}
                               role="menuitem"
                               aria-current={current ? 'page' : undefined}
-                              onClick={() => setIsOpen(false)}
+                              onClick={() => {
+                                setIsOpen(false);
+                                if (href.includes('tour=1')) startSiteTour();
+                              }}
                               className={`flex items-start gap-3 px-4 py-2.5 transition-colors ${
                                 current ? 'bg-[#E3ECEF] text-[#2F4A5C]' : 'text-gray-800 hover:bg-gray-50'
                               }`}

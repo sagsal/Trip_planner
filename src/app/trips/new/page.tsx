@@ -1918,7 +1918,7 @@ function NewTripContent() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Trip Information */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div data-tour="trip-info" className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Trip Information</h2>
               
               <div className="grid grid-cols-1 gap-6">
@@ -2115,7 +2115,7 @@ function NewTripContent() {
                   </div>
 
             {/* Cities and their data */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div data-tour="countries" className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Countries & Cities</h2>
               </div>
@@ -2288,7 +2288,7 @@ function NewTripContent() {
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-end space-x-4">
+            <div data-tour="save-buttons" className="flex justify-end space-x-4">
               <button
                 type="button"
                 onClick={() => router.back()}

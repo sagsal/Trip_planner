@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import SiteTour from "@/components/SiteTour";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
       >
         <Navigation />
         {children}
+        <SiteTour />
       </body>
     </html>
   );

@@ -227,7 +227,7 @@ function TripsContent() {
 
         {/* One box: typing filters the trips below; Enter asks the AI assistant */}
         <TripFinder onTyping={setSearchTerm}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div data-tour="filters" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <select
               value={filterCountry}
               onChange={(e) => setFilterCountry(e.target.value)}

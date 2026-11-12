@@ -253,7 +253,7 @@ function SandboxContent() {
   return (
     <div className="min-h-screen bg-[#F6F2EC] pt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div data-tour="sandbox-head" className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl sm:text-4xl font-semibold text-[#2F4A5C] flex items-center gap-3">
               <Package className="w-8 h-8 text-[#4A6878]" /> My Travel Sandbox

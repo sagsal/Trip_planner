@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import TourButton from '@/components/TourButton';
 import type { ReactNode } from 'react';
 
 export const metadata = {
@@ -92,7 +93,9 @@ export default function HowToPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">How to use</p>
         <h1 className="text-3xl sm:text-5xl font-semibold text-[#2F4A5C] leading-tight mb-4">Share your trips. Plan your next one.</h1>
-        <p className="text-lg text-[#4A5A63] mb-8">A quick guide to everything on Share and Plan. Jump to what you need:</p>
+        <p className="text-lg text-[#4A5A63] mb-5">A quick guide to everything on Share and Plan.</p>
+        <TourButton className="mb-8" />
+        <p className="text-sm text-[#5B6B75] mb-3">Or jump to what you need:</p>
 
         {/* Contents */}
         <nav aria-label="Contents" className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-12">

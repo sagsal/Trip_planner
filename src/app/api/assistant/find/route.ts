@@ -34,7 +34,12 @@ const NEXT_STEP_TOOL = {
       cities: {
         type: 'array',
         items: { type: 'string' },
-        description: 'For collect: only places in these cities, if they named any (e.g. "just Cartagena and Medellín" → ["Cartagena", "Medellín"]). Empty = all cities.',
+        description: 'For collect: only places in these cities, if they named any (e.g. "just Cartagena and Medellín" → ["Cartagena", "Medellín"]). Empty = all cities. A neighbourhood is NOT a city: put it in areas and its city here.',
+      },
+      areas: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'For collect: neighbourhoods/areas they named, e.g. "hotels in Polanco" → ["Polanco"] (and cities ["Mexico City"], countries ["Mexico"]). Empty = anywhere.',
       },
       question: { type: 'string', description: 'When asking: one short, friendly question.' },
       options: { type: 'array', items: { type: 'string' }, description: 'When asking: 3-6 short tap-to-answer choices.' },
@@ -112,7 +117,8 @@ export async function POST(request: NextRequest) {
       `Ask at most ${Math.max(0, 3 - asked)} more short follow-up question(s), only if the answer would really change which trips fit (e.g. kids' ages, trip length, interests). ` +
       (asked >= 3 ? 'Do NOT ask anything more: search now. ' : 'If you already know enough, search now. ') +
       'Questions must offer tap-to-answer options. Be warm and brief. ' +
-      'If they ask to create a sandbox or planned trip from trips, use action "collect" (you may still ask one question first if the destination is unclear).',
+      'If they ask to create a sandbox or planned trip from trips, use action "collect" (you may still ask one question first if the destination is unclear). ' +
+      'Neighbourhoods (e.g. Polanco, Roma Norte, Getsemaní) belong to a city: search that city/country and put the neighbourhood in areas.',
     messages,
     tool: NEXT_STEP_TOOL,
     maxTokens: 1200,
@@ -129,6 +135,10 @@ export async function POST(request: NextRequest) {
             .filter((c: any) => typeof c === 'string' && c.trim())
             .map((c: string) => c.trim().slice(0, 80))
             .slice(0, 20),
+          areas: (Array.isArray(step.input.areas) ? step.input.areas : [])
+            .filter((c: any) => typeof c === 'string' && c.trim())
+            .map((c: string) => c.trim().slice(0, 80))
+            .slice(0, 10),
         }
       : null;
 
@@ -203,6 +213,7 @@ export async function POST(request: NextRequest) {
     system:
       'Rank real trips for a traveller. Use ONLY trips from the list (by id). Put trips to the requested destination first (exact: true); ' +
       'then, if there are few, add close alternatives (same region, similar style; exact: false). Leave out trips that do not fit at all. ' +
+      'If they named a neighbourhood (e.g. Polanco), a trip to that city counts as exact — places are filtered by address later, so do not say none were found. ' +
       'Give each a one-sentence reason that mentions specific cities or places from that trip. At most 8.',
     messages: [
       {

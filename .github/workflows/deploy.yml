@@ -88,6 +88,9 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- area check (one-time)"
+          curl -s -m 60 -X POST -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"create a Mexico trip in my sandbox and add hotels in Polanco"}],"asked":3}' http://localhost:3000/api/assistant/find \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);const k=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();const a=(j.collect&&j.collect.areas)||[];const ps=(j.results||[]).flatMap(r=>r.places).filter(p=>!j.collect.kinds.length||j.collect.kinds.includes(p.kind)).filter(p=>a.some(x=>k(p.location+" "+p.name).includes(k(x))));console.log("collect:",JSON.stringify(j.collect),"trips:",(j.results||[]).length,"matching places:",ps.length,"note:",j.note)}catch(e){console.log("FAIL unreadable")}})'
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

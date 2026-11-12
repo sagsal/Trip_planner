@@ -60,10 +60,12 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
   const [collectKinds, setCollectKinds] = useState<string[]>(['hotel', 'activity', 'restaurant']);
   const [collectTrips, setCollectTrips] = useState<string[]>([]);
   const [collectCities, setCollectCities] = useState<string[]>([]); // empty = all cities
+  const [collectAreas, setCollectAreas] = useState<string[]>([]); // neighbourhoods, matched against addresses
   const [collecting, setCollecting] = useState(false);
   const [collected, setCollected] = useState<{ id: string; title: string; saved: number } | null>(null);
 
-  const openCollect = (title: string, kinds: string[] | undefined, res: Result[], cities?: string[]) => {
+  const openCollect = (title: string, kinds: string[] | undefined, res: Result[], cities?: string[], areas?: string[]) => {
+    setCollectAreas((areas || []).filter(Boolean));
     setCollectTitle(title);
     setCollectKinds(kinds && kinds.length ? kinds : ['hotel', 'activity', 'restaurant']);
     // Cities they named (e.g. "just Cartagena and Medellín"), matched to the trips' own city names
@@ -83,7 +85,8 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
       .filter((r) => collectTrips.includes(r.id))
       .flatMap((r) => r.places)
       .filter((p) => collectKinds.includes(p.kind))
-      .filter((p) => collectCities.length === 0 || collectCities.includes(p.city || ''));
+      .filter((p) => collectCities.length === 0 || collectCities.includes(p.city || ''))
+      .filter((p) => collectAreas.length === 0 || collectAreas.some((a) => cityKey(`${p.location || ''} ${p.name}`).includes(cityKey(a))));
   const cityOptions = (res: Result[]) =>
     Array.from(new Set(res.filter((r) => collectTrips.includes(r.id)).flatMap((r) => r.places.map((p) => p.city || '')).filter(Boolean)));
 
@@ -146,7 +149,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
         setFilters(data.filters || null);
         setSummary(data.filters?.summary || msgs[0]?.content || '');
         // They asked to create a sandbox trip from these trips: open the confirmation
-        if (data.collect && (data.results || []).length) openCollect(data.collect.title, data.collect.kinds, data.results, data.collect.cities);
+        if (data.collect && (data.results || []).length) openCollect(data.collect.title, data.collect.kinds, data.results, data.collect.cities, data.collect.areas);
         else setCollectOpen(false);
       }
     } catch (e) {
@@ -332,7 +335,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
       {results !== null && !busy && (
         <div className="mt-2">
           {note && <p className="text-sm text-[#5B6B75] mb-3">{note}</p>}
-          {results.length > 0 && (
+          {results.length > 0 && !collectOpen && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {results.map((r) => (
                 <div key={r.id} className="bg-white rounded-xl border border-[#E4DED4] overflow-hidden flex flex-col">
@@ -394,6 +397,17 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
                       );
                     })}
                   </div>
+                  {collectAreas.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className="text-xs font-medium text-gray-700">Only in</span>
+                      {collectAreas.map((a) => (
+                        <button key={a} type="button" onClick={() => setCollectAreas((p) => p.filter((x) => x !== a))}
+                          className="px-3 py-1.5 rounded-full border text-sm bg-[#4A6878] border-[#4A6878] text-white" title="Remove">
+                          📍 {a} ✕
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {cityOptions(results).length > 1 && (
                     <>
                       <p className="text-xs font-medium text-gray-700 mb-1">Cities</p>
@@ -445,7 +459,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
           )}
 
           {/* What next? */}
-          <div className="rounded-xl bg-[#F3F7F8] border border-[#C9D9DF] p-4">
+          {!collectOpen && <div className="rounded-xl bg-[#F3F7F8] border border-[#C9D9DF] p-4">
             <p className="text-sm font-medium text-[#2F4A5C] mb-3">Planning a trip like this? Put it in your sandbox:</p>
             <div className="flex flex-col sm:flex-row gap-2">
               {results.length > 0 && !collectOpen && (
@@ -459,7 +473,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
                 {starting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Let AI plan it day by day
               </button>
             </div>
-          </div>
+          </div>}
         </div>
       )}
     </div>

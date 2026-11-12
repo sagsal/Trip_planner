@@ -775,7 +775,10 @@ function TripDetailContent() {
               </div>
             )}
             {trip.description && (
-              <p className="text-gray-700 text-lg mb-6 leading-relaxed">{trip.description}</p>
+              <div className="mb-6 rounded-lg bg-[#F6F2EC] border border-[#E4DED4] px-4 py-3">
+                <p className="text-sm font-semibold text-[#2F4A5C] mb-1">💬 Overall comments</p>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line">{trip.description}</p>
+              </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

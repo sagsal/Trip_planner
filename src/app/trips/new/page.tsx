@@ -2000,6 +2000,20 @@ function NewTripContent() {
                 })()}
               </div>
 
+              {/* Overall comments about the trip */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">💬 Overall comments</label>
+                <p className="text-xs text-gray-500 mb-2">Your overall impressions: highlights, what you’d do differently, tips for anyone planning the same trip.</p>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={4}
+                  placeholder="e.g. Loved the food and the people. Five days was perfect; I’d skip the hop-on bus and spend an extra morning in Coyoacán."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                />
+              </div>
+
               {/* Flights: getting there and getting home */}
               {renderFlights(
                 flightLegs,

@@ -1524,13 +1524,22 @@ function NewTripContent() {
                                 countryName={city.country}
                               />
                               {selectedHotelData && (
-                                <div className="mb-2 p-2 bg-white rounded border border-yellow-300">
-                                  <p className="text-xs text-gray-600">
-                                    ✓ Selected: {selectedHotelData.name}
-                                    {selectedHotelData.rating && (
-                                      <span className="ml-2">⭐ {selectedHotelData.rating}</span>
+                                <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-yellow-300">
+                                  {selectedHotelData.photo_url ? (
+                                    <img
+                                      src={selectedHotelData.photo_url}
+                                      alt=""
+                                      className="w-24 h-20 object-cover rounded-md shrink-0"
+                                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
+                                  ) : null}
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-900">✓ {selectedHotelData.name}</p>
+                                    {selectedHotelData.address_obj?.street1 && (
+                                      <p className="text-xs text-gray-600">{selectedHotelData.address_obj.street1}</p>
                                     )}
-                                  </p>
+                                    <p className="text-xs text-gray-500 mt-1">Click Save to add it.</p>
+                                  </div>
                                 </div>
                               )}
                               <div className="flex gap-2">
@@ -1631,13 +1640,22 @@ function NewTripContent() {
                                     countryName={city.country}
                                   />
                                   {selectedRestaurantData && (
-                                    <div className="mb-2 p-2 bg-white rounded border border-green-300">
-                                      <p className="text-xs text-gray-600">
-                                        ✓ Selected: {selectedRestaurantData.name}
-                                        {selectedRestaurantData.rating && (
-                                          <span className="ml-2">⭐ {selectedRestaurantData.rating}</span>
+                                    <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-green-300">
+                                      {selectedRestaurantData.photo_url ? (
+                                        <img
+                                          src={selectedRestaurantData.photo_url}
+                                          alt=""
+                                          className="w-24 h-20 object-cover rounded-md shrink-0"
+                                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                      ) : null}
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-900">✓ {selectedRestaurantData.name}</p>
+                                        {selectedRestaurantData.address_obj?.street1 && (
+                                          <p className="text-xs text-gray-600">{selectedRestaurantData.address_obj.street1}</p>
                                         )}
-                                      </p>
+                                        <p className="text-xs text-gray-500 mt-1">Click Save to add it.</p>
+                                      </div>
                                     </div>
                                   )}
                                   <div className="flex gap-2">

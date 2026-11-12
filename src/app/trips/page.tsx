@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { tripTypeIcon } from '@/lib/regions';
-import { MapPin, Calendar, Star, User, Heart, Filter, Search } from 'lucide-react';
+import { tripTypeIcon, REGIONS, TRIP_TYPES, regionOf } from '@/lib/regions';
+import { MapPin, Calendar, Star, User, Heart } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripFinder from '@/components/TripFinder';
 import { fetchTrips } from '@/utils/api';
@@ -21,6 +21,7 @@ interface Trip {
   isDraft?: boolean; // Add isDraft to interface
   coverImageUrl?: string | null;
   tripType?: string | null;
+  region?: string | null;
   createdAt: string;
   cities_data: CityData[];
   user: {
@@ -70,6 +71,8 @@ function TripsContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterRegion, setFilterRegion] = useState('');
+  const [filterType, setFilterType] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
   const [countries, setCountries] = useState<string[]>([]);
 
@@ -161,8 +164,11 @@ function TripsContent() {
                          );
     
     const matchesCountry = !filterCountry || parseCountries(trip.countries).includes(filterCountry);
-    
-    return matchesSearch && matchesCountry;
+    const matchesRegion =
+      !filterRegion || trip.region === filterRegion || parseCountries(trip.countries).some((c: string) => regionOf(c) === filterRegion);
+    const matchesType = !filterType || trip.tripType === filterType;
+
+    return matchesSearch && matchesCountry && matchesRegion && matchesType;
   });
 
   if (isLoading) {
@@ -219,43 +225,44 @@ function TripsContent() {
           </p>
         </div>
 
-        {/* AI assistant: find trips by describing what you want */}
-        <TripFinder />
-
-        {/* Search and Filter */}
-        <div className="bg-white/75 backdrop-blur-sm rounded-xl shadow-sm p-6 mb-8 border border-[#E4DED4]">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search trips, countries, cities..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6878] focus:border-transparent text-black bg-white/90"
-                />
-              </div>
-            </div>
-            <div className="md:w-64">
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <select
-                  value={filterCountry}
-                  onChange={(e) => setFilterCountry(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A6878] focus:border-transparent appearance-none text-black bg-white/90"
-                >
-                  <option value="" className="text-gray-900">All Countries</option>
-                  {countries.map((country) => (
-                    <option key={country} value={country} className="text-gray-900">
-                      {country}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+        {/* One box: typing filters the trips below; Enter asks the AI assistant */}
+        <TripFinder onTyping={setSearchTerm}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <select
+              value={filterCountry}
+              onChange={(e) => setFilterCountry(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
+              aria-label="Country"
+            >
+              <option value="">All countries</option>
+              {countries.map((country) => (
+                <option key={country} value={country}>{country}</option>
+              ))}
+            </select>
+            <select
+              value={filterRegion}
+              onChange={(e) => setFilterRegion(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
+              aria-label="Region"
+            >
+              <option value="">All regions</option>
+              {REGIONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
+              aria-label="Type of trip"
+            >
+              <option value="">All types of trip</option>
+              {TRIP_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.icon} {t.value}</option>
+              ))}
+            </select>
           </div>
-        </div>
+        </TripFinder>
 
         {/* Results Count */}
         <div className="mb-6">
@@ -270,7 +277,7 @@ function TripsContent() {
             <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-[#2F4A5C] mb-2">No trips found</h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || filterCountry 
+              {searchTerm || filterCountry || filterRegion || filterType 
                 ? 'Try adjusting your search or filter criteria'
                 : 'Be the first to share your travel experience!'
               }

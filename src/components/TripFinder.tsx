@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Loader2, ArrowRight, RotateCcw, Send, MapPin, Calendar, Package, Check } from 'lucide-react';
@@ -37,7 +37,7 @@ const EXAMPLES = [
   'Food trip to Mexico City',
 ];
 
-export default function TripFinder() {
+export default function TripFinder({ onTyping, children }: { onTyping?: (text: string) => void; children?: ReactNode } = {}) {
   const router = useRouter();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -147,6 +147,7 @@ export default function TripFinder() {
     setResults(null);
     setAsked(0);
     setInput('');
+    onTyping?.(''); // a full request shouldn't filter the list below
     send(msgs, 0);
   };
 
@@ -280,8 +281,11 @@ export default function TripFinder() {
         >
           <input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={conversation ? 'Or type your own answer…' : 'Where are you dreaming of going? e.g. Japan with my family'}
+            onChange={(e) => {
+              setInput(e.target.value);
+              if (!conversation) onTyping?.(e.target.value); // filter the trips below as you type
+            }}
+            placeholder={conversation ? 'Or type your own answer…' : 'Search trips, or ask: “Japan with my family, two weeks”'}
             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#4A6878] focus:border-transparent"
           />
           <button type="submit" disabled={!input.trim()} className="px-4 py-3 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] disabled:opacity-50" aria-label="Send">
@@ -289,6 +293,12 @@ export default function TripFinder() {
           </button>
         </form>
       )}
+      {!conversation && (
+        <p className="mt-2 text-xs text-[#6B7A83]">
+          Typing filters the trips below. Press <b>Enter</b> to ask the AI — it can ask a few questions, explain its picks, or build a sandbox trip.
+        </p>
+      )}
+      {!conversation && children && <div className="mt-3">{children}</div>}
       {!conversation && (
         <div className="flex flex-wrap gap-2 mt-3">
           {EXAMPLES.map((ex) => (

@@ -37,6 +37,9 @@ const EXAMPLES = [
   'Food trip to Mexico City',
 ];
 
+// "Medellín" → "medellin", for matching city names loosely
+const cityKey = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, '').trim();
+
 export default function TripFinder({ onTyping, children }: { onTyping?: (text: string) => void; children?: ReactNode } = {}) {
   const router = useRouter();
   const [input, setInput] = useState('');
@@ -56,19 +59,33 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
   const [collectTitle, setCollectTitle] = useState('');
   const [collectKinds, setCollectKinds] = useState<string[]>(['hotel', 'activity', 'restaurant']);
   const [collectTrips, setCollectTrips] = useState<string[]>([]);
+  const [collectCities, setCollectCities] = useState<string[]>([]); // empty = all cities
   const [collecting, setCollecting] = useState(false);
   const [collected, setCollected] = useState<{ id: string; title: string; saved: number } | null>(null);
 
-  const openCollect = (title: string, kinds: string[] | undefined, res: Result[]) => {
+  const openCollect = (title: string, kinds: string[] | undefined, res: Result[], cities?: string[]) => {
     setCollectTitle(title);
     setCollectKinds(kinds && kinds.length ? kinds : ['hotel', 'activity', 'restaurant']);
-    setCollectTrips(res.filter((r) => r.exact).map((r) => r.id));
+    // Cities they named (e.g. "just Cartagena and Medellín"), matched to the trips' own city names
+    const named = (cities || []).map(cityKey).filter(Boolean);
+    const all = Array.from(new Set(res.flatMap((r) => r.places.map((p) => p.city || '')).filter(Boolean)));
+    const picked = named.length ? all.filter((c) => named.some((n) => cityKey(c).includes(n) || n.includes(cityKey(c)))) : [];
+    setCollectCities(picked);
+    const exact = res.filter((r) => r.exact);
+    const withCities = picked.length ? res.filter((r) => r.places.some((p) => picked.includes(p.city || ''))) : [];
+    setCollectTrips((withCities.length ? withCities : exact).map((r) => r.id));
     setCollected(null);
     setCollectOpen(true);
   };
 
   const collectPlaces = (res: Result[]) =>
-    res.filter((r) => collectTrips.includes(r.id)).flatMap((r) => r.places).filter((p) => collectKinds.includes(p.kind));
+    res
+      .filter((r) => collectTrips.includes(r.id))
+      .flatMap((r) => r.places)
+      .filter((p) => collectKinds.includes(p.kind))
+      .filter((p) => collectCities.length === 0 || collectCities.includes(p.city || ''));
+  const cityOptions = (res: Result[]) =>
+    Array.from(new Set(res.filter((r) => collectTrips.includes(r.id)).flatMap((r) => r.places.map((p) => p.city || '')).filter(Boolean)));
 
   const createAndAdd = async () => {
     let user: { id: string } | null = null;
@@ -129,7 +146,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
         setFilters(data.filters || null);
         setSummary(data.filters?.summary || msgs[0]?.content || '');
         // They asked to create a sandbox trip from these trips: open the confirmation
-        if (data.collect && (data.results || []).length) openCollect(data.collect.title, data.collect.kinds, data.results);
+        if (data.collect && (data.results || []).length) openCollect(data.collect.title, data.collect.kinds, data.results, data.collect.cities);
         else setCollectOpen(false);
       }
     } catch (e) {
@@ -377,6 +394,26 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
                       );
                     })}
                   </div>
+                  {cityOptions(results).length > 1 && (
+                    <>
+                      <p className="text-xs font-medium text-gray-700 mb-1">Cities</p>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <button type="button" onClick={() => setCollectCities([])}
+                          className={`px-3 py-1.5 rounded-full border text-sm ${collectCities.length === 0 ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
+                          All cities
+                        </button>
+                        {cityOptions(results).map((c) => {
+                          const on = collectCities.includes(c);
+                          return (
+                            <button key={c} type="button" onClick={() => setCollectCities((p) => (on ? p.filter((x) => x !== c) : [...p, c]))}
+                              className={`px-3 py-1.5 rounded-full border text-sm ${on ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
+                              {c}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                   <p className="text-xs font-medium text-gray-700 mb-1">From these trips</p>
                   <div className="space-y-1 mb-3">
                     {results.map((r) => (

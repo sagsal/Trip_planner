@@ -31,6 +31,11 @@ const NEXT_STEP_TOOL = {
         items: { type: 'string', enum: ['hotel', 'restaurant', 'activity'] },
         description: 'For collect: only these kinds of places, if they said so (e.g. "just restaurants"). Empty = all.',
       },
+      cities: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'For collect: only places in these cities, if they named any (e.g. "just Cartagena and Medellín" → ["Cartagena", "Medellín"]). Empty = all cities.',
+      },
       question: { type: 'string', description: 'When asking: one short, friendly question.' },
       options: { type: 'array', items: { type: 'string' }, description: 'When asking: 3-6 short tap-to-answer choices.' },
       multi: { type: 'boolean', description: 'When asking: true if several choices can be picked.' },
@@ -120,6 +125,10 @@ export async function POST(request: NextRequest) {
       ? {
           title: (typeof step.input.sandboxTitle === 'string' && step.input.sandboxTitle.trim()) || (step.input.filters?.summary as string) || 'My next trip',
           kinds: (Array.isArray(step.input.kinds) ? step.input.kinds : []).filter((k: any) => ['hotel', 'restaurant', 'activity'].includes(k)),
+          cities: (Array.isArray(step.input.cities) ? step.input.cities : [])
+            .filter((c: any) => typeof c === 'string' && c.trim())
+            .map((c: string) => c.trim().slice(0, 80))
+            .slice(0, 20),
         }
       : null;
 

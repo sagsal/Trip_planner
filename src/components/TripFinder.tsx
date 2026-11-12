@@ -414,8 +414,13 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
                       </div>
                     </>
                   )}
-                  <p className="text-xs font-medium text-gray-700 mb-1">From these trips</p>
-                  <div className="space-y-1 mb-3">
+                  {results.length > 1 && (
+                    <details className="mb-3">
+                      <summary className="text-xs text-[#5B6B75] underline cursor-pointer select-none">
+                        From {collectTrips.length} of {results.length} trips · change
+                      </summary>
+                      <div className="mt-2">
+                  <div className="space-y-1 mb-1">
                     {results.map((r) => (
                       <label key={r.id} className="flex items-center gap-2 text-sm text-[#2F4A5C]">
                         <input type="checkbox" checked={collectTrips.includes(r.id)} onChange={() => setCollectTrips((p) => (p.includes(r.id) ? p.filter((x) => x !== r.id) : [...p, r.id]))} />
@@ -423,6 +428,9 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
                       </label>
                     ))}
                   </div>
+                      </div>
+                    </details>
+                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <button type="button" onClick={createAndAdd} disabled={collecting}
                       className="inline-flex items-center px-4 py-2 bg-[#2F4A5C] text-white rounded-lg hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">

@@ -10,6 +10,7 @@ import { cleanArrival, cleanTravel, parseJson, routeText, modeInfo, type FlightL
 import { tripTypeIcon } from '@/lib/regions';
 import SaveToSandbox from '@/components/SaveToSandbox';
 import GoogleReviews from '@/components/GoogleReviews';
+import ShareTrip from '@/components/ShareTrip';
 import type { PlaceToSave } from '@/lib/sandbox';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
@@ -944,9 +945,12 @@ function TripDetailContent() {
                 <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">{t.title}</h1>
                 {byline && <p className="text-[#F1EEE8]">{byline}</p>}
               </div>
-              {allPlaces.length > 0 && (
-                <div className="bg-white rounded-xl"><SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" /></div>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {t.isPublic && <ShareTrip title={t.title} />}
+                {allPlaces.length > 0 && (
+                  <div className="bg-white rounded-xl"><SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" /></div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -956,7 +960,10 @@ function TripDetailContent() {
               <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">{t.title}</h1>
               {byline && <p className="text-[#5B6A73]">{byline}</p>}
             </div>
-            {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" />}
+            <div className="flex flex-wrap items-center gap-2">
+              {t.isPublic && <ShareTrip title={t.title} />}
+              {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" />}
+            </div>
           </div>
         )}
 

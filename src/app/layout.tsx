@@ -21,8 +21,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Share and Plan - the Ultimate Trip Planning Tool",
-  description: "Plan, share and build amazing trips. Create detailed trip journals with hotels, restaurants, and activities reviews.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://tripshare.org"),
+  title: "Share and Plan - Build your next trip with help from fellow travelers",
+  description: "Share the details of your trips, day by day, and build your next one from other travelers' real itineraries.",
+  openGraph: {
+    siteName: "Share and Plan",
+    type: "website",
+    title: "Share and Plan",
+    description: "Build your next trip with help from fellow travelers. Real trips, day by day: where they stayed, ate and explored.",
+    images: [{ url: "/sea-warm.jpg" }],
+  },
+  twitter: { card: "summary_large_image" },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

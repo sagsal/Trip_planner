@@ -1,0 +1,88 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { Share2, Link2, Check, Mail, X } from 'lucide-react';
+
+/** "Share" on a trip page: the phone's own share sheet where there is one, else copy / WhatsApp / Facebook / email */
+export default function ShareTrip({ title, text, className = '' }: { title: string; text?: string; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const url = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+  const message = text || `Have a look at this trip: ${title}`;
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [open]);
+
+  const onClick = async () => {
+    const nav: any = typeof navigator !== 'undefined' ? navigator : null;
+    // Phones: the built-in share sheet (Messages, WhatsApp, Instagram, …)
+    if (nav?.share && /Android|iPhone|iPad|iPod/i.test(nav.userAgent || '')) {
+      try { await nav.share({ title, text: message, url }); return; } catch (e: any) { if (e?.name === 'AbortError') return; }
+    }
+    setOpen((o) => !o);
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch {}
+      ta.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const enc = encodeURIComponent;
+  const links = [
+    { label: 'WhatsApp', href: `https://wa.me/?text=${enc(`${message} ${url}`)}`, color: '#25D366' },
+    { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`, color: '#1877F2' },
+    { label: 'X', href: `https://x.com/intent/post?text=${enc(message)}&url=${enc(url)}`, color: '#13212B' },
+  ];
+
+  return (
+    <div ref={boxRef} className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-expanded={open}
+        className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DCD2] text-[#13212B] text-sm font-semibold hover:bg-[#F6F3EE]"
+      >
+        <Share2 className="w-4 h-4 mr-1.5" /> Share
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 bottom-full mb-2 sm:bottom-auto sm:top-full sm:mt-2 sm:mb-0 z-40 w-64 bg-white rounded-2xl border border-[#E2DCD2] shadow-xl p-2 text-[#13212B]">
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <p className="text-sm font-bold">Share this trip</p>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-1 text-[#5B6A73]"><X className="w-4 h-4" /></button>
+          </div>
+          <button type="button" role="menuitem" onClick={copy} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm text-left">
+            {copied ? <Check className="w-4 h-4 text-[#1F6F78]" /> : <Link2 className="w-4 h-4" />}
+            {copied ? 'Link copied' : 'Copy link'}
+          </button>
+          {links.map((l) => (
+            <a key={l.label} role="menuitem" href={l.href} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm">
+              <span className="w-4 h-4 rounded-full" style={{ background: l.color }} aria-hidden />
+              {l.label}
+            </a>
+          ))}
+          <a role="menuitem" href={`mailto:?subject=${enc(title)}&body=${enc(`${message}\n\n${url}`)}`} onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm">
+            <Mail className="w-4 h-4" /> Email
+          </a>
+          <p className="px-3 pt-1.5 pb-1 text-xs text-[#5B6A73]">For Instagram, copy the link and add it to your story or bio.</p>
+        </div>
+      )}
+    </div>
+  );
+}

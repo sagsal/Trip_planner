@@ -88,9 +88,6 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
-          echo "--- link preview check (one-time)"
-          TID=$(curl -s -m 30 "http://localhost:3000/api/trips?public=true&limit=1" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log((JSON.parse(d).trips||[])[0].id)}catch(e){}})')
-          curl -s -m 30 "http://localhost:3000/trips/$TID" | grep -oE '<meta (property|name)="(og:title|og:image|og:description|twitter:card)" content="[^"]{0,140}' | sed -E 's/(og:description" content=").*/\1…/'
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

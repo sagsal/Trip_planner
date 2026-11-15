@@ -10,6 +10,14 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#F6F2EC] pt-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+        {/* Why I started this site */}
+        <div className="bg-white rounded-xl border-l-4 border-[#4A6878] border-y border-r border-y-[#E4DED4] border-r-[#E4DED4] shadow-sm p-6 sm:p-8 mb-12">
+          <p className="text-lg text-[#2F4A5C] leading-relaxed">
+            I started this site because I am always asked for an easy way to share the details of trips I plan. And I of
+            course am always asking friends and family for details of their trips.
+          </p>
+        </div>
+
         <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">About Share and Plan</p>
         <h1 className="text-3xl sm:text-5xl font-semibold text-[#2F4A5C] leading-tight mb-6">
           Travel is better when it’s shared.

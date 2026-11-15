@@ -81,8 +81,8 @@ jobs:
 
           # Nightly database backup to Backblaze at 03:17 server time (skips itself until the keys are set)
           NODE_BIN="$(command -v node)"
-          ( crontab -l 2>/dev/null | grep -v 'scripts/backup-db.js' ; echo "17 3 * * * cd /var/www/Trip_planner && $NODE_BIN scripts/backup-db.js >> \$HOME/tripshare-backup.log 2>&1" ) | crontab -
-          echo "nightly backup scheduled: $(crontab -l | grep -c 'scripts/backup-db.js') entry"
+          ( crontab -l 2>/dev/null | grep -v 'scripts/backup-db.js' || true ; echo "17 3 * * * cd /var/www/Trip_planner && $NODE_BIN scripts/backup-db.js >> \$HOME/tripshare-backup.log 2>&1" ) | crontab -
+          echo "nightly backup scheduled: $(crontab -l 2>/dev/null | grep -c 'scripts/backup-db.js' || true) entry"
           echo "✅ Deployment complete!"
           REMOTE
 

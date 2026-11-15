@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { tripTypeIcon, REGIONS, TRIP_TYPES, regionOf } from '@/lib/regions';
 import { MapPin, Heart } from 'lucide-react';
@@ -8,7 +8,6 @@ import { useSearchParams } from 'next/navigation';
 import TripCard, { FeaturedTripCard } from '@/components/TripCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripFinder from '@/components/TripFinder';
-import { fetchTrips } from '@/utils/api';
 
 interface Trip {
   id: string;
@@ -68,116 +67,78 @@ interface Activity {
   liked?: boolean;
 }
 
+const PAGE_SIZE = 24;
+
 function TripsContent() {
   const searchParams = useSearchParams();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [query, setQuery] = useState(''); // searchTerm, after a short pause in typing
   const [filterRegion, setFilterRegion] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
   const [countries, setCountries] = useState<string[]>([]);
+  const requestId = useRef(0);
 
+  // Every country that has a trip, for the filter
   useEffect(() => {
-    fetchTripsData();
+    fetch('/api/trips?facets=countries')
+      .then((r) => r.json())
+      .then((d) => setCountries(Array.isArray(d.countries) ? d.countries : []))
+      .catch(() => {});
   }, []);
 
-  const fetchTripsData = async () => {
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(searchTerm.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Search and filters run in the database, so older trips are found too
+  const load = async (pageNo: number) => {
+    const id = ++requestId.current;
+    if (pageNo === 1) setIsLoading(true);
+    else setLoadingMore(true);
     try {
-      // Fetch public trips (non-drafts)
-      const result = await fetchTrips();
-      
-      if (result.data) {
-        // Filter to only show public, non-draft trips
-        // Handle cases where isDraft might be undefined/null
-        // Exclude template trips and database trips (used for suggestions only)
-        const publicTrips = result.data.trips.filter((trip: any) => {
-          const isPublic = trip.isPublic === true;
-          const isNotDraft = trip.isDraft === false || trip.isDraft === undefined || trip.isDraft === null;
-          const isNotTemplate = !trip.title?.includes('TEMPLATE') && !trip.title?.includes('DATABASE:');
-          return isPublic && isNotDraft && isNotTemplate;
-        });
-        
-        setTrips(publicTrips);
-        
-        // Extract unique countries for filter
-        const uniqueCountries = new Set<string>();
-        publicTrips.forEach((trip: Trip) => {
-          try {
-            const tripCountries = JSON.parse(trip.countries);
-            tripCountries.forEach((country: string) => uniqueCountries.add(country));
-          } catch (e) {
-            // Handle parsing error
-          }
-        });
-        setCountries(Array.from(uniqueCountries).sort());
-      } else if (result.error) {
-        console.error('Error fetching trips:', result.error);
-      }
+      const qs = new URLSearchParams({ public: 'true', page: String(pageNo), limit: String(PAGE_SIZE) });
+      if (query) qs.set('q', query);
+      if (filterCountry) qs.set('country', filterCountry);
+      if (filterRegion) qs.set('region', filterRegion);
+      if (filterType) qs.set('type', filterType);
+      const res = await fetch(`/api/trips?${qs}`);
+      const data = await res.json();
+      if (id !== requestId.current) return; // a newer search has started
+      const got: Trip[] = Array.isArray(data.trips) ? data.trips : [];
+      setTrips((prev) => (pageNo === 1 ? got : [...prev, ...got.filter((t) => !prev.some((p) => p.id === t.id))]));
+      setTotal(Number(data.pagination?.total) || got.length);
+      setPage(pageNo);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('Error fetching trips:', error);
+      if (pageNo === 1) setTrips([]);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const parseCountries = (countriesJson: string) => {
-    try {
-      // Handle double-encoded JSON
-      let parsed = JSON.parse(countriesJson);
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed);
+      if (id === requestId.current) {
+        setIsLoading(false);
+        setLoadingMore(false);
       }
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
     }
   };
 
-  const parseCities = (citiesJson: string) => {
-    try {
-      // Handle double-encoded JSON
-      let parsed = JSON.parse(citiesJson);
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed);
-      }
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
+  useEffect(() => {
+    load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, filterCountry, filterRegion, filterType]);
 
-  const filteredTrips = trips.filter(trip => {
-    const matchesSearch = trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         trip.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         parseCountries(trip.countries).some((country: string) => 
-                           country.toLowerCase().includes(searchTerm.toLowerCase())
-                         ) ||
-                         parseCities(trip.cities).some((city: string) => 
-                           city.toLowerCase().includes(searchTerm.toLowerCase())
-                         );
-    
-    const matchesCountry = !filterCountry || parseCountries(trip.countries).includes(filterCountry);
-    const matchesRegion =
-      !filterRegion || trip.region === filterRegion || parseCountries(trip.countries).some((c: string) => regionOf(c) === filterRegion);
-    const matchesType = !filterType || trip.tripType === filterType;
-
-    return matchesSearch && matchesCountry && matchesRegion && matchesType;
-  });
+  const filteredTrips = trips;
+  const hasMore = trips.length < total;
 
   const askParam = searchParams.get('ask') || undefined;
-  const sorted = [...filteredTrips].sort((a, b) => (b.coverImageUrl ? 1 : 0) - (a.coverImageUrl ? 1 : 0));
+  // Featured: the newest trip with a cover photo; everything else stays newest first
   const anyFilter = !!(searchTerm || filterCountry || filterRegion || filterType);
-  const featured = !anyFilter && sorted.length > 1 ? sorted[0] : null;
-  const rest = featured ? sorted.slice(1) : sorted;
+  const featured = !anyFilter && filteredTrips.length > 1 ? filteredTrips.find((t) => t.coverImageUrl) || filteredTrips[0] : null;
+  const rest = featured ? filteredTrips.filter((t) => t.id !== featured.id) : filteredTrips;
   const selectCls = 'px-3.5 py-2.5 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] min-h-[42px]';
 
   return (
@@ -237,12 +198,25 @@ function TripsContent() {
         ) : (
           <>
             <p className="text-sm text-[#5B6A73] mb-4">
-              {filteredTrips.length === trips.length ? `${trips.length} ${trips.length === 1 ? 'trip' : 'trips'}` : `Showing ${filteredTrips.length} of ${trips.length} trips`}
+              {total} {total === 1 ? 'trip' : 'trips'}
+              {anyFilter ? ' match' : ''}
             </p>
             {featured && <div className="mb-5"><FeaturedTripCard t={featured} /></div>}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {rest.map((trip) => <TripCard key={trip.id} t={trip} />)}
             </div>
+            {hasMore && (
+              <div className="flex justify-center mt-8">
+                <button
+                  type="button"
+                  onClick={() => load(page + 1)}
+                  disabled={loadingMore}
+                  className="px-6 min-h-[48px] rounded-xl bg-white border border-[#E2DCD2] font-semibold text-[#13212B] hover:bg-[#F6F3EE] disabled:opacity-60"
+                >
+                  {loadingMore ? 'Loading…' : `Load more trips (${total - trips.length} more)`}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

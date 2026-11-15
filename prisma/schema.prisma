@@ -48,6 +48,9 @@ model Trip {
   cities_data City[]
 
   @@map("trips")
+
+  @@index([isPublic, isDraft, createdAt])
+  @@index([userId, isDraft])
 }
 
 model City {
@@ -67,6 +70,8 @@ model City {
   activities  Activity[]
 
   @@map("cities")
+
+  @@index([name])
 }
 
 model Hotel {

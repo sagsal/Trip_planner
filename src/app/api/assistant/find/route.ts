@@ -156,15 +156,33 @@ export async function POST(request: NextRequest) {
   const minDays = Number(f.minDays) || 0;
   const maxDays = Number(f.maxDays) || 0;
 
-  const trips = await prisma.trip.findMany({
-    where: { isPublic: true, isDraft: false },
-    orderBy: { createdAt: 'desc' },
-    take: 400,
-    include: {
-      user: { select: { name: true } },
-      cities_data: { include: { hotels: true, restaurants: true, activities: true } },
-    },
-  });
+  // Narrow down in the database first (country, region, type), then top up with the newest trips,
+  // so this stays quick with thousands of trips and older matching trips are still found
+  const include = {
+    user: { select: { name: true } },
+    cities_data: { include: { hotels: true, restaurants: true, activities: true } },
+  };
+  const base = { isPublic: true, isDraft: false, NOT: [{ title: { contains: 'TEMPLATE' } }, { title: { contains: 'DATABASE:' } }] };
+  const rawCountries: string[] = (Array.isArray(f.countries) ? f.countries : []).map((c: any) => String(c).trim()).filter(Boolean).slice(0, 10);
+  const or: any[] = [
+    ...rawCountries.map((c) => ({ countries: { contains: `"${c}"` } })),
+    ...rawCountries.map((c) => ({ cities_data: { some: { country: c } } })),
+    ...(wantRegion ? [{ region: wantRegion }] : []),
+    ...(wantTypes.length ? [{ tripType: { in: wantTypes } }] : []),
+  ];
+  const matching = or.length
+    ? await prisma.trip.findMany({ where: { ...base, OR: or }, orderBy: { createdAt: 'desc' }, take: 150, include })
+    : [];
+  const newest =
+    matching.length < 60
+      ? await prisma.trip.findMany({
+          where: { ...base, id: { notIn: matching.map((t) => t.id) } },
+          orderBy: { createdAt: 'desc' },
+          take: 60 - matching.length,
+          include,
+        })
+      : [];
+  const trips = [...matching, ...newest];
 
   const scored = trips.map((t) => {
     const countries = parseList(t.countries).map((c) => c.toLowerCase());

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, MapPin, Calendar, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass, Sparkles } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { fetchTrips } from '@/utils/api';
 
 interface Trip {
   id: string;
@@ -92,7 +91,10 @@ function AccountContent() {
       // Fetch user's trips from API (shared/public, drafts, and private finalized trips)
       try {
         const [sharedResult, draftsResult, privateResult] = await Promise.all([
-          fetchTrips(), // Shared/public trips
+          fetch(`/api/trips?public=true&mine=true&limit=50&userId=${parsedUser.id}`)
+            .then(r => r.json())
+            .then(d => ({ data: { trips: d.trips || [] }, error: d.error || null }))
+            .catch(() => ({ data: null, error: 'Couldn’t load your trips.' })), // This user's shared/public trips
           fetch(`/api/trips?drafts=true&userId=${parsedUser.id}`).then(r => r.json()).catch(() => ({ trips: [] })), // Draft trips
           fetch(`/api/trips?private=true&userId=${parsedUser.id}`).then(r => r.json()).catch(() => ({ trips: [] })) // Private finalized trips
         ]);
@@ -101,7 +103,7 @@ function AccountContent() {
           // Filter shared trips to show only the current user's public trips
           // Exclude database trips (used for suggestions only)
           const userSharedTrips = sharedResult.data.trips.filter((trip: any) => 
-            trip.user.id === parsedUser.id && 
+            trip.user?.id === parsedUser.id && 
             (!trip.isDraft || trip.isDraft === false) && 
             trip.isPublic === true &&
             !trip.title?.includes('DATABASE:') &&
@@ -124,21 +126,8 @@ function AccountContent() {
         
         setError(null);
       } catch (fetchError) {
-        // If all fail, try to at least get shared trips
-        const result = await fetchTrips();
-        if (result.data) {
-          const userTrips = result.data.trips.filter((trip: any) => 
-            trip.user.id === parsedUser.id &&
-            !trip.title?.includes('DATABASE:') &&
-            !trip.title?.includes('TEMPLATE')
-          );
-          const drafts = userTrips.filter((trip: any) => trip.isDraft === true);
-          const shared = userTrips.filter((trip: any) => (!trip.isDraft || trip.isDraft === false) && trip.isPublic === true);
-          setDraftTrips(drafts);
-          setTrips(shared);
-        } else if (result.error) {
-          setError(result.error);
-        }
+        console.error('Error loading your trips:', fetchError);
+        setError('Couldn’t load your trips. Please refresh the page.');
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

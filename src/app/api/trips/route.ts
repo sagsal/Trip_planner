@@ -1,3 +1,4 @@
+import { countriesIn } from '@/lib/regions';
 import { NextRequest, NextResponse } from 'next/server';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
@@ -671,14 +672,59 @@ export async function GET(request: NextRequest) {
       if (userId) {
         where.userId = userId;
       }
-    } else if (publicOnly) {
-      // Get only public shared trips (not drafts)
-      where.isPublic = true;
-      where.isDraft = false;
     } else {
-      // Default: public trips only
+      // Public shared trips (not drafts); with userId, only that person's
       where.isPublic = true;
       where.isDraft = false;
+      if (userId && searchParams.get('mine') === 'true') where.userId = userId;
+    }
+
+    // Search and filters, done in the database so every trip is found, not just the newest page
+    const and: any[] = [];
+    const q = (searchParams.get('q') || '').trim().slice(0, 100);
+    if (q) {
+      const words = q.split(/\s+/).filter((w) => w.length > 1).slice(0, 6);
+      for (const w of words) {
+        and.push({
+          OR: [
+            { title: { contains: w } },
+            { countries: { contains: w } },
+            { region: { contains: w } },
+            { tripType: { contains: w } },
+            { description: { contains: w } },
+            { cities_data: { some: { name: { contains: w } } } },
+          ],
+        });
+      }
+    }
+    const country = (searchParams.get('country') || '').trim().slice(0, 80);
+    if (country) and.push({ OR: [{ countries: { contains: `"${country}"` } }, { cities_data: { some: { country } } }] });
+    const region = (searchParams.get('region') || '').trim().slice(0, 80);
+    if (region) {
+      // Older trips may have no region saved: match them by their countries too
+      const inRegion = countriesIn(region).slice(0, 80);
+      and.push({ OR: [{ region }, ...inRegion.map((c) => ({ countries: { contains: `"${c}"` } }))] });
+    }
+    const tripType = (searchParams.get('type') || '').trim().slice(0, 80);
+    if (tripType) and.push({ tripType });
+    if (!drafts && !privateOnly) {
+      // Example/template trips are for suggestions only
+      and.push({ NOT: { title: { contains: 'TEMPLATE' } } }, { NOT: { title: { contains: 'DATABASE:' } } });
+    }
+    if (and.length) where.AND = and;
+
+    // Just the list of countries that have trips (for the Browse filter)
+    if (searchParams.get('facets') === 'countries') {
+      const rows = await prisma.trip.findMany({ where: { isPublic: true, isDraft: false }, select: { countries: true, region: true }, take: 20000 });
+      const set = new Set<string>();
+      for (const r of rows) {
+        try {
+          let v: any = JSON.parse(r.countries || '[]');
+          if (typeof v === 'string') v = JSON.parse(v);
+          if (Array.isArray(v)) v.forEach((c: any) => typeof c === 'string' && c.trim() && set.add(c.trim()));
+        } catch {}
+      }
+      return NextResponse.json({ countries: Array.from(set).sort((a, b) => a.localeCompare(b)) });
     }
 
     // Fetch trips from database with timeout protection
@@ -694,8 +740,7 @@ export async function GET(request: NextRequest) {
             user: {
               select: {
                 id: true,
-                name: true,
-                email: true
+                name: true
               }
             },
             cities_data: {

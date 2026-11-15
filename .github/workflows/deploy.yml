@@ -88,6 +88,11 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- scale checks (one-time, counts only)"
+          J='let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("trips:",(j.trips||[]).length,"total:",j.pagination&&j.pagination.total,"email-in-response:",/"email"/.test(d))}catch(e){console.log("FAIL",d.slice(0,80))}})'
+          for qs in "public=true&limit=24" "public=true&limit=24&page=2" "public=true&q=bogota" "public=true&country=Mexico" "public=true&region=South%20America" "public=true&type=Family"; do echo -n "$qs -> "; curl -s -m 30 "http://localhost:3000/api/trips?$qs" | node -e "$J"; done
+          echo -n "facets -> "; curl -s -m 30 "http://localhost:3000/api/trips?facets=countries" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log("countries:",JSON.parse(d).countries.length)}catch(e){console.log("FAIL")}})'
+          echo -n "finder -> "; curl -s -m 60 -X POST -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"a family week in Mexico"}],"asked":3}' http://localhost:3000/api/assistant/find | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log("action:",j.action,"results:",(j.results||[]).length)}catch(e){console.log("FAIL")}})'
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

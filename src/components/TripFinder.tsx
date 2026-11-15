@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Loader2, ArrowRight, RotateCcw, Send, MapPin, Calendar, Package, Check } from 'lucide-react';
@@ -40,7 +40,7 @@ const EXAMPLES = [
 // "Medellín" → "medellin", for matching city names loosely
 const cityKey = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, '').trim();
 
-export default function TripFinder({ onTyping, children }: { onTyping?: (text: string) => void; children?: ReactNode } = {}) {
+export default function TripFinder({ onTyping, children, initialAsk }: { onTyping?: (text: string) => void; children?: ReactNode; initialAsk?: string } = {}) {
   const router = useRouter();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -193,6 +193,17 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
   };
 
   /** Create a planned trip in the sandbox and open "Fill with AI" with this conversation. */
+  // Arriving with a question (e.g. from the homepage search): ask it straight away
+  const askedInitial = useRef(false);
+  useEffect(() => {
+    if (initialAsk && !askedInitial.current) {
+      askedInitial.current = true;
+      setInput(initialAsk);
+      start(initialAsk);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAsk]);
+
   const startPlanning = async () => {
     let user: { id: string } | null = null;
     try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch {}
@@ -225,7 +236,7 @@ export default function TripFinder({ onTyping, children }: { onTyping?: (text: s
   const conversation = messages.length > 0;
 
   return (
-    <div data-tour="finder" className="bg-white/85 backdrop-blur-sm rounded-2xl border border-[#E4DED4] shadow-sm p-5 sm:p-6 mb-8">
+    <div data-tour="finder" className="bg-white rounded-[20px] border border-[#E2DCD2] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-5 sm:p-6 mb-8">
       <div className="flex items-center justify-between gap-3 mb-3">
         <h2 className="text-xl font-semibold text-[#2F4A5C] flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#4A6878]" /> Find a trip for you

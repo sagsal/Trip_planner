@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { tripTypeIcon, REGIONS, TRIP_TYPES, regionOf } from '@/lib/regions';
-import { MapPin, Calendar, Star, User, Heart } from 'lucide-react';
+import { MapPin, Heart } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import TripCard, { FeaturedTripCard } from '@/components/TripCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripFinder from '@/components/TripFinder';
 import { fetchTrips } from '@/utils/api';
@@ -68,6 +69,7 @@ interface Activity {
 }
 
 function TripsContent() {
+  const searchParams = useSearchParams();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,217 +173,78 @@ function TripsContent() {
     return matchesSearch && matchesCountry && matchesRegion && matchesType;
   });
 
-  if (isLoading) {
-    return (
-      <div className="relative min-h-screen overflow-hidden pt-16">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: 'url(/sea-warm.jpg)',
-          }}
-        >
-          {/* Overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/30"></div>
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-white/60 backdrop-blur-sm rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white/60 backdrop-blur-sm rounded-xl shadow-sm p-6">
-                  <div className="h-4 bg-[#E9E3DA] rounded w-3/4 mb-4"></div>
-                  <div className="h-3 bg-[#E9E3DA] rounded w-1/2 mb-2"></div>
-                  <div className="h-3 bg-[#E9E3DA] rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const askParam = searchParams.get('ask') || undefined;
+  const sorted = [...filteredTrips].sort((a, b) => (b.coverImageUrl ? 1 : 0) - (a.coverImageUrl ? 1 : 0));
+  const anyFilter = !!(searchTerm || filterCountry || filterRegion || filterType);
+  const featured = !anyFilter && sorted.length > 1 ? sorted[0] : null;
+  const rest = featured ? sorted.slice(1) : sorted;
+  const selectCls = 'px-3.5 py-2.5 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] min-h-[42px]';
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-16">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: 'url(/sea-warm.jpg)',
-        }}
-      >
-        {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/30"></div>
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#143C5A] mb-2">Discover Amazing Trips</h1>
-          <p className="text-[#5B6B75]">
-            Explore travel experiences shared by fellow adventurers
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <h1 className="text-4xl font-extrabold tracking-tight mb-2">Find a trip to build on</h1>
+        <p className="text-[#5B6A73] mb-6">Real itineraries shared by fellow travelers. Describe what you want, or filter below.</p>
 
         {/* One box: typing filters the trips below; Enter asks the AI assistant */}
-        <TripFinder onTyping={setSearchTerm}>
-          <div data-tour="filters" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <select
-              value={filterCountry}
-              onChange={(e) => setFilterCountry(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
-              aria-label="Country"
-            >
-              <option value="">All countries</option>
-              {countries.map((country) => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </select>
-            <select
-              value={filterRegion}
-              onChange={(e) => setFilterRegion(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
-              aria-label="Region"
-            >
+        <TripFinder onTyping={setSearchTerm} initialAsk={askParam}>
+          <div data-tour="filters" className="flex flex-wrap gap-2">
+            <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className={selectCls} aria-label="Region">
               <option value="">All regions</option>
               {REGIONS.map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
-              aria-label="Type of trip"
-            >
+            <select value={filterCountry} onChange={(e) => setFilterCountry(e.target.value)} className={selectCls} aria-label="Country">
+              <option value="">All countries</option>
+              {countries.map((country) => (
+                <option key={country} value={country}>{country}</option>
+              ))}
+            </select>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className={selectCls} aria-label="Type of trip">
               <option value="">All types of trip</option>
               {TRIP_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.icon} {t.value}</option>
               ))}
             </select>
+            {anyFilter && (
+              <button
+                type="button"
+                onClick={() => { setFilterCountry(''); setFilterRegion(''); setFilterType(''); }}
+                className="px-3.5 py-2.5 rounded-full text-sm text-[#1F6F78] underline min-h-[42px]"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         </TripFinder>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            Showing {filteredTrips.length} of {trips.length} trips
-          </p>
-        </div>
-
-        {/* Trips Grid */}
-        {filteredTrips.length === 0 ? (
-          <div className="text-center py-12">
-            <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-[#2F4A5C] mb-2">No trips found</h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm || filterCountry || filterRegion || filterType 
-                ? 'Try adjusting your search or filter criteria'
-                : 'Be the first to share your travel experience!'
-              }
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3].map((i) => <div key={i} className="h-[400px] rounded-[20px] bg-white border border-[#ECE7DF] animate-pulse" />)}
+          </div>
+        ) : filteredTrips.length === 0 ? (
+          <div className="text-center py-14 bg-white border border-[#ECE7DF] rounded-[20px]">
+            <MapPin className="w-12 h-12 text-[#C9D2D6] mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">No trips found</h3>
+            <p className="text-[#5B6A73] mb-6">
+              {anyFilter ? 'Try changing your search or filters.' : 'Be the first to share your travel experience!'}
             </p>
-            <Link
-              href="/trips/new"
-              className="inline-flex items-center px-6 py-3 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors"
-            >
-              <Heart className="w-5 h-5 mr-2" />
-              Share Your Trip
+            <Link href="/trips/new" className="inline-flex items-center px-6 py-3 bg-[#13212B] text-white rounded-xl font-semibold hover:bg-[#24394A]">
+              <Heart className="w-5 h-5 mr-2" /> Share your trip
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTrips.map((trip, index) => (
-              <motion.div
-                key={trip.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white/85 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-[#E4DED4]"
-              >
-                {trip.coverImageUrl && (
-                  <Link href={`/trips/${trip.id}`} className="block">
-                    <img
-                      src={trip.coverImageUrl}
-                      alt={trip.title}
-                      loading="lazy"
-                      className="w-full h-44 object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  </Link>
-                )}
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="min-w-0">
-                      <h3 className="text-xl font-semibold text-[#2F4A5C] line-clamp-2">{trip.title}</h3>
-                      {trip.tripType && (
-                        <span className="inline-block mt-1 text-xs font-medium bg-[#E3ECEF] text-[#3F5B6A] px-2 py-0.5 rounded-full">
-                          {tripTypeIcon(trip.tripType)} {trip.tripType}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500 ml-2">
-                      <User className="w-4 h-4 mr-1" />
-                      {trip.user.name}
-                    </div>
-                  </div>
-                  
-                  {trip.description && (
-                    <p className="text-gray-600 mb-4 line-clamp-3">{trip.description}</p>
-                  )}
-                  
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {parseCountries(trip.countries).join(', ')}
-                    </div>
-                    {trip.cities_data && trip.cities_data.length > 0 && (
-                      <div className="ml-5">
-                        {trip.cities_data.map((city, index) => (
-                          <div key={city.id} className="text-sm text-gray-600 mb-1">
-                            <span className="font-medium">{city.name}</span>
-                            <span className="text-gray-500 ml-2">
-                              ({city.hotels.length} hotels, {city.restaurants.length} restaurants, {city.activities.length} activities)
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 mr-1 text-yellow-400" />
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.hotels.length, 0) || 0} hotels</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 mr-1 text-green-400" />
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.restaurants.length, 0) || 0} restaurants</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 mr-1 text-purple-400" />
-                      <span>{trip.cities_data?.reduce((total, city) => total + city.activities.length, 0) || 0} activities</span>
-                    </div>
-                  </div>
-                  
-                  <Link
-                    href={`/trips/${trip.id}`}
-                    className="block w-full bg-[#4A6878] text-white px-4 py-3 rounded-lg text-center hover:bg-[#3F5B6A] transition-colors"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <>
+            <p className="text-sm text-[#5B6A73] mb-4">
+              {filteredTrips.length === trips.length ? `${trips.length} ${trips.length === 1 ? 'trip' : 'trips'}` : `Showing ${filteredTrips.length} of ${trips.length} trips`}
+            </p>
+            {featured && <div className="mb-5"><FeaturedTripCard t={featured} /></div>}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {rest.map((trip) => <TripCard key={trip.id} t={trip} />)}
+            </div>
+          </>
         )}
-
       </div>
     </div>
   );

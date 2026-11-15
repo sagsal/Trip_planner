@@ -1,71 +1,163 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
-import { Plane } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense, FormEvent } from 'react';
+import Link from 'next/link';
+import { ArrowRight, Search } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import TripCard, { CardTrip } from '@/components/TripCard';
+import { startSiteTour } from '@/components/SiteTour';
+
+const EXAMPLES = ['A family week in Mexico', '10 days in Colombia', 'Couples trip to Greece', 'Food trips'];
+
+const STEPS = [
+  { n: '1', title: 'Share your trip', text: 'Add your cities, hotels, restaurants and activities for each day. Or import your notes and let AI fill it in.' },
+  { n: '2', title: 'Find trips like yours', text: 'Ask in plain words, like “a family week in Mexico”, and see real itineraries that fit.' },
+  { n: '3', title: 'Plan in your Sandbox', text: 'Save the places you like into planned trips, and let AI arrange them day by day.' },
+];
 
 function HomeContent() {
-  const [successMessage, setSuccessMessage] = useState('');
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const [successMessage, setSuccessMessage] = useState('');
+  const [q, setQ] = useState('');
+  const [trips, setTrips] = useState<CardTrip[] | null>(null);
 
   useEffect(() => {
     const message = searchParams.get('message');
-    if (message) {
-      setSuccessMessage(message);
-    }
+    if (message) setSuccessMessage(message);
   }, [searchParams]);
-  
+
+  useEffect(() => {
+    fetch('/api/trips?public=true&limit=6')
+      .then((r) => r.json())
+      .then((d) =>
+        setTrips(
+          (d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:')).slice(0, 3)
+        )
+      )
+      .catch(() => setTrips([]));
+  }, []);
+
+  const ask = (text: string) => {
+    const t = text.trim();
+    router.push(t ? `/trips?ask=${encodeURIComponent(t)}` : '/trips');
+  };
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    ask(q);
+  };
+
   return (
-    <div className="relative min-h-screen overflow-hidden">
-              {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: 'url(/sea-warm.jpg)',
-        }}
-      >
-        {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/10"></div>
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 sm:px-6 lg:px-8 text-center pt-16 pb-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="max-w-4xl mx-auto w-full"
-        >
-          {/* Headline */}
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex flex-col items-center px-4 sm:px-0"
-          >
-            <Plane className="w-12 h-12 sm:w-16 sm:h-16 text-[#143C5A] mb-6" />
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-[#143C5A] leading-tight max-w-4xl">
-              Build your next trip with help from fellow travelers
-            </h1>
-          </motion.div>
-
-          {/* Success Message */}
-          {successMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.2 }}
-              className="mt-8 px-4 sm:px-0"
-            >
-              <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-lg text-center max-w-md mx-auto">
-                {successMessage}
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
+    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+      {successMessage && (
+        <div className="max-w-6xl mx-auto px-6 pt-6">
+          <div className="bg-[#E3F0F0] border border-[#C3DEDF] text-[#16535A] px-5 py-3 rounded-xl">{successMessage}</div>
         </div>
+      )}
+
+      {/* Hero */}
+      <section className="max-w-6xl mx-auto px-6 pt-12 sm:pt-16 pb-10 flex flex-wrap gap-12 items-center">
+        <div className="flex-[1_1_440px] min-w-0 flex flex-col gap-5">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#1F6F78]">Real trips from real travelers</p>
+          <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold leading-[1.05] tracking-tight">
+            Build your next trip with help from fellow travelers
+          </h1>
+          <p className="text-lg sm:text-[19px] leading-relaxed text-[#4A5963]">
+            Share where you stayed, ate and explored, day by day. Then borrow the best of other people’s trips to plan your own.
+          </p>
+          <form onSubmit={onSubmit} className="flex flex-wrap gap-2.5 bg-white border border-[#E2DCD2] rounded-2xl p-2 shadow-[0_6px_24px_rgba(19,33,43,0.06)]">
+            <label htmlFor="home-ask" className="sr-only">Where do you want to go?</label>
+            <input
+              id="home-ask"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Try: a family week in Mexico"
+              className="flex-[1_1_220px] min-w-0 border-0 outline-none text-base px-3.5 py-3 bg-transparent text-[#13212B] placeholder:text-[#8A969D]"
+            />
+            <button type="submit" className="inline-flex items-center justify-center rounded-xl bg-[#1F6F78] hover:bg-[#16535A] text-white font-semibold px-5 min-h-[48px]">
+              <Search className="w-4 h-4 mr-2" /> Find trips
+            </button>
+          </form>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => ask(ex)}
+                className="px-3.5 py-2 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] hover:bg-[#F6F3EE]"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-[1_1_400px] min-w-0 grid grid-cols-2 gap-3.5">
+          <img src="/sea-warm.jpg" alt="" className="col-span-2 h-56 sm:h-64 w-full object-cover rounded-[20px] bg-[#C9DCDD]" />
+          <img src="/sea-side-beach-0e.jpg" alt="" className="h-40 sm:h-44 w-full object-cover rounded-[20px] bg-[#E6D7C3]" />
+          <img src="/pexels-bella-white-201200-635279.jpg" alt="" className="h-40 sm:h-44 w-full object-cover rounded-[20px] bg-[#D5DCCB]" />
+        </div>
+      </section>
+
+      {/* Founder note */}
+      <section className="max-w-6xl mx-auto px-6 pb-12">
+        <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-7 sm:p-8">
+          <p className="text-lg sm:text-[19px] leading-relaxed text-[#2A3A44]">
+            I started this site because I am always asked for an easy way to share the details of trips I plan. And I of course am
+            always asking friends and family for details of their trips. <strong className="text-[#13212B]">With this site you can do both!</strong>
+          </p>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="max-w-6xl mx-auto px-6 pb-14">
+        <h2 className="text-3xl font-extrabold tracking-tight mb-6">How it works</h2>
+        <div className="flex flex-wrap gap-5">
+          {STEPS.map((s) => (
+            <div key={s.n} className="flex-[1_1_280px] min-w-0 bg-white border border-[#ECE7DF] rounded-[20px] p-7 flex flex-col gap-3">
+              <span className="w-11 h-11 rounded-xl bg-[#E3F0F0] text-[#1F6F78] flex items-center justify-center font-extrabold">{s.n}</span>
+              <h3 className="text-xl font-bold">{s.title}</h3>
+              <p className="text-[#4A5963] leading-relaxed">{s.text}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-5 text-[#4A5963]">
+          New here? <button type="button" onClick={startSiteTour} className="font-semibold text-[#1F6F78] underline">Take the 2-minute guided tour</button>.
+        </p>
+      </section>
+
+      {/* Recently shared */}
+      <section className="max-w-6xl mx-auto px-6 pb-16">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+          <h2 className="text-3xl font-extrabold tracking-tight">Recently shared</h2>
+          <Link href="/trips" className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A]">
+            See all trips <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {trips === null
+            ? [1, 2, 3].map((i) => <div key={i} className="h-[380px] rounded-[20px] bg-white border border-[#ECE7DF] animate-pulse" />)
+            : trips.map((t) => <TripCard key={t.id} t={t} />)}
+          {trips !== null && trips.length < 3 && (
+            <div className="border-2 border-dashed border-[#DCD5CA] rounded-[20px] flex flex-col items-center justify-center gap-3 p-8 text-center min-h-[320px]">
+              <h3 className="text-xl font-bold">Your trip could be here</h3>
+              <p className="text-[#5B6A73] max-w-xs">Share a trip you loved so others can build on it.</p>
+              <Link href="/trips/new" className="px-5 py-3 rounded-xl bg-[#13212B] text-white font-semibold hover:bg-[#24394A]">Add your trip</Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <footer className="border-t border-[#ECE7DF] bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-7 flex flex-wrap gap-5 justify-between text-sm text-[#5B6A73]">
+          <span>Share and Plan · tripshare.org</span>
+          <div className="flex gap-5">
+            <Link href="/about" className="hover:text-[#13212B]">About</Link>
+            <Link href="/how-to" className="hover:text-[#13212B]">How to use</Link>
+            <button type="button" onClick={startSiteTour} className="hover:text-[#13212B]">Take the tour</button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

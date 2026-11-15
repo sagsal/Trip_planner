@@ -101,62 +101,218 @@ interface DraftTrip {
   }[];
 }
 
+type Kind = 'hotel' | 'restaurant' | 'activity';
+const KIND_LABEL: Record<Kind, string> = { hotel: 'Stay', restaurant: 'Eat', activity: 'Do' };
+
 // One hotel / restaurant / activity: photo, name, address, rating, the traveller's review and a link
-function PlaceCard({ place, save }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null }; save?: PlaceToSave }) {
+function PlaceCard({ place, kind, save }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null }; kind: Kind; save?: PlaceToSave }) {
   const details = placeFields(place);
   const rating = Number(place.rating) || 0;
+  const [imgOk, setImgOk] = useState(true);
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <div className="flex flex-col sm:flex-row">
-        {details.imageUrl && (
-          <img
-            src={details.imageUrl}
-            alt={place.name}
-            loading="lazy"
-            className="w-full sm:w-48 h-40 sm:h-auto object-cover shrink-0"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        )}
-        <div className="p-4 flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h4 className="text-lg font-semibold text-gray-900">
-                {place.name}
-                {isRental(place) && (
-                  <span className="ml-2 align-middle text-xs font-medium bg-[#E3ECEF] text-[#3F5B6A] px-2 py-0.5 rounded-full">🏠 Rental</span>
-                )}
-              </h4>
-              {place.location && <p className="text-gray-600 text-sm">{place.location}</p>}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {rating > 0 && (
-                <span className="flex items-center" title={`${rating} out of 5`}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star key={n} className={`w-4 h-4 ${n <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-                  ))}
-                </span>
-              )}
-              {place.liked === true && <ThumbsUp className="w-4 h-4 text-green-600" />}
-              {place.liked === false && <ThumbsDown className="w-4 h-4 text-red-500" />}
-              {save && <SaveToSandbox places={[save]} />}
-            </div>
+    <div className="bg-white border border-[#ECE7DF] rounded-2xl overflow-hidden flex flex-col sm:flex-row">
+      {details.imageUrl && imgOk && (
+        <img
+          src={details.imageUrl}
+          alt=""
+          loading="lazy"
+          className="w-full sm:w-44 h-44 sm:h-auto sm:min-h-[132px] object-cover shrink-0 bg-[#F1EEE8]"
+          onError={() => setImgOk(false)}
+        />
+      )}
+      <div className="p-4 flex-1 min-w-0 flex flex-col gap-1.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#5B6A73]">
+              {isRental(place) ? 'Rental' : KIND_LABEL[kind]}
+            </p>
+            <h4 className="text-[17px] font-bold text-[#13212B] leading-snug">{place.name}</h4>
+            {place.location && <p className="text-[#5B6A73] text-sm mt-0.5 line-clamp-1">{place.location}</p>}
           </div>
-          {details.review && (
-            <p className="mt-2 text-gray-700 text-sm leading-relaxed whitespace-pre-line">{details.review}</p>
-          )}
-          {details.webUrl && (
-            <a
-              href={details.webUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center text-sm text-[#3F5B6A] hover:text-[#2F4A5C] underline"
-            >
-              {linkLabel(details.webUrl)}
-              <ExternalLink className="w-3.5 h-3.5 ml-1" />
-            </a>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {place.liked === true && <ThumbsUp className="w-4 h-4 text-[#2F7A4F]" aria-label="Liked" />}
+            {place.liked === false && <ThumbsDown className="w-4 h-4 text-[#B4532A]" aria-label="Didn’t like" />}
+            {save && <SaveToSandbox places={[save]} />}
+          </div>
         </div>
+        {rating > 0 && (
+          <span className="flex items-center" title={`${rating} out of 5`} aria-label={`${rating} out of 5`}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Star key={n} className={`w-4 h-4 ${n <= rating ? 'text-[#E0A526] fill-[#E0A526]' : 'text-[#D9D4CC]'}`} />
+            ))}
+          </span>
+        )}
+        {details.review && <p className="text-[#3D4C56] text-sm leading-relaxed whitespace-pre-line">{details.review}</p>}
+        {details.webUrl && (
+          <a
+            href={details.webUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center self-start text-sm font-semibold text-[#1F6F78] hover:text-[#16535A]"
+          >
+            {linkLabel(details.webUrl)}
+            <ExternalLink className="w-3.5 h-3.5 ml-1" />
+          </a>
+        )}
       </div>
+    </div>
+  );
+}
+
+type CityT = CityData;
+
+// One city: filter by kind, then where they stayed and a day-by-day timeline
+function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHeader: boolean }) {
+  const [kind, setKind] = useState<'all' | Kind>('all');
+  useEffect(() => setKind('all'), [city.id]);
+
+  const toSave = (p: any, k: Kind): PlaceToSave => {
+    const f = placeFields(p);
+    return {
+      kind: k,
+      name: p.name,
+      location: p.location || null,
+      city: city.name,
+      country: city.country,
+      imageUrl: f.imageUrl,
+      webUrl: f.webUrl,
+      stayType: p.stayType || null,
+      sourceTripId: trip.id,
+      sourceTripTitle: trip.title,
+      sourceUserName: trip.user?.name || null,
+      sourceRating: p.rating || null,
+      sourceReview: f.review || null,
+    };
+  };
+  const cityPlaces: PlaceToSave[] = [
+    ...city.hotels.map((h) => toSave(h, 'hotel')),
+    ...city.activities.map((a) => toSave(a, 'activity')),
+    ...city.restaurants.map((r) => toSave(r, 'restaurant')),
+  ];
+
+  const dayNumbers = new Set<number>();
+  city.restaurants.forEach((r) => r.dayNumber && dayNumbers.add(r.dayNumber));
+  city.activities.forEach((a) => a.dayNumber && dayNumbers.add(a.dayNumber));
+  const days = Array.from(dayNumbers).sort((a, b) => a - b);
+  const noDay = [
+    ...city.activities.filter((a) => !a.dayNumber).map((a) => ({ p: a, k: 'activity' as Kind })),
+    ...city.restaurants.filter((r) => !r.dayNumber).map((r) => ({ p: r, k: 'restaurant' as Kind })),
+  ];
+  const totalDays = Math.max(city.numberOfDays || 0, days.length ? days[days.length - 1] : 0);
+  const arrival = cleanArrival(parseJson(city.arrival, null));
+  const m = arrival?.mode ? modeInfo(arrival.mode) : null;
+
+  const pills: { k: 'all' | Kind; label: string; n: number }[] = [
+    { k: 'all', label: 'All', n: cityPlaces.length },
+    { k: 'hotel', label: 'Where to stay', n: city.hotels.length },
+    { k: 'restaurant', label: 'Where to eat', n: city.restaurants.length },
+    { k: 'activity', label: 'Things to do', n: city.activities.length },
+  ].filter((x) => x.k === 'all' || x.n > 0) as any;
+
+  const list = (k: Kind) => (k === 'hotel' ? city.hotels : k === 'restaurant' ? city.restaurants : city.activities);
+
+  return (
+    <div className="flex flex-col gap-5">
+      {showHeader && (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-[28px] font-extrabold tracking-tight text-[#13212B]">{city.name}</h2>
+            <p className="text-[#5B6A73]">
+              {city.country}
+              {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
+            </p>
+          </div>
+          {cityPlaces.length > 1 && <SaveToSandbox places={cityPlaces} label="Save this city" variant="pill" />}
+        </div>
+      )}
+      {arrival && m && (
+        <div className="rounded-xl bg-[#F1F6F6] border border-[#D4E5E6] px-4 py-2.5 text-sm text-[#16535A]">
+          <span className="font-semibold">
+            {m.icon} Arrived by {m.label.toLowerCase()}
+            {arrival.from && ` from ${arrival.from}`}
+          </span>
+          {arrival.operator && <span> · {arrival.operator}</span>}
+          {arrival.details && <p className="mt-1 whitespace-pre-line">{arrival.details}</p>}
+        </div>
+      )}
+
+      {pills.length > 2 && (
+        <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
+          {pills.map((x) => (
+            <button
+              key={x.k}
+              type="button"
+              aria-pressed={kind === x.k}
+              onClick={() => setKind(x.k)}
+              className={`px-3.5 py-2 rounded-full border text-sm min-h-[40px] ${
+                kind === x.k ? 'bg-[#13212B] border-[#13212B] text-white font-semibold' : 'bg-white border-[#E2DCD2] text-[#3D4C56] hover:bg-[#F6F3EE]'
+              }`}
+            >
+              {x.label} <span className={kind === x.k ? 'text-white/70' : 'text-[#8A969D]'}>{x.n}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {kind !== 'all' ? (
+        <div className="grid grid-cols-1 gap-3">
+          {list(kind).map((p: any) => (
+            <div key={p.id} className="flex flex-col gap-1">
+              {p.dayNumber ? <span className="text-xs font-semibold text-[#5B6A73]">Day {p.dayNumber}</span> : null}
+              <PlaceCard place={p} kind={kind} save={toSave(p, kind)} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {city.hotels.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold text-[#13212B] mb-3">Where we stayed</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {city.hotels.map((h) => <PlaceCard key={h.id} place={h} kind="hotel" save={toSave(h, 'hotel')} />)}
+              </div>
+            </div>
+          )}
+
+          {days.length > 0 && (
+            <div className="flex flex-col">
+              {days.map((dayNumber, idx) => {
+                const items = [
+                  ...city.activities.filter((a) => a.dayNumber === dayNumber).map((a) => ({ p: a, k: 'activity' as Kind })),
+                  ...city.restaurants.filter((r) => r.dayNumber === dayNumber).map((r) => ({ p: r, k: 'restaurant' as Kind })),
+                ];
+                const last = idx === days.length - 1 && noDay.length === 0;
+                return (
+                  <div key={dayNumber} className="flex gap-4 sm:gap-5">
+                    <div className="flex flex-col items-center shrink-0">
+                      <span className="w-11 h-11 rounded-full bg-[#1F6F78] text-white flex items-center justify-center font-extrabold">{dayNumber}</span>
+                      {!last && <span className="flex-1 w-0.5 bg-[#E2DCD2] mt-1.5" />}
+                    </div>
+                    <div className={`flex-1 min-w-0 ${last ? '' : 'pb-8'} flex flex-col gap-3`}>
+                      <div className="flex flex-wrap items-center justify-between gap-2 min-h-[44px]">
+                        <h3 className="text-xl font-extrabold text-[#13212B]">Day {dayNumber}</h3>
+                        {items.length > 1 && (
+                          <SaveToSandbox places={items.map(({ p, k }) => toSave(p, k))} label="Save this day" variant="pill" />
+                        )}
+                      </div>
+                      {items.map(({ p, k }) => <PlaceCard key={`${k}-${p.id}`} place={p} kind={k} save={toSave(p, k)} />)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {noDay.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold text-[#13212B] mb-3">{days.length > 0 ? `Also in ${city.name}` : 'Places'}</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {noDay.map(({ p, k }) => <PlaceCard key={`${k}-${p.id}`} place={p} kind={k} save={toSave(p, k)} />)}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -175,6 +331,8 @@ function TripDetailContent() {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [activeCityId, setActiveCityId] = useState<string | null>(null);
+  const [coverOk, setCoverOk] = useState(true);
   const [selectedItems, setSelectedItems] = useState<{
     hotels: Set<string>;
     restaurants: Set<string>;
@@ -631,7 +789,7 @@ function TripDetailContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-[#FBFAF7] pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
@@ -648,18 +806,18 @@ function TripDetailContent() {
 
   if (error || (!trip && !isLoading)) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-[#FBFAF7] pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Back Button */}
           <Link
             href="/trips"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-6"
+            className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A] mb-6"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to All Trips
           </Link>
           
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-8 text-center">
             <div className="mb-6">
               <span className="text-6xl">🔍</span>
             </div>
@@ -673,14 +831,14 @@ function TripDetailContent() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/trips"
-                className="inline-flex items-center px-6 py-3 bg-[#0160D6] text-white rounded-lg hover:bg-[#0160D6]/90 transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-[#13212B] text-white rounded-xl hover:bg-[#24394A] transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Browse All Trips
               </Link>
               <Link
-                href="/trips/build"
-                className="inline-flex items-center px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors"
+                href="/trips/new"
+                className="inline-flex items-center px-6 py-3 bg-white border border-[#E2DCD2] text-[#13212B] rounded-xl hover:bg-[#F6F3EE] transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your Own Trip
@@ -692,292 +850,197 @@ function TripDetailContent() {
     );
   }
 
+  const t = trip!;
+  const cities = t.cities_data || [];
+  const multi = cities.length > 1;
+  const active = cities.find((c) => c.id === activeCityId) || cities[0];
+  const travel = cleanTravel(t.travelInfo);
+  const counts = {
+    stays: cities.reduce((n, c) => n + c.hotels.length, 0),
+    eats: cities.reduce((n, c) => n + c.restaurants.length, 0),
+    todo: cities.reduce((n, c) => n + c.activities.length, 0),
+  };
+  const daysTotal =
+    cities.reduce((n, c) => n + (c.numberOfDays || 0), 0) ||
+    (t.startDate && t.endDate ? Math.max(1, Math.round((new Date(t.endDate).getTime() - new Date(t.startDate).getTime()) / 86400000) + 1) : 0);
+  const allPlaces: PlaceToSave[] = cities.flatMap((c) => {
+    const mk = (p: any, kind: Kind): PlaceToSave => {
+      const f = placeFields(p);
+      return {
+        kind, name: p.name, location: p.location || null, city: c.name, country: c.country,
+        imageUrl: f.imageUrl, webUrl: f.webUrl, stayType: p.stayType || null,
+        sourceTripId: t.id, sourceTripTitle: t.title, sourceUserName: t.user?.name || null,
+        sourceRating: p.rating || null, sourceReview: f.review || null,
+      };
+    };
+    return [...c.hotels.map((h) => mk(h, 'hotel')), ...c.activities.map((a) => mk(a, 'activity')), ...c.restaurants.map((r) => mk(r, 'restaurant'))];
+  });
+  const byline = [
+    t.startDate && t.endDate ? `${formatDate(t.startDate)} – ${formatDate(t.endDate)}` : '',
+    daysTotal ? `${daysTotal} ${daysTotal === 1 ? 'day' : 'days'}` : '',
+    multi ? `${cities.length} cities` : '',
+    t.user?.name ? `by ${t.user.name}` : '',
+  ].filter(Boolean).join(' · ');
+  const chips = (light: boolean) => (
+    <div className="flex flex-wrap gap-2">
+      {t.tripType && (
+        <span className={`px-3 py-1.5 rounded-full text-[13px] font-semibold ${light ? 'bg-white text-[#13212B]' : 'bg-[#E3F0F0] text-[#16535A]'}`}>
+          {tripTypeIcon(t.tripType)} {t.tripType}
+        </span>
+      )}
+      {t.region && (
+        <span className={`px-3 py-1.5 rounded-full text-[13px] font-semibold ${light ? 'bg-white/20 text-white' : 'bg-[#F1EEE8] text-[#3D4C56]'}`}>{t.region}</span>
+      )}
+    </div>
+  );
+  const legsBlock = (title: string, legs: FlightLeg[]) =>
+    legs.length > 0 && (
+      <div className="text-sm">
+        <p className="text-[#5B6A73] mb-1">{title}</p>
+        {routeText(legs) && <p className="font-semibold text-[#13212B]">{routeText(legs)}</p>}
+        <ul className="mt-1 space-y-0.5 text-[#3D4C56]">
+          {legs.map((l, i) => (
+            <li key={i}>
+              {[l.from, l.to].filter(Boolean).join(' → ')}
+              {l.airline && <span> · {l.airline}</span>}
+              {l.flightNumber && <span className="text-[#8A969D]"> · {l.flightNumber}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <Link
-          href="/trips"
-          className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to All Trips
+    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <Link href="/trips" className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A] mb-4">
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> All trips
         </Link>
 
-        {/* Success/Error Messages */}
         {success && (
-          <div className="bg-green-50 border-2 border-green-300 text-green-800 px-6 py-4 rounded-lg mb-6 shadow-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">✅</span>
-                <div>
-                  <p className="font-semibold">{success}</p>
-                  {selectedDraft && (
-                    <Link
-                      href={`/trips/build/${selectedDraft}`}
-                      className="text-sm text-green-700 hover:text-green-900 underline mt-1 inline-block"
-                    >
-                      View your draft trip →
-                    </Link>
-                  )}
-                </div>
-              </div>
-              <button onClick={() => setSuccess(null)} className="text-green-600 hover:text-green-800 ml-4">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+          <div className="bg-[#E3F0F0] border border-[#C3DEDF] text-[#16535A] px-5 py-3 rounded-xl mb-5 flex items-center justify-between">
+            <p className="font-semibold">{success}</p>
+            <button onClick={() => setSuccess(null)} aria-label="Close" className="ml-4"><X className="w-5 h-5" /></button>
           </div>
         )}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">
-              <X className="w-4 h-4" />
-            </button>
+            <button onClick={() => setError('')} aria-label="Close"><X className="w-4 h-4" /></button>
           </div>
         )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Trip Header */}
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8 overflow-hidden">
-            {trip.coverImageUrl && (
-              <img
-                src={trip.coverImageUrl}
-                alt={trip.title}
-                className="-mx-8 -mt-8 mb-6 w-[calc(100%+4rem)] max-w-none h-64 sm:h-80 object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            )}
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{trip.title}</h1>
-                <div className="flex items-center text-gray-600 mb-4">
-                  <User className="w-5 h-5 mr-2" />
-                  <span>By {trip.user.name}</span>
-                </div>
+        {/* Cover with the title on it */}
+        {t.coverImageUrl && coverOk ? (
+          <div className="relative h-[320px] sm:h-[400px] rounded-[28px] overflow-hidden bg-[#D9C7AF]">
+            <img src={t.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setCoverOk(false)} />
+            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 bg-[rgba(19,33,43,0.58)] flex flex-wrap items-end justify-between gap-4">
+              <div className="flex flex-col gap-2 min-w-0">
+                {chips(true)}
+                <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">{t.title}</h1>
+                {byline && <p className="text-[#F1EEE8]">{byline}</p>}
               </div>
+              {allPlaces.length > 0 && (
+                <div className="bg-white rounded-xl"><SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" /></div>
+              )}
             </div>
-
-            {(trip.tripType || trip.region) && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {trip.tripType && (
-                  <span className="text-sm font-medium bg-[#E3ECEF] text-[#3F5B6A] px-3 py-1 rounded-full">
-                    {tripTypeIcon(trip.tripType)} {trip.tripType}
-                  </span>
-                )}
-                {trip.region && (
-                  <span className="text-sm font-medium bg-[#F3EBDD] text-[#8A6D3B] px-3 py-1 rounded-full">🌎 {trip.region}</span>
-                )}
-              </div>
-            )}
-            {trip.description && (
-              <div className="mb-6 rounded-lg bg-[#F6F2EC] border border-[#E4DED4] px-4 py-3">
-                <p className="text-sm font-semibold text-[#2F4A5C] mb-1">💬 Overall comments</p>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">{trip.description}</p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  <span className="font-medium">Travel Dates</span>
-                </div>
-                <p className="text-gray-900">
-                  {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                </p>
-              </div>
-              <div>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <MapPin className="w-5 h-5 mr-2" />
-                  <span className="font-medium">Destinations</span>
-                </div>
-                <p className="text-gray-900">
-                  {parseCountries(trip.countries).join(', ')}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {parseCities(trip.cities).join(', ')}
-                </p>
-              </div>
+          </div>
+        ) : (
+          <div className="bg-white border border-[#ECE7DF] rounded-[28px] p-6 sm:p-8 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-col gap-2 min-w-0">
+              {chips(false)}
+              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">{t.title}</h1>
+              {byline && <p className="text-[#5B6A73]">{byline}</p>}
             </div>
+            {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" />}
+          </div>
+        )}
 
-            {/* Flights there and back */}
-            {(() => {
-              const t = cleanTravel(trip.travelInfo);
-              if (t.outbound.length === 0 && t.return.length === 0) return null;
-              const block = (title: string, icon: string, legs: FlightLeg[]) =>
-                legs.length > 0 && (
-                  <div>
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <span className="mr-2">{icon}</span>
-                      <span className="font-medium">{title}</span>
-                    </div>
-                    {routeText(legs) && <p className="text-gray-900 font-semibold mb-2">{routeText(legs)}</p>}
-                    <ul className="space-y-1 text-sm text-gray-700">
-                      {legs.map((l, i) => (
-                        <li key={i}>
-                          <span className="font-medium">{[l.from, l.to].filter(Boolean).join(' → ')}</span>
-                          {l.airline && <span> · {l.airline}</span>}
-                          {l.flightNumber && <span className="text-gray-500"> · {l.flightNumber}</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
+        {/* Route between cities */}
+        {multi && (
+          <div className="mt-5 bg-white border border-[#ECE7DF] rounded-[20px] px-5 py-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+            <span className="font-bold text-[#5B6A73]">Route</span>
+            {cities.map((c, i) => {
+              const a = cleanArrival(parseJson(c.arrival, null));
+              const mi = a?.mode ? modeInfo(a.mode) : null;
               return (
-                <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {block('Getting there', '✈️', t.outbound)}
-                  {block('Getting home', '🛬', t.return)}
-                </div>
+                <span key={c.id} className="flex items-center gap-2">
+                  {i > 0 && <span aria-hidden className="text-[#A9B3B9]">→{mi ? ` ${mi.icon} →` : ''}</span>}
+                  <button type="button" onClick={() => setActiveCityId(c.id)} className="font-bold text-[#13212B] hover:text-[#1F6F78] underline-offset-2 hover:underline">
+                    {c.name}
+                  </button>
+                  {c.numberOfDays ? <span className="text-[#8A969D]">{c.numberOfDays} {c.numberOfDays === 1 ? 'day' : 'days'}</span> : null}
+                </span>
               );
-            })()}
+            })}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap gap-8 items-start pb-16">
+          {/* The trip itself */}
+          <div className="flex-[999_1_560px] min-w-0">
+            {multi && active && (
+              <div role="tablist" aria-label="Cities" className="flex flex-wrap gap-1 border-b border-[#E2DCD2] mb-6">
+                {cities.map((c) => {
+                  const on = c.id === active.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => setActiveCityId(c.id)}
+                      className={`px-4 min-h-[48px] -mb-px border-b-[3px] text-[15px] ${on ? 'border-[#1F6F78] text-[#13212B] font-bold' : 'border-transparent text-[#5B6A73] hover:text-[#13212B]'}`}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {active ? (
+              <CityView city={active} trip={t} showHeader={multi} />
+            ) : (
+              <p className="text-[#5B6A73]">No places added to this trip yet.</p>
+            )}
           </div>
 
-          {/* Cities, day by day */}
-          {trip.cities_data && trip.cities_data.length > 0 && (
-            <div className="space-y-8">
-              {trip.cities_data.map((city) => {
-                // Group restaurants and activities by the day they were entered on
-                const dayNumbers = new Set<number>();
-                city.restaurants.forEach((r) => r.dayNumber && dayNumbers.add(r.dayNumber));
-                city.activities.forEach((a) => a.dayNumber && dayNumbers.add(a.dayNumber));
-                const days = Array.from(dayNumbers).sort((a, b) => a - b);
-                const noDayRestaurants = city.restaurants.filter((r) => !r.dayNumber);
-                const noDayActivities = city.activities.filter((a) => !a.dayNumber);
-                const totalDays = Math.max(city.numberOfDays || 0, days.length ? days[days.length - 1] : 0);
-                // What gets saved to the sandbox for a place in this city
-                const toSave = (p: any, kind: PlaceToSave['kind']): PlaceToSave => {
-                  const f = placeFields(p);
-                  return {
-                    kind,
-                    name: p.name,
-                    location: p.location || null,
-                    city: city.name,
-                    country: city.country,
-                    imageUrl: f.imageUrl,
-                    webUrl: f.webUrl,
-                    stayType: p.stayType || null,
-                    sourceTripId: trip.id,
-                    sourceTripTitle: trip.title,
-                    sourceUserName: trip.user?.name || null,
-                    sourceRating: p.rating || null,
-                    sourceReview: f.review || null,
-                  };
-                };
-                const cityPlaces: PlaceToSave[] = [
-                  ...city.hotels.map((h) => toSave(h, 'hotel')),
-                  ...city.activities.map((a) => toSave(a, 'activity')),
-                  ...city.restaurants.map((r) => toSave(r, 'restaurant')),
-                ];
-
-                return (
-                  <div key={city.id} className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-                    <div className="mb-6">
-                      <div className="flex items-start justify-between gap-3">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-1">{city.name}</h2>
-                        {cityPlaces.length > 1 && <SaveToSandbox places={cityPlaces} label="Save this city" variant="pill" />}
-                      </div>
-                      <p className="text-gray-600">
-                        {city.country}
-                        {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
-                      </p>
-                      {(() => {
-                        const a = cleanArrival(parseJson(city.arrival, null));
-                        if (!a || !a.mode) return null;
-                        const m = modeInfo(a.mode);
-                        return (
-                          <div className="mt-3 rounded-lg bg-[#F3F7F8] border border-[#C9D9DF] px-3 py-2 text-sm text-[#2F4A5C]">
-                            <span className="font-medium">
-                              {m?.icon} Arrived by {m?.label.toLowerCase()}
-                              {a.from && ` from ${a.from}`}
-                            </span>
-                            {a.operator && <span> · {a.operator}</span>}
-                            {a.details && <p className="mt-1 text-[#3F5B6A] whitespace-pre-line">{a.details}</p>}
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {city.hotels.length > 0 && (
-                      <div className="mb-8">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">🏨 Where we stayed</h3>
-                        <div className="space-y-4">
-                          {city.hotels.map((hotel) => (
-                            <PlaceCard key={hotel.id} place={hotel} save={toSave(hotel, 'hotel')} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {days.map((dayNumber) => {
-                      const rs = city.restaurants.filter((r) => r.dayNumber === dayNumber);
-                      const as = city.activities.filter((a) => a.dayNumber === dayNumber);
-                      return (
-                        <div key={dayNumber} className="mb-8 last:mb-0">
-                          <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900">Day {dayNumber}</h3>
-                            {as.length + rs.length > 1 && (
-                              <SaveToSandbox
-                                places={[...as.map((a) => toSave(a, 'activity')), ...rs.map((r) => toSave(r, 'restaurant'))]}
-                                label="Save this day"
-                                variant="pill"
-                              />
-                            )}
-                          </div>
-                          {as.length > 0 && (
-                            <div className="mb-4">
-                              <p className="text-sm font-medium text-gray-500 mb-2">🎯 Activities</p>
-                              <div className="space-y-4">
-                                {as.map((a) => <PlaceCard key={a.id} place={a} save={toSave(a, 'activity')} />)}
-                              </div>
-                            </div>
-                          )}
-                          {rs.length > 0 && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-500 mb-2">🍽️ Restaurants</p>
-                              <div className="space-y-4">
-                                {rs.map((r) => <PlaceCard key={r.id} place={r} save={toSave(r, 'restaurant')} />)}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {(noDayActivities.length > 0 || noDayRestaurants.length > 0) && (
-                      <div className="mb-2">
-                        {days.length > 0 && (
-                          <h3 className="text-lg font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Also in {city.name}</h3>
-                        )}
-                        {noDayActivities.length > 0 && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-500 mb-2">🎯 Activities</p>
-                            <div className="space-y-4">
-                              {noDayActivities.map((a) => <PlaceCard key={a.id} place={a} save={toSave(a, 'activity')} />)}
-                            </div>
-                          </div>
-                        )}
-                        {noDayRestaurants.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-gray-500 mb-2">🍽️ Restaurants</p>
-                            <div className="space-y-4">
-                              {noDayRestaurants.map((r) => <PlaceCard key={r.id} place={r} save={toSave(r, 'restaurant')} />)}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+          {/* At a glance */}
+          <aside className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
+            <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-5 flex flex-col gap-4">
+              <h2 className="text-[17px] font-extrabold">Trip at a glance</h2>
+              <div className="grid grid-cols-3 gap-2.5 text-center">
+                {[['stays', counts.stays], ['eats', counts.eats], ['to do', counts.todo]].map(([label, n]) => (
+                  <div key={label as string} className="bg-[#F6F3EE] rounded-xl py-3 px-1.5">
+                    <div className="text-xl font-extrabold">{n}</div>
+                    <div className="text-xs text-[#5B6A73]">{label}</div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              <div className="text-sm flex flex-col gap-1.5">
+                <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Where</span><span className="text-right">{parseCountries(t.countries).join(', ')}</span></div>
+                {daysTotal > 0 && <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Length</span><span>{daysTotal} {daysTotal === 1 ? 'day' : 'days'}</span></div>}
+              </div>
+              {(travel.outbound.length > 0 || travel.return.length > 0) && (
+                <div className="pt-3 border-t border-[#ECE7DF] flex flex-col gap-3">
+                  {legsBlock('Getting there', travel.outbound)}
+                  {legsBlock('Getting home', travel.return)}
+                </div>
+              )}
             </div>
-          )}
-
-        </motion.div>
+            {t.description && (
+              <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-5">
+                <h2 className="text-[17px] font-extrabold mb-2">Overall comments</h2>
+                <p className="text-[15px] leading-relaxed text-[#3D4C56] whitespace-pre-line">{t.description}</p>
+              </div>
+            )}
+            {allPlaces.length > 0 && (
+              <div className="bg-[#F1F6F6] border border-[#D4E5E6] rounded-[20px] p-5 text-sm text-[#16535A]">
+                Tap <b>＋</b> on any place to save it to your Sandbox, or save a whole day or city at once.
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
     </div>
   );

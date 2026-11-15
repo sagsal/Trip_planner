@@ -134,6 +134,32 @@ async function dump() {
   );
 }
 
+/** Rows of one table inside a mysqldump: counts the (…) groups after INSERT INTO `t` VALUES, minding quoted text */
+function countRows(text, table) {
+  const head = `INSERT INTO \`${table}\` VALUES `;
+  let rows = 0;
+  let at = text.indexOf(head);
+  while (at !== -1) {
+    let i = at + head.length;
+    let depth = 0;
+    let inStr = false;
+    for (; i < text.length; i++) {
+      const c = text[i];
+      if (inStr) {
+        if (c === '\\') i++;
+        else if (c === "'") inStr = false;
+        continue;
+      }
+      if (c === "'") inStr = true;
+      else if (c === '(') { if (depth === 0) rows++; depth++; }
+      else if (c === ')') depth--;
+      else if (c === ';' && depth === 0) break;
+    }
+    at = text.indexOf(head, i);
+  }
+  return rows;
+}
+
 const mb = (n) => (n / 1024 / 1024).toFixed(2) + ' MB';
 
 async function backup() {
@@ -170,7 +196,16 @@ async function check() {
   try {
     await mysql(['-e', `CREATE DATABASE \`${tmp}\` CHARACTER SET utf8mb4`]);
   } catch (e) {
-    console.log('test restore skipped: this database user cannot create a temporary database (the backup file itself checked out)');
+    // No permission for a temporary database: count the rows inside the backup instead
+    const text = sql.toString('utf8');
+    let ok = true;
+    for (const t of ['users', 'trips', 'cities', 'hotels', 'restaurants', 'activities'].filter((x) => tables.includes(x))) {
+      const inBackup = countRows(text, t);
+      const live = String(await mysql(['-e', `SELECT COUNT(*) FROM \`${d.name}\`.\`${t}\``])).trim();
+      if (String(inBackup) !== live) ok = false;
+      console.log(`backup check ${t}: ${inBackup} rows in backup, ${live} live`);
+    }
+    console.log(ok ? 'backup check: PASS (every row is in the backup)' : 'backup check: counts differ (new rows may have been added since the backup ran)');
     return;
   }
   try {

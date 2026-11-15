@@ -23,8 +23,12 @@ jobs:
           TRIPADVISOR_API_KEY: ${{ secrets.TRIPADVISOR_API_KEY }}
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
         run: |
-          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY; do
+          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY B2_KEY_ID B2_APP_KEY B2_BUCKET B2_ENDPOINT; do
             VALUE="${!NAME}"
             if [ -z "$VALUE" ]; then
               echo "$NAME secret not set - skipping"
@@ -74,6 +78,11 @@ jobs:
           pm2 start npm --name tripplanner -- start
           pm2 save
           sudo systemctl restart nginx
+
+          # Nightly database backup to Backblaze at 03:17 server time (skips itself until the keys are set)
+          NODE_BIN="$(command -v node)"
+          ( crontab -l 2>/dev/null | grep -v 'scripts/backup-db.js' ; echo "17 3 * * * cd /var/www/Trip_planner && $NODE_BIN scripts/backup-db.js >> \$HOME/tripshare-backup.log 2>&1" ) | crontab -
+          echo "nightly backup scheduled: $(crontab -l | grep -c 'scripts/backup-db.js') entry"
           echo "✅ Deployment complete!"
           REMOTE
 
@@ -88,6 +97,9 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- backup now + test restore (one-time, counts only)"
+          node scripts/backup-db.js || true
+          node scripts/backup-db.js --check || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

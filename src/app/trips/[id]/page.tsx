@@ -9,6 +9,7 @@ import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { cleanArrival, cleanTravel, parseJson, routeText, modeInfo, type FlightLeg } from '@/lib/travel';
 import { tripTypeIcon } from '@/lib/regions';
 import SaveToSandbox from '@/components/SaveToSandbox';
+import GoogleReviews from '@/components/GoogleReviews';
 import type { PlaceToSave } from '@/lib/sandbox';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
@@ -153,6 +154,9 @@ function PlaceCard({ place, kind, save }: { place: { name: string; location?: st
             {linkLabel(details.webUrl)}
             <ExternalLink className="w-3.5 h-3.5 ml-1" />
           </a>
+        )}
+        {!isRental(place) && (
+          <GoogleReviews name={place.name} location={place.location} city={save?.city} country={save?.country} kind={kind} />
         )}
       </div>
     </div>

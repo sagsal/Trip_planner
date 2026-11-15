@@ -181,3 +181,12 @@ model SavedPlace {
   @@index([sandboxTripId])
   @@map("saved_places")
 }
+
+// Counts paid API calls per month (e.g. "google-reviews:2026-11"), so the site can stop at a cap
+model ApiUsage {
+  key       String   @id
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@map("api_usage")
+}

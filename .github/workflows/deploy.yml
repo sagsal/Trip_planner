@@ -88,6 +88,9 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- google reviews check (one-time, counts only)"
+          curl -s -m 40 "http://localhost:3000/api/places/reviews?name=Harry%20Sasson&city=Bogota&country=Colombia&kind=restaurant" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log(j.reviews?("PASS rating="+j.rating+" ratings="+j.count+" reviews="+j.reviews.length):("FAIL "+Object.keys(j).join(",")+" "+(j.error||"")))}catch(e){console.log("FAIL unreadable")}})'
+          curl -s -m 40 "http://localhost:3000/api/places/reviews?name=Harry%20Sasson&city=Bogota&country=Colombia&kind=restaurant" -o /dev/null -w "repeat (cached) %{http_code}\n"
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

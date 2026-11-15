@@ -16,6 +16,7 @@ export default function AboutPage() {
             I started this site because I am always asked for an easy way to share the details of trips I plan. And I of
             course am always asking friends and family for details of their trips.
           </p>
+          <p className="text-lg font-semibold text-[#2F4A5C] mt-3">With this site you can do both!</p>
         </div>
 
         <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">About Share and Plan</p>

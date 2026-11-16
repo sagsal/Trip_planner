@@ -1,0 +1,32 @@
+name: Phone screenshots
+
+# Takes phone-sized screenshots of the public pages of tripshare.org (for design checks).
+# Runs when .github/screens/run.txt changes. Screenshots are uploaded as a run artifact.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/screens/run.txt']
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Install a browser
+        run: |
+          mkdir -p /tmp/shots && cd /tmp/shots
+          npm init -y >/dev/null
+          npm install playwright@1.48.2 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Take screenshots
+        run: |
+          cd /tmp/shots
+          cp "$GITHUB_WORKSPACE/.github/screens/shoot.js" .
+          node shoot.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone-screenshots
+          path: /tmp/shots/out
+          retention-days: 3

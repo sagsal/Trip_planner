@@ -1,0 +1,58 @@
+// Phone screenshots of the public pages (iPhone-sized, 390 x 844). Prints layout warnings too.
+const { chromium, devices } = require('playwright');
+const fs = require('fs');
+const SITE = 'https://tripshare.org';
+
+(async () => {
+  fs.mkdirSync('out', { recursive: true });
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+  const page = await ctx.newPage();
+
+  // A public trip to look at: one single-city and one multi-city if there are any
+  const list = await (await fetch(`${SITE}/api/trips?public=true&limit=24`)).json();
+  const trips = list.trips || [];
+  const multi = trips.find((t) => (t.cities_data || []).length > 1);
+  const single = trips.find((t) => (t.cities_data || []).length === 1);
+  const pages = [
+    ['home', '/'],
+    ['browse', '/trips'],
+    ...(single ? [['trip-single', `/trips/${single.id}`]] : []),
+    ...(multi ? [['trip-multi', `/trips/${multi.id}`]] : []),
+    ['about', '/about'],
+    ['how-to', '/how-to'],
+    ['login', '/login'],
+    ['register', '/register'],
+  ];
+
+  for (const [name, path] of pages) {
+    await page.goto(SITE + path, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    // Anything wider than the screen (causes sideways scrolling)?
+    const wide = await page.evaluate(() => {
+      const W = document.documentElement.clientWidth;
+      const out = [];
+      document.querySelectorAll('body *').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.right > W + 2 && getComputedStyle(el).position !== 'fixed') {
+          out.push(`${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}.${String(el.className).split(' ').slice(0, 3).join('.')} right=${Math.round(r.right)}`);
+        }
+      });
+      return { W, scrollW: document.documentElement.scrollWidth, items: out.slice(0, 8) };
+    });
+    console.log(`${name}: screen ${wide.W}px, page ${wide.scrollW}px${wide.items.length ? ' — too wide: ' + wide.items.join(' | ') : ''}`);
+    await page.screenshot({ path: `out/${name}.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+    if (name === 'home') {
+      await page.screenshot({ path: `out/${name}-top.jpg`, type: 'jpeg', quality: 70 });
+      // Open the Menu
+      const menu = page.locator('[data-tour="menu"]');
+      if (await menu.count()) {
+        await menu.first().click().catch(() => {});
+        await page.waitForTimeout(600);
+        await page.screenshot({ path: `out/menu-open.jpg`, type: 'jpeg', quality: 70 });
+        await page.keyboard.press('Escape').catch(() => {});
+      }
+    }
+  }
+  await browser.close();
+})();

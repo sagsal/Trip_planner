@@ -7,6 +7,9 @@ on:
     branches: [main]
     paths: ['.github/screens/run.txt']
 
+permissions:
+  contents: write
+
 jobs:
   shots:
     runs-on: ubuntu-latest
@@ -25,8 +28,11 @@ jobs:
           cd /tmp/shots
           cp "$GITHUB_WORKSPACE/.github/screens/shoot.js" .
           node shoot.js
-      - uses: actions/upload-artifact@v4
-        with:
-          name: phone-screenshots
-          path: /tmp/shots/out
-          retention-days: 3
+      - name: Save screenshots to the "screens" branch (not main)
+        run: |
+          cd /tmp/shots/out
+          git init -q -b screens
+          git config user.name "screenshots bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -qm "Phone screenshots"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screens

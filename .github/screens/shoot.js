@@ -99,6 +99,8 @@ const SITE = 'https://tripshare.org';
       await page.waitForTimeout(400);
       await page.locator('#state-Canada').scrollIntoViewIfNeeded().catch(() => {});
       await page.screenshot({ path: `out/new-trip-province.jpg`, type: 'jpeg', quality: 70 });
+      const opts = await page.locator('#state-Canada').locator('xpath=ancestor::div[2]').locator('select').nth(1).locator('option').allTextContents().catch(() => []);
+      console.log('city list for Newfoundland:', opts.slice(0, 8).join(' | '));
     }
     await page.screenshot({ path: `out/new-trip-filled.jpg`, type: 'jpeg', quality: 60, fullPage: true });
   } catch (e) {

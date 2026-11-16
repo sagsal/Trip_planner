@@ -9,7 +9,7 @@ import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { REGIONS, TRIP_TYPES, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
-import { statesOf, stateLabel } from '@/lib/states';
+import { statesOf, stateLabel, citiesInState } from '@/lib/states';
 import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, cleanTravel, type FlightLeg, type Arrival } from '@/lib/travel';
 
 interface Hotel {
@@ -2203,7 +2203,9 @@ function NewTripContent() {
                   .map((city, cityIndex) => ({ city, cityIndex }))
                   .filter(({ city }) => city.country === country);
                 const isAdding = addingCityFor === country;
-                const cityOptions = (countriesData as Record<string, string[]>)[country] || [];
+                // With a state / province picked, list its main cities; otherwise the country's
+                const stateCities = addingCityFor === country && selectedState ? citiesInState(country, selectedState) : [];
+                const cityOptions = stateCities.length ? stateCities : (countriesData as Record<string, string[]>)[country] || [];
                 return (
                   <section key={country} className="mb-10 rounded-2xl border border-[#D9D2C7] bg-[#FBF9F5] p-4 sm:p-6">
                     <div className="flex items-center justify-between gap-3 mb-5">
@@ -2246,6 +2248,7 @@ function NewTripContent() {
                               setAddingCityFor(country);
                               setSelectedCountry(country);
                               setSelectedState(e.target.value);
+                              if (selectedCity !== 'custom') setSelectedCity('');
                             }}
                             className="w-full md:w-1/2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                           >

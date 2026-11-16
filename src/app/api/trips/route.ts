@@ -555,6 +555,7 @@ export async function POST(request: NextRequest) {
               name: cityData.name,
               country: cityData.country,
               numberOfDays: cityData.numberOfDays || 1,
+              state: typeof cityData.state === 'string' && cityData.state.trim() ? cityData.state.trim().slice(0, 80) : null,
               arrival: cleanArrival(cityData.arrival) ? JSON.stringify(cleanArrival(cityData.arrival)) : null,
               hotels: {
                 create: hotels.map((hotel: any) => ({
@@ -693,6 +694,7 @@ export async function GET(request: NextRequest) {
             { tripType: { contains: w } },
             { description: { contains: w } },
             { cities_data: { some: { name: { contains: w } } } },
+            { cities_data: { some: { state: { contains: w } } } },
           ],
         });
       }

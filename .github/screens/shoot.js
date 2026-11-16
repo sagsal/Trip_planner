@@ -91,6 +91,15 @@ const SITE = 'https://tripshare.org';
     await page.fill('#trip-days', '7').catch(() => {});
     await page.locator('#trip-days').scrollIntoViewIfNeeded().catch(() => {});
     await page.screenshot({ path: `out/new-trip-when.jpg`, type: 'jpeg', quality: 70 });
+    const anyCountry = page.locator('select').filter({ hasText: 'Choose a country' }).first();
+    if (await anyCountry.count()) {
+      await anyCountry.selectOption({ label: 'Canada' }).catch(() => {});
+      await page.waitForTimeout(800);
+      await page.selectOption('#state-Canada', 'Newfoundland and Labrador').catch(() => {});
+      await page.waitForTimeout(400);
+      await page.locator('#state-Canada').scrollIntoViewIfNeeded().catch(() => {});
+      await page.screenshot({ path: `out/new-trip-province.jpg`, type: 'jpeg', quality: 70 });
+    }
     await page.screenshot({ path: `out/new-trip-filled.jpg`, type: 'jpeg', quality: 60, fullPage: true });
   } catch (e) {
     console.log('signed-in screenshots skipped:', e.message);

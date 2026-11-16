@@ -9,6 +9,7 @@ import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { REGIONS, TRIP_TYPES, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
+import { statesOf, stateLabel } from '@/lib/states';
 import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, cleanTravel, type FlightLeg, type Arrival } from '@/lib/travel';
 
 interface Hotel {
@@ -58,6 +59,7 @@ interface CityData {
   id: string;
   name: string;
   country: string;
+  state?: string; // state / province (US, Canada, …)
   numberOfDays: number;
   hotel: Hotel | null;
   days: Day[];
@@ -109,6 +111,7 @@ function NewTripContent() {
   const [tripType, setTripType] = useState('');
   const [tripCountries, setTripCountries] = useState<string[]>([]);
   const [addingCityFor, setAddingCityFor] = useState<string | null>(null); // country whose "Add a city" form is in use
+  const [selectedState, setSelectedState] = useState(''); // state / province for the city being added
   // Flights to the destination, e.g. YYZ → JFK (Air Canada), JFK → ATH (Delta)
   const [flightLegs, setFlightLegs] = useState<FlightLeg[]>([]);  // getting there
   const [returnLegs, setReturnLegs] = useState<FlightLeg[]>([]);  // getting home
@@ -141,8 +144,12 @@ function NewTripContent() {
   // Trip name, made from its countries (and cities when there's one country)
   const autoTitle = useMemo(() => {
     const byCountry: Record<string, string[]> = {};
-    for (const c of citiesData) (byCountry[c.country] ||= []).push(c.name);
-    return tripNameFrom(countryList, byCountry);
+    const statesBy: Record<string, string[]> = {};
+    for (const c of citiesData) {
+      (byCountry[c.country] ||= []).push(c.name);
+      if (c.state) (statesBy[c.country] ||= []).push(c.state);
+    }
+    return tripNameFrom(countryList, byCountry, statesBy);
   }, [countryList, citiesData]);
 
   // Reopening a saved trip: /trips/new?id=TRIP_ID
@@ -410,6 +417,7 @@ function NewTripContent() {
             arrival: cleanArrival(parseJson(city.arrival, null)),
             name: city.name ?? '',
             country: city.country ?? '',
+            state: city.state || undefined,
             numberOfDays: n,
             hotel: hotels[0] ?? null,
             days,
@@ -674,6 +682,7 @@ function NewTripContent() {
 
   const addCity = (countryOverride?: string) => {
     const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
+    if (nameToAdd === '__whole_state__' && !selectedState) return;
     const countryToUse = countryOverride || selectedCountry;
     if (!countryToUse || !nameToAdd || !selectedNumberOfDays) return;
     
@@ -690,15 +699,16 @@ function NewTripContent() {
 
     const newCity: CityData = {
       id: Date.now().toString(),
-      name: nameToAdd,
+      name: nameToAdd === '__whole_state__' ? selectedState : nameToAdd,
       country: countryToUse,
+      state: statesOf(countryToUse).length ? selectedState || undefined : undefined,
       numberOfDays: numberOfDays,
       hotel: null, // added in the city's own box
       days: days
     };
     setCitiesData(prev => [...prev, newCity]);
     
-    // Reset selections
+    // Reset selections (keep the state: the next city is often in the same one)
     setSelectedCountry('');
     setSelectedCity('');
     setCustomCityName('');
@@ -1048,6 +1058,7 @@ function NewTripContent() {
         return {
           name: city.name,
           country: city.country,
+          state: city.state || null,
           numberOfDays: city.numberOfDays,
           arrival: city.arrival || null,
           hotels: [
@@ -1219,7 +1230,7 @@ function NewTripContent() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
-                        <p className="text-gray-600">📍 {city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
+                        <p className="text-gray-600">📍 {city.state ? `${city.state}, ` : ''}{city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
                       </div>
                     </div>
                     <button
@@ -1555,7 +1566,7 @@ function NewTripContent() {
                                 allowDescribe
                                 className="mb-2"
                                 cityName={city.name}
-                                countryName={city.country}
+                                countryName={city.state && city.state !== city.name ? `${city.state}, ${city.country}` : city.country}
                               />
                               {selectedHotelData && (
                                 <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-yellow-300">
@@ -1671,7 +1682,7 @@ function NewTripContent() {
                                           allowDescribe
                                     className="mb-2"
                                     cityName={city.name}
-                                    countryName={city.country}
+                                    countryName={city.state && city.state !== city.name ? `${city.state}, ${city.country}` : city.country}
                                   />
                                   {selectedRestaurantData && (
                                     <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-green-300">
@@ -1873,7 +1884,7 @@ function NewTripContent() {
                                           category="attractions"
                                           allowDescribe
                                           cityName={city.name}
-                                          countryName={city.country}
+                                          countryName={city.state && city.state !== city.name ? `${city.state}, ${city.country}` : city.country}
                                         />
                                       </div>
                                       <div>
@@ -2225,6 +2236,26 @@ function NewTripContent() {
                       <p className="font-medium text-[#2F4A5C] mb-3">
                         {citiesHere.length === 0 ? `Add a city in ${country}` : `Add another city in ${country}`}
                       </p>
+                      {statesOf(country).length > 0 && (
+                        <div className="mb-3">
+                          <label className="block text-sm text-gray-600 mb-1" htmlFor={`state-${country}`}>{stateLabel(country)}</label>
+                          <select
+                            id={`state-${country}`}
+                            value={isAdding ? selectedState : ''}
+                            onChange={(e) => {
+                              setAddingCityFor(country);
+                              setSelectedCountry(country);
+                              setSelectedState(e.target.value);
+                            }}
+                            className="w-full md:w-1/2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="">Choose…</option>
+                            {statesOf(country).map((st) => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <select
                           value={isAdding ? selectedCity : ''}
@@ -2237,10 +2268,13 @@ function NewTripContent() {
                           className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                         >
                           <option value="">Choose a city…</option>
+                          {isAdding && selectedState && statesOf(country).length > 0 && (
+                            <option value="__whole_state__">All of {selectedState} (no single city)</option>
+                          )}
                           {cityOptions.map((c) => (
                             <option key={c} value={c}>{c}</option>
                           ))}
-                          <option value="custom">+ A city not in the list</option>
+                          <option value="custom">+ A city or place not in the list</option>
                         </select>
                         {isAdding && selectedCity === 'custom' ? (
                           <input

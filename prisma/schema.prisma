@@ -57,6 +57,7 @@ model City {
   id        String   @id @default(cuid())
   name      String
   country   String
+  state     String?  // state / province, e.g. Newfoundland and Labrador
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

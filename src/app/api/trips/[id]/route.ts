@@ -618,6 +618,7 @@ export async function PUT(
               country: cityData.country,
               tripId: id,
               numberOfDays: Number(cityData.numberOfDays) || 1,
+              state: typeof cityData.state === 'string' && cityData.state.trim() ? cityData.state.trim().slice(0, 80) : null,
               arrival: cleanArrival(cityData.arrival) ? JSON.stringify(cleanArrival(cityData.arrival)) : null,
               hotels: {
                 create: (cityData.hotels || []).map((hotel: any) => ({

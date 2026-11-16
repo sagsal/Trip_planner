@@ -97,6 +97,14 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- static files check (one-time)"
+          CSS=$(curl -s -m 20 http://localhost:3000/ | grep -oE '/_next/static/css/[a-z0-9]+\.css' | head -1)
+          echo "css path found: ${CSS:+yes}"
+          echo "local app: $(curl -s -o /dev/null -w '%{http_code}' -m 20 http://localhost:3000$CSS)"
+          echo "public site: $(curl -s -o /dev/null -w '%{http_code}' -m 20 https://tripshare.org$CSS)"
+          echo "public site (browser-like): $(curl -s -o /dev/null -w '%{http_code}' -m 20 -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1' -H 'Accept: text/css,*/*;q=0.1' -H 'Referer: https://tripshare.org/' https://tripshare.org$CSS)"
+          echo "www: $(curl -s -o /dev/null -w '%{http_code}' -m 20 https://www.tripshare.org$CSS)"
+          grep -n "_next\|location\|proxy_pass\|return 4" /etc/nginx/sites-enabled/* 2>/dev/null | sed 's/server_name.*/server_name …/' | head -30
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

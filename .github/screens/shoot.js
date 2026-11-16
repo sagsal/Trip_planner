@@ -8,6 +8,11 @@ const SITE = 'https://tripshare.org';
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ ...devices['iPhone 13'] });
   const page = await ctx.newPage();
+  page.on('response', (r) => {
+    const u = r.url();
+    if (r.status() >= 400 || /\.css(\?|$)/.test(u)) console.log(`  ${r.status()} ${u.replace(SITE, '').slice(0, 120)}`);
+  });
+  page.on('requestfailed', (r) => console.log(`  FAILED ${r.url().replace(SITE, '').slice(0, 120)} ${r.failure()?.errorText || ''}`));
 
   // A public trip to look at: one single-city and one multi-city if there are any
   const list = await (await fetch(`${SITE}/api/trips?public=true&limit=24`)).json();

@@ -103,105 +103,8 @@ function RegisterContent() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pt-16">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-pulse"
-        style={{
-          backgroundImage: 'url(/sea-side-beach-0e.jpg)',
-          animation: 'kenBurns 20s ease-in-out infinite alternate',
-        }}
-      >
-        {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
-      </div>
-
-      {/* Floating elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 left-10 w-4 h-4 bg-white rounded-full opacity-30"
-          style={{
-            animation: 'float 6s ease-in-out infinite',
-            animationDelay: '0s'
-          }}
-        />
-        <div
-          className="absolute top-40 right-20 w-3 h-3 bg-white rounded-full opacity-20"
-          style={{
-            animation: 'float 8s ease-in-out infinite',
-            animationDelay: '1s'
-          }}
-        />
-        <div
-          className="absolute top-60 left-1/4 w-2 h-2 bg-white rounded-full opacity-25"
-          style={{
-            animation: 'float 7s ease-in-out infinite',
-            animationDelay: '2s'
-          }}
-        />
-        <div
-          className="absolute top-80 right-1/3 w-5 h-5 bg-white rounded-full opacity-20"
-          style={{
-            animation: 'float 9s ease-in-out infinite',
-            animationDelay: '3s'
-          }}
-        />
-        <div
-          className="absolute top-32 right-1/4 w-3 h-3 bg-white rounded-full opacity-15"
-          style={{
-            animation: 'sway 10s ease-in-out infinite',
-            animationDelay: '4s'
-          }}
-        />
-        <div
-          className="absolute top-72 left-1/3 w-2 h-2 bg-white rounded-full opacity-20"
-          style={{
-            animation: 'sway 12s ease-in-out infinite',
-            animationDelay: '5s'
-          }}
-        />
-
-        {/* Animated sparkles */}
-        <div
-          className="absolute top-16 right-16 w-1 h-1 bg-white rounded-full opacity-40"
-          style={{
-            animation: 'float 4s ease-in-out infinite',
-            animationDelay: '0.5s'
-          }}
-        />
-        <div
-          className="absolute top-48 left-16 w-1 h-1 bg-white rounded-full opacity-30"
-          style={{
-            animation: 'float 5s ease-in-out infinite',
-            animationDelay: '1.5s'
-          }}
-        />
-        <div
-          className="absolute top-64 right-8 w-1 h-1 bg-white rounded-full opacity-35"
-          style={{
-            animation: 'float 6s ease-in-out infinite',
-            animationDelay: '2.5s'
-          }}
-        />
-
-        {/* Gentle moving clouds effect */}
-        <div
-          className="absolute top-10 left-0 w-32 h-16 bg-white/5 rounded-full blur-sm"
-          style={{
-            animation: 'sway 15s ease-in-out infinite',
-            animationDelay: '0s'
-          }}
-        />
-        <div
-          className="absolute top-24 right-0 w-24 h-12 bg-white/5 rounded-full blur-sm"
-          style={{
-            animation: 'sway 18s ease-in-out infinite',
-            animationDelay: '3s'
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
+    <div className="relative min-h-screen bg-[#FBFAF7] pt-16">
+      <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-start sm:items-center justify-center px-4 py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -219,7 +122,7 @@ function RegisterContent() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/50"
+                    className="bg-white rounded-[20px] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-6 sm:p-8 border border-[#ECE7DF]"
                   >
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name Field */}
@@ -236,7 +139,7 @@ function RegisterContent() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-4 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -256,7 +159,7 @@ function RegisterContent() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-4 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -276,7 +179,7 @@ function RegisterContent() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-12 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Create a password"
                   />
                   <button
@@ -303,7 +206,7 @@ function RegisterContent() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-12 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Confirm your password"
                   />
                   <button
@@ -331,7 +234,7 @@ function RegisterContent() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#F13B13] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#F13B13]/90 focus:ring-2 focus:ring-[#F13B13] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#1F6F78] text-white py-3 px-4 rounded-xl min-h-[48px] font-semibold hover:bg-[#16535A] focus:ring-2 focus:ring-[#1F6F78] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </button>
@@ -341,7 +244,7 @@ function RegisterContent() {
             <div className="mt-6 text-center">
               <p className="text-black">
                 Already have an account?{' '}
-                <Link href="/login" className="text-[#0160D6] hover:text-[#0160D6]/80 font-medium">
+                <Link href="/login" className="text-[#1F6F78] hover:text-[#16535A] font-medium">
                   Sign in
                 </Link>
               </p>

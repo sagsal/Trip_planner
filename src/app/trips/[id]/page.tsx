@@ -112,17 +112,17 @@ function PlaceCard({ place, kind, save }: { place: { name: string; location?: st
   const rating = Number(place.rating) || 0;
   const [imgOk, setImgOk] = useState(true);
   return (
-    <div className="bg-white border border-[#ECE7DF] rounded-2xl overflow-hidden flex flex-col sm:flex-row">
+    <div className="bg-white border border-[#ECE7DF] rounded-2xl overflow-hidden flex flex-row">
       {details.imageUrl && imgOk && (
         <img
           src={details.imageUrl}
           alt=""
           loading="lazy"
-          className="w-full sm:w-44 h-44 sm:h-auto sm:min-h-[132px] object-cover shrink-0 bg-[#F1EEE8]"
+          className="w-20 h-20 m-3 mr-0 rounded-xl sm:m-0 sm:rounded-none sm:w-44 sm:h-auto sm:min-h-[132px] object-cover shrink-0 bg-[#F1EEE8]"
           onError={() => setImgOk(false)}
         />
       )}
-      <div className="p-4 flex-1 min-w-0 flex flex-col gap-1.5">
+      <div className="p-3 sm:p-4 flex-1 min-w-0 flex flex-col gap-1.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wider text-[#5B6A73]">
@@ -289,13 +289,16 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
                 const last = idx === days.length - 1 && noDay.length === 0;
                 return (
                   <div key={dayNumber} className="flex gap-4 sm:gap-5">
-                    <div className="flex flex-col items-center shrink-0">
+                    <div className="hidden sm:flex flex-col items-center shrink-0">
                       <span className="w-11 h-11 rounded-full bg-[#1F6F78] text-white flex items-center justify-center font-extrabold">{dayNumber}</span>
                       {!last && <span className="flex-1 w-0.5 bg-[#E2DCD2] mt-1.5" />}
                     </div>
-                    <div className={`flex-1 min-w-0 ${last ? '' : 'pb-8'} flex flex-col gap-3`}>
+                    <div className={`flex-1 min-w-0 ${last ? '' : 'pb-6 sm:pb-8'} flex flex-col gap-3`}>
                       <div className="flex flex-wrap items-center justify-between gap-2 min-h-[44px]">
-                        <h3 className="text-xl font-extrabold text-[#13212B]">Day {dayNumber}</h3>
+                        <h3 className="text-xl font-extrabold text-[#13212B] flex items-center gap-2.5">
+                          <span className="sm:hidden w-8 h-8 rounded-full bg-[#1F6F78] text-white text-sm flex items-center justify-center font-extrabold">{dayNumber}</span>
+                          Day {dayNumber}
+                        </h3>
                         {items.length > 1 && (
                           <SaveToSandbox places={items.map(({ p, k }) => toSave(p, k))} label="Save this day" variant="pill" />
                         )}
@@ -937,18 +940,18 @@ function TripDetailContent() {
 
         {/* Cover with the title on it */}
         {t.coverImageUrl && coverOk ? (
-          <div className="relative h-[320px] sm:h-[400px] rounded-[28px] overflow-hidden bg-[#D9C7AF]">
+          <div className="relative h-[340px] sm:h-[400px] rounded-[24px] sm:rounded-[28px] overflow-hidden bg-[#D9C7AF]">
             <img src={t.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setCoverOk(false)} />
-            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 bg-[rgba(19,33,43,0.58)] flex flex-wrap items-end justify-between gap-4">
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 bg-[rgba(19,33,43,0.58)] flex flex-wrap items-end justify-between gap-3 sm:gap-4">
               <div className="flex flex-col gap-2 min-w-0">
                 {chips(true)}
-                <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">{t.title}</h1>
-                {byline && <p className="text-[#F1EEE8]">{byline}</p>}
+                <h1 className="text-[28px] leading-tight sm:text-5xl font-extrabold tracking-tight text-white">{t.title}</h1>
+                {byline && <p className="text-sm sm:text-base text-[#F1EEE8]">{byline}</p>}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {t.isPublic && <ShareTrip title={t.title} />}
                 {allPlaces.length > 0 && (
-                  <div className="bg-white rounded-xl"><SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" /></div>
+                  <div className="bg-white rounded-xl"><SaveToSandbox places={allPlaces} label="Save trip" variant="pill" /></div>
                 )}
               </div>
             </div>
@@ -962,7 +965,7 @@ function TripDetailContent() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {t.isPublic && <ShareTrip title={t.title} />}
-              {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save whole trip to Sandbox" variant="pill" />}
+              {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save trip" variant="pill" />}
             </div>
           </div>
         )}

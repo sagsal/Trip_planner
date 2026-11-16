@@ -57,7 +57,7 @@ function HomeContent() {
       )}
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-12 sm:pt-16 pb-10 flex flex-wrap gap-12 items-center">
+      <section className="max-w-6xl mx-auto px-5 sm:px-6 pt-8 sm:pt-16 pb-10 flex flex-wrap gap-8 sm:gap-12 items-center">
         <div className="flex-[1_1_440px] min-w-0 flex flex-col gap-5">
           <p className="text-sm font-semibold uppercase tracking-wider text-[#1F6F78]">Real trips from real travelers</p>
           <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold leading-[1.05] tracking-tight">
@@ -75,7 +75,7 @@ function HomeContent() {
               placeholder="Try: a family week in Mexico"
               className="flex-[1_1_220px] min-w-0 border-0 outline-none text-base px-3.5 py-3 bg-transparent text-[#13212B] placeholder:text-[#8A969D]"
             />
-            <button type="submit" className="inline-flex items-center justify-center rounded-xl bg-[#1F6F78] hover:bg-[#16535A] text-white font-semibold px-5 min-h-[48px]">
+            <button type="submit" className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-[#1F6F78] hover:bg-[#16535A] text-white font-semibold px-5 min-h-[48px]">
               <Search className="w-4 h-4 mr-2" /> Find trips
             </button>
           </form>
@@ -93,9 +93,9 @@ function HomeContent() {
           </div>
         </div>
         <div className="flex-[1_1_400px] min-w-0 grid grid-cols-2 gap-3.5">
-          <img src="/sea-warm.jpg" alt="" className="col-span-2 h-56 sm:h-64 w-full object-cover rounded-[20px] bg-[#C9DCDD]" />
-          <img src="/sea-side-beach-0e.jpg" alt="" className="h-40 sm:h-44 w-full object-cover rounded-[20px] bg-[#E6D7C3]" />
-          <img src="/pexels-bella-white-201200-635279.jpg" alt="" className="h-40 sm:h-44 w-full object-cover rounded-[20px] bg-[#D5DCCB]" />
+          <img src="/sea-warm.jpg" alt="" className="col-span-2 h-44 sm:h-64 w-full object-cover rounded-[20px] bg-[#C9DCDD]" />
+          <img src="/sea-side-beach-0e.jpg" alt="" className="h-28 sm:h-44 w-full object-cover rounded-[20px] bg-[#E6D7C3]" />
+          <img src="/pexels-bella-white-201200-635279.jpg" alt="" className="h-28 sm:h-44 w-full object-cover rounded-[20px] bg-[#D5DCCB]" />
         </div>
       </section>
 

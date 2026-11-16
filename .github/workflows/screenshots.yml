@@ -25,6 +25,7 @@ jobs:
           npx playwright install --with-deps chromium >/dev/null
       - name: Take screenshots
         run: |
+          sleep 240   # let the deploy from the same push finish first
           cd /tmp/shots
           cp "$GITHUB_WORKSPACE/.github/screens/shoot.js" .
           node shoot.js

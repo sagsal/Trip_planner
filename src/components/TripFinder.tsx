@@ -236,7 +236,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
   const conversation = messages.length > 0;
 
   return (
-    <div data-tour="finder" className="bg-white rounded-[20px] border border-[#E2DCD2] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-5 sm:p-6 mb-8">
+    <div data-tour="finder" className="bg-white rounded-[20px] border border-[#E2DCD2] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-5 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
       <div className="flex items-center justify-between gap-3 mb-3">
         <h2 className="text-xl font-semibold text-[#2F4A5C] flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#4A6878]" /> Find a trip for you
@@ -326,14 +326,14 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
       )}
       {!conversation && (
         <p className="mt-2 text-xs text-[#6B7A83]">
-          Typing filters the trips below. Press <b>Enter</b> to ask the AI — it can ask a few questions, explain its picks, or build a sandbox trip.
+          Typing filters the trips below. Press <b>Enter</b> to ask the AI<span className="hidden sm:inline"> — it can ask a few questions, explain its picks, or build a sandbox trip</span>.
         </p>
       )}
       {!conversation && children && <div className="mt-3">{children}</div>}
       {!conversation && (
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex sm:flex-wrap gap-2 mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 overflow-x-auto sm:overflow-visible pb-1 [scrollbar-width:none]">
           {EXAMPLES.map((ex) => (
-            <button key={ex} type="button" onClick={() => start(ex)} className="px-3 py-1.5 rounded-full border border-[#D9D2C7] bg-white text-sm text-[#2F4A5C] hover:bg-[#FBF9F5]">
+            <button key={ex} type="button" onClick={() => start(ex)} className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border border-[#D9D2C7] bg-white text-sm text-[#2F4A5C] hover:bg-[#FBF9F5]">
               {ex}
             </button>
           ))}

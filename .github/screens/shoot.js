@@ -59,5 +59,37 @@ const SITE = 'https://tripshare.org';
       }
     }
   }
+  // Signed-in pages, with a temporary account (removed by scripts/cleanup-test-users.js on the next deploy)
+  try {
+    const email = `screenshot-bot-${Date.now()}@example.invalid`;
+    const reg = await (await fetch(`${SITE}/api/auth/register`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Screenshot Bot', email, password: 'Screens-' + Math.random().toString(36).slice(2) + '9!' }),
+    })).json();
+    const user = reg.user;
+    if (!user?.id) throw new Error('could not make a test account');
+    await fetch(`${SITE}/api/sandbox`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, title: 'Greece 2027', region: 'Europe' }) });
+    await page.goto(SITE + '/', { waitUntil: 'domcontentloaded' });
+    await page.evaluate((u) => localStorage.setItem('user', JSON.stringify(u)), user);
+    for (const [name, path] of [['account', '/account'], ['new-trip', '/trips/new'], ['sandbox', '/sandbox'], ['import', '/trips/import']]) {
+      await page.goto(SITE + path, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+      const W = await page.evaluate(() => [document.documentElement.clientWidth, document.documentElement.scrollWidth]);
+      console.log(`${name}: screen ${W[0]}px, page ${W[1]}px`);
+      await page.screenshot({ path: `out/${name}.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+    }
+    // The add-trip form with a country and city filled in, if the controls are there
+    await page.goto(SITE + '/trips/new', { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    const countrySel = page.locator('select').filter({ hasText: 'Select a country' }).first();
+    if (await countrySel.count()) {
+      await countrySel.selectOption({ label: 'Greece' }).catch(() => {});
+      await page.waitForTimeout(800);
+    }
+    await page.screenshot({ path: `out/new-trip-filled.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+  } catch (e) {
+    console.log('signed-in screenshots skipped:', e.message);
+  }
+
   await browser.close();
 })();

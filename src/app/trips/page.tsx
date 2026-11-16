@@ -139,17 +139,17 @@ function TripsContent() {
   const anyFilter = !!(searchTerm || filterCountry || filterRegion || filterType);
   const featured = !anyFilter && filteredTrips.length > 1 ? filteredTrips.find((t) => t.coverImageUrl) || filteredTrips[0] : null;
   const rest = featured ? filteredTrips.filter((t) => t.id !== featured.id) : filteredTrips;
-  const selectCls = 'px-3.5 py-2.5 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] min-h-[42px]';
+  const selectCls = 'shrink-0 px-3.5 py-2.5 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] min-h-[42px]';
 
   return (
     <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2">Find a trip to build on</h1>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Find a trip to build on</h1>
         <p className="text-[#5B6A73] mb-6">Real itineraries shared by fellow travelers. Describe what you want, or filter below.</p>
 
         {/* One box: typing filters the trips below; Enter asks the AI assistant */}
         <TripFinder onTyping={setSearchTerm} initialAsk={askParam}>
-          <div data-tour="filters" className="flex flex-wrap gap-2">
+          <div data-tour="filters" className="flex sm:flex-wrap gap-2 -mx-5 px-5 sm:mx-0 sm:px-0 overflow-x-auto sm:overflow-visible pb-1 [scrollbar-width:none]">
             <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className={selectCls} aria-label="Region">
               <option value="">All regions</option>
               {REGIONS.map((r) => (
@@ -172,7 +172,7 @@ function TripsContent() {
               <button
                 type="button"
                 onClick={() => { setFilterCountry(''); setFilterRegion(''); setFilterType(''); }}
-                className="px-3.5 py-2.5 rounded-full text-sm text-[#1F6F78] underline min-h-[42px]"
+                className="shrink-0 whitespace-nowrap px-3.5 py-2.5 rounded-full text-sm text-[#1F6F78] underline min-h-[42px]"
               >
                 Clear filters
               </button>

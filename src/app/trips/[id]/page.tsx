@@ -11,6 +11,7 @@ import { tripTypeIcon } from '@/lib/regions';
 import SaveToSandbox from '@/components/SaveToSandbox';
 import GoogleReviews from '@/components/GoogleReviews';
 import ShareTrip from '@/components/ShareTrip';
+import { monthYear, daysFromDates } from '@/lib/dates';
 import type { PlaceToSave } from '@/lib/sandbox';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { fetchTrip } from '@/utils/api';
@@ -868,9 +869,7 @@ function TripDetailContent() {
     eats: cities.reduce((n, c) => n + c.restaurants.length, 0),
     todo: cities.reduce((n, c) => n + c.activities.length, 0),
   };
-  const daysTotal =
-    cities.reduce((n, c) => n + (c.numberOfDays || 0), 0) ||
-    (t.startDate && t.endDate ? Math.max(1, Math.round((new Date(t.endDate).getTime() - new Date(t.startDate).getTime()) / 86400000) + 1) : 0);
+  const daysTotal = daysFromDates(t.startDate, t.endDate) || cities.reduce((n, c) => n + (c.numberOfDays || 0), 0);
   const allPlaces: PlaceToSave[] = cities.flatMap((c) => {
     const mk = (p: any, kind: Kind): PlaceToSave => {
       const f = placeFields(p);
@@ -884,7 +883,7 @@ function TripDetailContent() {
     return [...c.hotels.map((h) => mk(h, 'hotel')), ...c.activities.map((a) => mk(a, 'activity')), ...c.restaurants.map((r) => mk(r, 'restaurant'))];
   });
   const byline = [
-    t.startDate && t.endDate ? `${formatDate(t.startDate)} – ${formatDate(t.endDate)}` : '',
+    monthYear(t.startDate),
     daysTotal ? `${daysTotal} ${daysTotal === 1 ? 'day' : 'days'}` : '',
     multi ? `${cities.length} cities` : '',
     t.user?.name ? `by ${t.user.name}` : '',

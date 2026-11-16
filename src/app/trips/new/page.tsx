@@ -75,6 +75,19 @@ function daysBetween(start: string, end: string): string {
   return String(Math.round((e - s) / 86400000) + 1);
 }
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const FIRST_YEAR = 2022;
+
+// The trip is saved as "month + year + number of days": the start is the 1st of that month
+// and the end is that many days later (exact dates aren't needed)
+function whenToDates(month: string, year: string, days: string): { startDate: string; endDate: string } {
+  if (!month || !year) return { startDate: '', endDate: '' };
+  const startDate = `${year}-${month}-01`;
+  const n = Math.max(1, Math.min(365, parseInt(days) || 1));
+  const end = new Date(Date.parse(`${startDate}T00:00:00Z`) + (n - 1) * 86400000);
+  return { startDate, endDate: end.toISOString().slice(0, 10) };
+}
+
 function NewTripContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -636,6 +649,22 @@ function NewTripContent() {
     });
   }, []);
 
+  const setWhen = useCallback((part: 'month' | 'year' | 'days', value: string) => {
+    setFormData((prev) => {
+      const month = part === 'month' ? value : prev.startDate.slice(5, 7);
+      const year = part === 'year' ? value : prev.startDate.slice(0, 4);
+      const days = part === 'days' ? value.replace(/[^0-9]/g, '').slice(0, 3) : prev.numberOfDays;
+      // Keep whichever part isn't chosen yet, so the boxes don't clear each other
+      const dates = whenToDates(month, year, days);
+      return {
+        ...prev,
+        numberOfDays: days,
+        startDate: dates.startDate || (month || year ? `${year || '0000'}-${month || '00'}-01` : ''),
+        endDate: dates.endDate,
+      };
+    });
+  }, []);
+
   const handleArrayChange = useCallback((field: 'countries', index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -1059,6 +1088,11 @@ function NewTripContent() {
           userName: user.name,
           userEmail: user.email,
         };
+        // Month + year not both chosen yet (drafts): don't send a half date
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.startDate) || /^0000|-00-/.test(formData.startDate) || !formData.endDate) {
+          payload.startDate = '';
+          payload.endDate = '';
+        }
         if (!isEditing) {
           payload.isDraft = saveAsDraft; // Drafts stay private and can be finished later
         } else if (editingStatus === 'draft') {
@@ -1961,62 +1995,52 @@ function NewTripContent() {
 
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date *
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    required
-                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Date *
-                  </label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    required
-                    min={new Date(new Date().setFullYear(new Date().getFullYear() - 3)).toISOString().split('T')[0]}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Days
-                </label>
-                {(() => {
-                  const days = daysBetween(formData.startDate, formData.endDate);
-                  const badRange = !!(formData.startDate && formData.endDate && !days);
-                  return (
-                    <>
-                      <div
-                        className={`w-full px-4 py-3 rounded-lg border ${badRange ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'} ${days ? 'text-black font-medium' : 'text-gray-400'}`}
-                        aria-live="polite"
-                      >
-                        {days ? `${days} ${days === '1' ? 'day' : 'days'}` : 'Add your start and end dates'}
-                      </div>
-                      {badRange && (
-                        <p className="mt-1 text-xs text-red-600">The end date is before the start date.</p>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
+              {(() => {
+                const month = /^\d{4}-\d{2}/.test(formData.startDate) ? formData.startDate.slice(5, 7) : '';
+                const year = /^\d{4}/.test(formData.startDate) ? formData.startDate.slice(0, 4) : '';
+                const thisYear = new Date().getFullYear();
+                const years: string[] = [];
+                for (let y = thisYear; y >= FIRST_YEAR; y--) years.push(String(y));
+                if (year && year !== '0000' && !years.includes(year)) years.push(year);
+                const sel = 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white';
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mt-6">
+                    <div>
+                      <label htmlFor="trip-month" className="block text-sm font-medium text-gray-700 mb-2">Month *</label>
+                      <select id="trip-month" required value={month === '00' ? '' : month} onChange={(e) => setWhen('month', e.target.value)} className={sel}>
+                        <option value="">Month…</option>
+                        {MONTHS.map((m, i) => (
+                          <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="trip-year" className="block text-sm font-medium text-gray-700 mb-2">Year *</label>
+                      <select id="trip-year" required value={year === '0000' ? '' : year} onChange={(e) => setWhen('year', e.target.value)} className={sel}>
+                        <option value="">Year…</option>
+                        {years.map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-2 md:col-span-1">
+                      <label htmlFor="trip-days" className="block text-sm font-medium text-gray-700 mb-2">Number of days *</label>
+                      <input
+                        id="trip-days"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={365}
+                        required
+                        value={formData.numberOfDays}
+                        onChange={(e) => setWhen('days', e.target.value)}
+                        placeholder="e.g. 7"
+                        className={sel}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Overall comments about the trip */}
               <div className="mt-6">

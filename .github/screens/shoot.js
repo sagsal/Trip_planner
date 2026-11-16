@@ -86,6 +86,11 @@ const SITE = 'https://tripshare.org';
       await countrySel.selectOption({ label: 'Greece' }).catch(() => {});
       await page.waitForTimeout(800);
     }
+    await page.selectOption('#trip-month', '03').catch(() => {});
+    await page.selectOption('#trip-year', '2022').catch(() => {});
+    await page.fill('#trip-days', '7').catch(() => {});
+    await page.locator('#trip-days').scrollIntoViewIfNeeded().catch(() => {});
+    await page.screenshot({ path: `out/new-trip-when.jpg`, type: 'jpeg', quality: 70 });
     await page.screenshot({ path: `out/new-trip-filled.jpg`, type: 'jpeg', quality: 60, fullPage: true });
   } catch (e) {
     console.log('signed-in screenshots skipped:', e.message);

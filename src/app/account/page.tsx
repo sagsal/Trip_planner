@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { monthYear, daysFromDates } from '@/lib/dates';
 import { useRouter } from 'next/navigation';
 import { Plus, MapPin, Calendar, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass, Sparkles } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -472,7 +473,7 @@ function AccountContent() {
                         {hasDates && (
                           <span className="inline-flex items-center">
                             <Calendar className="w-3.5 h-3.5 mr-1" />
-                            {formatDate(trip.startDate)} – {formatDate(trip.endDate)}
+                            {monthYear(trip.startDate)}{daysFromDates(trip.startDate, trip.endDate) ? ` · ${daysFromDates(trip.startDate, trip.endDate)} days` : ''}
                           </span>
                         )}
                         {places && (

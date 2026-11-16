@@ -6,6 +6,7 @@ import SaveToSandbox from '@/components/SaveToSandbox';
 import { placeFields } from '@/lib/placeDetails';
 import { tripTypeIcon, regionOf } from '@/lib/regions';
 import type { PlaceToSave } from '@/lib/sandbox';
+import { monthYear, daysFromDates } from '@/lib/dates';
 
 /* A trip as the list API returns it (only the fields the card uses) */
 export interface CardTrip {
@@ -41,13 +42,7 @@ export function parseList(json: unknown): string[] {
 }
 
 export function tripDays(t: CardTrip): number {
-  const byCity = (t.cities_data || []).reduce((n, c) => n + (c.numberOfDays || 0), 0);
-  if (byCity) return byCity;
-  if (t.startDate && t.endDate) {
-    const d = Math.round((new Date(t.endDate).getTime() - new Date(t.startDate).getTime()) / 86400000) + 1;
-    if (d > 0 && d < 400) return d;
-  }
-  return 0;
+  return daysFromDates(t.startDate, t.endDate) || (t.cities_data || []).reduce((n, c) => n + (c.numberOfDays || 0), 0);
 }
 
 export function tripCounts(t: CardTrip) {
@@ -113,7 +108,7 @@ function Counts({ t, small }: { t: CardTrip; small?: boolean }) {
 function Byline({ t }: { t: CardTrip }) {
   const days = tripDays(t);
   const cities = (t.cities_data || []).length;
-  const bits = [days ? plural(days, 'day', 'days') : '', cities ? plural(cities, 'city', 'cities') : '', t.user?.name ? `by ${t.user.name}` : ''].filter(Boolean);
+  const bits = [monthYear(t.startDate), days ? plural(days, 'day', 'days') : '', cities ? plural(cities, 'city', 'cities') : '', t.user?.name ? `by ${t.user.name}` : ''].filter(Boolean);
   return <p className="text-sm text-[#5B6A73]">{bits.join(' · ')}</p>;
 }
 

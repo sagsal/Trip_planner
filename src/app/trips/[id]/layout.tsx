@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { prisma } from '@/lib/prisma';
+import { monthYear, daysFromDates } from '@/lib/dates';
 
 /**
  * Link previews for a shared trip: when a trip link is pasted into WhatsApp, Facebook,
@@ -53,13 +54,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     if (!t || !t.isPublic || t.isDraft) return generic;
 
     const cities = t.cities_data || [];
-    let days = cities.reduce((n, c) => n + (c.numberOfDays || 0), 0);
-    if (!days && t.startDate && t.endDate) {
-      const d = Math.round((new Date(t.endDate).getTime() - new Date(t.startDate).getTime()) / 86400000) + 1;
-      if (d > 0 && d < 400) days = d;
-    }
+    const days = daysFromDates(t.startDate, t.endDate) || cities.reduce((n, c) => n + (c.numberOfDays || 0), 0);
     const places = cities.reduce((n, c) => n + c._count.hotels + c._count.restaurants + c._count.activities, 0);
     const facts = [
+      monthYear(t.startDate),
       days ? `${days} ${days === 1 ? 'day' : 'days'}` : '',
       cities.length > 1 ? `${cities.length} cities` : cities[0]?.name || list(t.countries).join(', '),
       t.tripType || '',

@@ -66,7 +66,7 @@ const STEPS: Step[] = [
     target: 'trip-info',
     needsLogin: true,
     title: 'Add your trip',
-    text: 'To share a trip, choose Add your trip. Start with the basics: region, type of trip, dates and flights. The number of days and the title fill in for you.',
+    text: 'To share a trip, choose Add your trip. Start with the basics: region, type of trip, the month and year you went, how many days, and your flights. The title fills in for you.',
   },
   {
     path: '/trips/new',

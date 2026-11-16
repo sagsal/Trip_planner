@@ -438,7 +438,7 @@ export async function POST(request: NextRequest) {
 
     // For non-draft trips, dates are required
     if (!isDraft && (!startDate || !endDate)) {
-      const errorResponse = { error: 'Start date and end date are required for shared trips' };
+      const errorResponse = { error: 'Please choose the month, year and number of days for your trip.' };
       console.error('Validation error:', errorResponse);
       return NextResponse.json(errorResponse, { status: 400 });
     }

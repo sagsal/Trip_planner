@@ -322,7 +322,7 @@ function AccountContent() {
           >
             Welcome back{user?.name ? `, ${user.name}` : ''}
           </motion.h1>
-          <p className="text-lg text-[#5B6B75] mb-10">
+          <p className="text-lg text-[#5B6B75] mb-6 sm:mb-10">
             What would you like to do today?
           </p>
 
@@ -334,15 +334,15 @@ function AccountContent() {
             >
               <Link
                 href="/trips/new"
-                className="group flex flex-col items-center justify-center h-full rounded-xl bg-[#4A6878] text-white px-6 py-10 shadow-sm hover:bg-[#3F5B6A] transition-colors duration-200"
+                className="group flex flex-row sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 text-left sm:text-center h-full rounded-xl bg-[#4A6878] text-white px-5 py-4 sm:px-6 sm:py-10 shadow-sm hover:bg-[#3F5B6A] transition-colors duration-200"
               >
-                <span className="flex items-center justify-center w-14 h-14 rounded-full bg-white/15 mb-4 group-hover:bg-white/25 transition-colors">
+                <span className="flex items-center justify-center shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/15 sm:mb-4 group-hover:bg-white/25 transition-colors">
                   <Plus className="w-7 h-7" />
                 </span>
-                <span className="text-xl font-medium">Add your trip</span>
-                <span className="mt-2 text-white/80 text-sm sm:text-base">
+                <span className="flex flex-col"><span className="text-lg sm:text-xl font-medium">Add your trip</span>
+                <span className="mt-0.5 sm:mt-2 text-white/80 text-sm sm:text-base">
                   Share where you went, where you stayed and what you loved
-                </span>
+                </span></span>
               </Link>
             </motion.div>
 
@@ -353,15 +353,15 @@ function AccountContent() {
             >
               <Link
                 href="/trips/import"
-                className="group flex flex-col items-center justify-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-6 py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
+                className="group flex flex-row sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 text-left sm:text-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-5 py-4 sm:px-6 sm:py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
               >
-                <span className="flex items-center justify-center w-14 h-14 rounded-full bg-[#E9E3DA] mb-4 group-hover:bg-[#E2DBD0] transition-colors">
+                <span className="flex items-center justify-center shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#E9E3DA] sm:mb-4 group-hover:bg-[#E2DBD0] transition-colors">
                   <Sparkles className="w-7 h-7" />
                 </span>
-                <span className="text-xl font-medium">Import your notes</span>
-                <span className="mt-2 text-[#6B7A83] text-sm sm:text-base">
+                <span className="flex flex-col"><span className="text-lg sm:text-xl font-medium">Import your notes</span>
+                <span className="mt-0.5 sm:mt-2 text-[#6B7A83] text-sm sm:text-base">
                   Upload a spreadsheet or document and we’ll fill in the trip
-                </span>
+                </span></span>
               </Link>
             </motion.div>
 
@@ -372,15 +372,15 @@ function AccountContent() {
             >
               <Link
                 href="/trips"
-                className="group flex flex-col items-center justify-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-6 py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
+                className="group flex flex-row sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 text-left sm:text-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-5 py-4 sm:px-6 sm:py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
               >
-                <span className="flex items-center justify-center w-14 h-14 rounded-full bg-[#E9E3DA] mb-4 group-hover:bg-[#E2DBD0] transition-colors">
+                <span className="flex items-center justify-center shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#E9E3DA] sm:mb-4 group-hover:bg-[#E2DBD0] transition-colors">
                   <Compass className="w-7 h-7" />
                 </span>
-                <span className="text-xl font-medium">Browse trips</span>
-                <span className="mt-2 text-[#6B7A83] text-sm sm:text-base">
+                <span className="flex flex-col"><span className="text-lg sm:text-xl font-medium">Browse trips</span>
+                <span className="mt-0.5 sm:mt-2 text-[#6B7A83] text-sm sm:text-base">
                   Get ideas from fellow travelers
-                </span>
+                </span></span>
               </Link>
             </motion.div>
           </div>

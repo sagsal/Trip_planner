@@ -27,8 +27,9 @@ jobs:
           B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
           B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
         run: |
-          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY B2_KEY_ID B2_APP_KEY B2_BUCKET B2_ENDPOINT; do
+          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY B2_KEY_ID B2_APP_KEY B2_BUCKET B2_ENDPOINT ADMIN_EMAILS; do
             VALUE="${!NAME}"
             if [ -z "$VALUE" ]; then
               echo "$NAME secret not set - skipping"
@@ -104,6 +105,18 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- admin check (one-time)"
+          echo "admin setting present: $(grep -c '^ADMIN_EMAILS=.\+' .env.local)"
+          echo "stats without sign-in: $(curl -s -o /dev/null -w '%{http_code}' -m 20 http://localhost:3000/api/admin/stats)"
+          node -e '
+            const c=require("./scripts/session-token");const {PrismaClient}=require("@prisma/client");const p=new PrismaClient();
+            (async()=>{const admins=(require("fs").readFileSync(".env.local","utf8").match(/^ADMIN_EMAILS=(.+)$/m)||[])[1]||"";
+              const u=await p.user.findFirst({where:{email:{in:admins.split(/[,\s]+/).filter(Boolean)}}});
+              const o=await p.user.findFirst({where:{NOT:{id:u?u.id:"x"}}});
+              const get=async(id)=>{const r=await fetch("http://localhost:3000/api/admin/stats?days=30",{headers:{Cookie:c(id)}});const d=await r.json().catch(()=>({}));return [r.status,d]};
+              if(u){const [s,d]=await get(u.id);console.log("owner:",s,"members:",d.members&&d.members.total,"shared trips:",d.trips&&d.trips.shared)}else console.log("owner account not found");
+              if(o){const [s]=await get(o.id);console.log("another member:",s)}
+              await p.$disconnect()})()'
           node scripts/cleanup-test-users.js || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true

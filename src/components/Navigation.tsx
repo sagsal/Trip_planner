@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle, MessageCircle,
+  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle, MessageCircle, BarChart3,
 } from 'lucide-react';
 import { SANDBOX_EVENT } from '@/lib/sandbox';
 
@@ -62,6 +62,7 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ id?: string; name: string; email: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false); // site owner: sees "Site dashboard" 
   const menuRef = useRef<HTMLDivElement>(null);
   const [sandboxCount, setSandboxCount] = useState<number | null>(null);
 
@@ -91,6 +92,7 @@ export default function Navigation() {
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
+        setIsAdmin(!!d.isAdmin);
         const stored = localStorage.getItem('user');
         if (d.user) {
           if (!stored) {
@@ -162,7 +164,11 @@ export default function Navigation() {
 
   const isCurrent = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href || (href !== '/trips' && !!pathname?.startsWith(href + '/'));
-  const sections = isAuthenticated ? SIGNED_IN : SIGNED_OUT;
+  const sections = isAuthenticated
+    ? isAdmin
+      ? [{ title: 'Site owner', items: [{ href: '/admin', label: 'Site dashboard', hint: 'Members, trips and activity (only you can see this)', icon: BarChart3 }] }, ...SIGNED_IN]
+      : SIGNED_IN
+    : SIGNED_OUT;
   const firstName = user?.name?.split(' ')[0];
 
   return (

@@ -104,9 +104,6 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
-          echo "--- sign-up questions check (one-time)"
-          E="screenshot-bot-signup-$(date +%s)@example.invalid"
-          curl -s -m 20 -X POST -H 'Content-Type: application/json' -d "{\"name\":\"Signup Test\",\"email\":\"$E\",\"password\":\"Test-12345!x\",\"homeRegion\":\"North America\",\"homeCountry\":\"Canada\",\"ageBracket\":\"45–54\"}" http://localhost:3000/api/auth/register | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const u=JSON.parse(d).user||{};console.log("saved:",u.homeRegion,"|",u.homeCountry,"|",u.ageBracket)})'
           node scripts/cleanup-test-users.js || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true

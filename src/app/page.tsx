@@ -12,6 +12,7 @@ const STEPS = [
   { n: '1', title: 'Share your trip', text: 'Add your cities, hotels, restaurants and activities for each day. Or import your notes and let AI fill it in.' },
   { n: '2', title: 'Find trips like yours', text: 'Ask in plain words, like “a family week in Mexico”, and see real itineraries that fit.' },
   { n: '3', title: 'Plan in your Sandbox', text: 'Save the places you like into planned trips, and let AI arrange them day by day.' },
+  { n: '4', title: 'Get feedback', text: 'Share a planned trip in Help me plan. Members tell you if it’s too many days, which hotel to swap, or what not to miss, and you accept the best ideas with one tap.' },
 ];
 
 function HomeContent() {
@@ -90,7 +91,7 @@ function HomeContent() {
         <h2 className="text-3xl font-extrabold tracking-tight mb-6">How it works</h2>
         <div className="flex flex-wrap gap-5">
           {STEPS.map((s) => (
-            <div key={s.n} className="flex-[1_1_280px] min-w-0 bg-white border border-[#ECE7DF] rounded-[20px] p-7 flex flex-col gap-3">
+            <div key={s.n} className="flex-[1_1_230px] min-w-0 bg-white border border-[#ECE7DF] rounded-[20px] p-6 flex flex-col gap-3">
               <span className="w-11 h-11 rounded-xl bg-[#E3F0F0] text-[#1F6F78] flex items-center justify-center font-extrabold">{s.n}</span>
               <h3 className="text-xl font-bold">{s.title}</h3>
               <p className="text-[#4A5963] leading-relaxed">{s.text}</p>

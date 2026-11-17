@@ -83,7 +83,7 @@ export function tripPlacesToSave(t: CardTrip): PlaceToSave[] {
         stayType: p.stayType || null,
         sourceTripId: t.id,
         sourceTripTitle: t.title,
-        sourceUserName: t.user?.name || null,
+        sourceUserName: null,
         sourceRating: p.rating || null,
         sourceReview: pf.review || null,
       };
@@ -108,7 +108,7 @@ function Counts({ t, small }: { t: CardTrip; small?: boolean }) {
 function Byline({ t }: { t: CardTrip }) {
   const days = tripDays(t);
   const cities = (t.cities_data || []).length;
-  const bits = [monthYear(t.startDate), days ? plural(days, 'day', 'days') : '', cities ? plural(cities, 'city', 'cities') : '', t.user?.name ? `by ${t.user.name}` : ''].filter(Boolean);
+  const bits = [monthYear(t.startDate), days ? plural(days, 'day', 'days') : '', cities ? plural(cities, 'city', 'cities') : ''].filter(Boolean);
   return <p className="text-sm text-[#5B6A73]">{bits.join(' · ')}</p>;
 }
 

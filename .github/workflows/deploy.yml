@@ -98,6 +98,11 @@ jobs:
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
           node scripts/cleanup-test-users.js || true
+          echo "--- contributor names check (one-time)"
+          curl -s -m 30 "http://localhost:3000/api/trips?public=true&limit=50" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);const n=j.trips.filter(t=>t.user&&("name" in t.user)).length;console.log("trips:",j.trips.length,"with a contributor name:",n)})'
+          TID=$(curl -s -m 30 "http://localhost:3000/api/trips?public=true&limit=1" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{console.log(JSON.parse(d).trips[0].id)})')
+          curl -s -m 30 "http://localhost:3000/api/trips/$TID" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);const t=j.trip||j;console.log("trip page data has a contributor name:", !!(t.user&&"name" in t.user))})'
+          curl -s -m 30 "http://localhost:3000/trips/$TID" | grep -oE 'og:description" content="[^"]*' | grep -c "Shared by" || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

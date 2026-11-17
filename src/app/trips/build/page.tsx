@@ -3004,7 +3004,7 @@ function SharedTripCard({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-gray-900">{trip.title}</h3>
-          <p className="text-gray-600 text-sm">by {trip.user.name}</p>
+          
         </div>
         <button
           onClick={() => toggleSection(tripKey)}

@@ -360,7 +360,6 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                       {r.tripType && <span>{tripTypeIcon(r.tripType)} {r.tripType}</span>}
                       {r.cities.length > 0 && <span className="inline-flex items-center"><MapPin className="w-3 h-3 mr-0.5" />{r.cities.slice(0, 4).join(', ')}</span>}
                       {r.days > 0 && <span className="inline-flex items-center"><Calendar className="w-3 h-3 mr-0.5" />{r.days} days</span>}
-                      {r.userName && <span>by {r.userName}</span>}
                     </p>
                     <p className="text-sm text-[#4A5A63] mt-2 flex-1">{r.reason}</p>
                     <div className="flex items-center gap-2 mt-3">
@@ -449,7 +448,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                     {results.map((r) => (
                       <label key={r.id} className="flex items-center gap-2 text-sm text-[#2F4A5C]">
                         <input type="checkbox" checked={collectTrips.includes(r.id)} onChange={() => setCollectTrips((p) => (p.includes(r.id) ? p.filter((x) => x !== r.id) : [...p, r.id]))} />
-                        {r.title}{r.userName ? ` (${r.userName})` : ''}{!r.exact && <span className="text-xs text-[#8A6D3B]">· similar</span>}
+                        {r.title}{!r.exact && <span className="text-xs text-[#8A6D3B]">· similar</span>}
                       </label>
                     ))}
                   </div>

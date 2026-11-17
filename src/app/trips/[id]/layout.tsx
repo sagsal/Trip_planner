@@ -47,7 +47,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         tripType: true,
         startDate: true,
         endDate: true,
-        user: { select: { name: true } },
         cities_data: { select: { name: true, numberOfDays: true, _count: { select: { hotels: true, restaurants: true, activities: true } } } },
       },
     });
@@ -64,7 +63,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       places ? `${places} places` : '',
     ].filter(Boolean).join(' · ');
     const route = cities.length > 1 ? cities.map((c) => c.name).join(' → ') : '';
-    const by = t.user?.name ? `Shared by ${t.user.name}. ` : '';
+    const by = '';
     const comment = (t.description || '').replace(/\s+/g, ' ').trim();
     const description = `${facts}${route ? ` — ${route}` : ''}. ${by}${comment ? comment.slice(0, 160) : 'Where they stayed, ate and explored, day by day.'}`.slice(0, 300);
 

@@ -128,7 +128,7 @@ export default function FillWithAI({
           {it.why && <span className="block text-xs text-[#4A5A63]">{it.why}</span>}
           <span className={`inline-flex items-center mt-0.5 text-[11px] px-1.5 py-0.5 rounded-full ${it.source === 'traveler' ? 'bg-[#E3ECEF] text-[#3F5B6A]' : 'bg-[#F3EBDD] text-[#8A6D3B]'}`}>
             {it.source === 'traveler' ? (
-              <><Users className="w-3 h-3 mr-1" />From {it.sourceUserName ? `${it.sourceUserName}’s trip` : 'a traveler'}{it.sourceRating ? ` · ${it.sourceRating}★` : ''}</>
+              <><Users className="w-3 h-3 mr-1" />From a traveler’s trip{it.sourceRating ? ` · ${it.sourceRating}★` : ''}</>
             ) : (
               <><Sparkles className="w-3 h-3 mr-1" />Suggested (Google)</>
             )}

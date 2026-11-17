@@ -120,7 +120,7 @@ async function runFill(userId: string, sandboxTripId: string, request: string) {
   /* 2. Candidates: real trips on the site first */
   const cityNames = cities.map((c) => c.name);
   const where = { city: { name: { in: cityNames }, trip: { isPublic: true, isDraft: false } } };
-  const include = { city: { include: { trip: { select: { id: true, title: true, user: { select: { name: true } } } } } } };
+  const include = { city: { include: { trip: { select: { id: true, title: true, user: { select: { id: true } } } } } } };
   const [hotels, restaurants, activities] = await Promise.all([
     prisma.hotel.findMany({ where, include, take: 60 }),
     prisma.restaurant.findMany({ where, include, take: 120 }),
@@ -143,7 +143,7 @@ async function runFill(userId: string, sandboxTripId: string, request: string) {
         stayType: p.stayType || null,
         sourceTripId: p.city?.trip?.id || null,
         sourceTripTitle: p.city?.trip?.title || null,
-        sourceUserName: p.city?.trip?.user?.name || null,
+        sourceUserName: null,
         sourceRating: p.rating || null,
         sourceReview: f.review || null,
       },

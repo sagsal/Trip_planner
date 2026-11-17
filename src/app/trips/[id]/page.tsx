@@ -186,7 +186,7 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
       stayType: p.stayType || null,
       sourceTripId: trip.id,
       sourceTripTitle: trip.title,
-      sourceUserName: trip.user?.name || null,
+      sourceUserName: null,
       sourceRating: p.rating || null,
       sourceReview: f.review || null,
     };
@@ -877,7 +877,7 @@ function TripDetailContent() {
       return {
         kind, name: p.name, location: p.location || null, city: c.name, country: c.country,
         imageUrl: f.imageUrl, webUrl: f.webUrl, stayType: p.stayType || null,
-        sourceTripId: t.id, sourceTripTitle: t.title, sourceUserName: t.user?.name || null,
+        sourceTripId: t.id, sourceTripTitle: t.title, sourceUserName: null,
         sourceRating: p.rating || null, sourceReview: f.review || null,
       };
     };
@@ -887,7 +887,6 @@ function TripDetailContent() {
     monthYear(t.startDate),
     daysTotal ? `${daysTotal} ${daysTotal === 1 ? 'day' : 'days'}` : '',
     multi ? `${cities.length} cities` : '',
-    t.user?.name ? `by ${t.user.name}` : '',
   ].filter(Boolean).join(' · ');
   const chips = (light: boolean) => (
     <div className="flex flex-wrap gap-2">

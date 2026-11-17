@@ -574,7 +574,7 @@ function SavedCard({
             <p className="text-xs text-[#6B7A83] mt-1">
               From{' '}
               <Link href={`/trips/${place.sourceTripId}`} className="underline hover:text-[#2F4A5C]">
-                {place.sourceUserName ? `${place.sourceUserName}’s ` : ''}{place.sourceTripTitle || 'a trip'}
+                {place.sourceTripTitle || 'a trip'}
               </Link>
             </p>
           )}

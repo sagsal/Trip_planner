@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
   // Narrow down in the database first (country, region, type), then top up with the newest trips,
   // so this stays quick with thousands of trips and older matching trips are still found
   const include = {
-    user: { select: { name: true } },
+    user: { select: { id: true } },
     cities_data: { include: { hotels: true, restaurants: true, activities: true } },
   };
   const base = { isPublic: true, isDraft: false, NOT: [{ title: { contains: 'TEMPLATE' } }, { title: { contains: 'DATABASE:' } }] };
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
           stayType: p.stayType || null,
           sourceTripId: t.id,
           sourceTripTitle: t.title,
-          sourceUserName: t.user?.name || null,
+          sourceUserName: null,
           sourceRating: p.rating || null,
           sourceReview: pf.review || null,
         };
@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
       countries: parseList(t.countries),
       cities: t.cities_data.map((c) => c.name),
       days,
-      userName: t.user?.name || '',
+      userName: '',
       reason: typeof m.reason === 'string' ? m.reason.slice(0, 300) : '',
       exact: m.exact !== false,
       places: places.slice(0, 80),

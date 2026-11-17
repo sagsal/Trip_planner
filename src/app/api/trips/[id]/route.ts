@@ -401,8 +401,7 @@ export async function GET(
           include: {
             user: {
               select: {
-                id: true,
-                name: true
+                id: true
               }
             },
             cities_data: {

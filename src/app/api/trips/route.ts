@@ -741,8 +741,7 @@ export async function GET(request: NextRequest) {
           include: {
             user: {
               select: {
-                id: true,
-                name: true
+                id: true
               }
             },
             cities_data: {

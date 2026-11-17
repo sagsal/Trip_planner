@@ -186,10 +186,11 @@ function NewTripContent() {
     for (const c of citiesData) {
       (byCountry[c.country] ||= []).push(c.name);
       if (c.state) (statesBy[c.country] ||= []).push(c.state);
-      if (c.area) (areasBy[c.country] ||= []).push(c.area);
     }
+    // Areas chosen at the top (e.g. Canadian Rockies) name the trip
+    for (const [country, list] of Object.entries(tripAreas) as [string, string[]][]) if (list.length) areasBy[country] = list;
     return tripNameFrom(countryList, byCountry, statesBy, areasBy);
-  }, [countryList, citiesData]);
+  }, [countryList, citiesData, tripAreas]);
 
   // Reopening a saved trip: /trips/new?id=TRIP_ID
   const searchParams = useSearchParams();
@@ -2046,17 +2047,12 @@ function NewTripContent() {
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
-                  {countryList.length > 0 && (
-                    <p className="mt-1 text-xs text-gray-500">
-                      Your trip will be listed as <span className="font-medium text-gray-700">{autoTitle}</span>
-                    </p>
-                  )}
                 </div>
 
                 {/* Country (then its areas), right under Region */}
                 <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {countryList.length === 0 ? 'Country' : 'Add another country'}
+                  {countryList.length > 1 ? 'Countries' : 'Country'}
                 </label>
                 {countryList.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -2080,7 +2076,7 @@ function NewTripContent() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
                 >
                   <option value="">
-                    {region ? `Choose a country in ${region}…` : 'Choose a country…'}
+                    {countryList.length ? 'Add another country…' : region ? `Choose a country in ${region}…` : 'Choose a country…'}
                   </option>
                   {(region ? countriesIn(region) : Object.keys(countriesData))
                     .filter((c) => !countryList.includes(c))
@@ -2095,6 +2091,11 @@ function NewTripContent() {
                 )}
               </div>
 
+                {countryList.length > 0 && (
+                  <p className="-mt-3 text-sm text-gray-600">
+                    Your trip will be listed as <span className="font-semibold text-gray-900">{autoTitle}</span>
+                  </p>
+                )}
                 {/* Areas within each country (optional) */}
                 {countryList.map((country) => {
                   const chosen = tripAreas[country] || [];

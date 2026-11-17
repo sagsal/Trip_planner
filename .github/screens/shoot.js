@@ -105,6 +105,7 @@ const SITE = 'https://tripshare.org';
       await page.waitForTimeout(600);
       const opts2 = await page.locator('#state-Canada').locator('xpath=ancestor::div[2]').locator('select').nth(1).locator('option').allTextContents().catch(() => []);
       console.log('city list with Canadian Rockies chosen:', opts2.slice(0, 8).join(' | '));
+      console.log('title hint:', (await page.locator('text=Your trip will be listed as').first().textContent().catch(() => '')) || '');
       await page.locator('[data-tour="trip-info"]').scrollIntoViewIfNeeded().catch(() => {});
       await page.screenshot({ path: `out/new-trip-info.jpg`, type: 'jpeg', quality: 70, fullPage: true });
       await page.screenshot({ path: `out/new-trip-area.jpg`, type: 'jpeg', quality: 70 });

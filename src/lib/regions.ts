@@ -52,12 +52,12 @@ export function tripNameFrom(
     const states = Array.from(new Set((statesByCountry[list[0]] || []).filter(Boolean)));
     // One travel area: "Florence & Siena, Tuscany" or "Tuscany, Italy" / "Canadian Rockies, Canada"
     const areas = Array.from(new Set((areasByCountry[list[0]] || []).filter(Boolean)));
-    const allInArea = areas.length === 1 && (areasByCountry[list[0]] || []).length === cities.length;
-    if (allInArea) {
+    if (areas.length === 1) {
       const others = cities.filter((c) => c !== areas[0]);
       if (others.length >= 1 && others.length <= 2) return `${join(others)}, ${areas[0]}`;
       return `${areas[0]}, ${list[0]}`;
     }
+    if (areas.length >= 2 && areas.length <= 3) return `${join(areas)}, ${list[0]}`;
     // One state / province: "St. John's, Newfoundland and Labrador" or "Newfoundland and Labrador, Canada"
     if (states.length === 1) {
       const others = cities.filter((c) => c !== states[0]);

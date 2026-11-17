@@ -8,8 +8,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import TripCard, { CardTrip } from '@/components/TripCard';
 import { startSiteTour } from '@/components/SiteTour';
 
-const EXAMPLES = ['A family week in Mexico', '10 days in Colombia', 'Couples trip to Greece', 'Food trips'];
-
 const STEPS = [
   { n: '1', title: 'Share your trip', text: 'Add your cities, hotels, restaurants and activities for each day. Or import your notes and let AI fill it in.' },
   { n: '2', title: 'Find trips like yours', text: 'Ask in plain words, like “a family week in Mexico”, and see real itineraries that fit.' },
@@ -79,33 +77,11 @@ function HomeContent() {
               <Search className="w-4 h-4 mr-2" /> Find trips
             </button>
           </form>
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLES.map((ex) => (
-              <button
-                key={ex}
-                type="button"
-                onClick={() => ask(ex)}
-                className="px-3.5 py-2 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] hover:bg-[#F6F3EE]"
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
         </div>
         <div className="flex-[1_1_400px] min-w-0 grid grid-cols-2 gap-3.5">
           <img src="/sea-warm.jpg" alt="" className="col-span-2 h-44 sm:h-64 w-full object-cover rounded-[20px] bg-[#C9DCDD]" />
           <img src="/sea-side-beach-0e.jpg" alt="" className="h-28 sm:h-44 w-full object-cover rounded-[20px] bg-[#E6D7C3]" />
           <img src="/pexels-bella-white-201200-635279.jpg" alt="" className="h-28 sm:h-44 w-full object-cover rounded-[20px] bg-[#D5DCCB]" />
-        </div>
-      </section>
-
-      {/* Founder note */}
-      <section className="max-w-6xl mx-auto px-6 pb-12">
-        <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-7 sm:p-8">
-          <p className="text-lg sm:text-[19px] leading-relaxed text-[#2A3A44]">
-            I started this site because I am always asked for an easy way to share the details of trips I plan. And I of course am
-            always asking friends and family for details of their trips. <strong className="text-[#13212B]">With this site you can do both!</strong>
-          </p>
         </div>
       </section>
 

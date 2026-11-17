@@ -171,7 +171,16 @@ function NewTripContent() {
     for (const c of citiesData) if (c.country?.trim()) counts.set(c.country.trim(), (counts.get(c.country.trim()) || 0) + 1);
     let best = '';
     for (const [country, n] of counts) if (!best || n > (counts.get(best) || 0)) best = country;
-    return best || countryList[0] || citiesData[0]?.name || '';
+    const country = best || countryList[0] || '';
+    if (!country) return citiesData[0]?.name || '';
+    // Narrow to the state / province most of its cities are in (e.g. "Newfoundland and Labrador, Canada")
+    const stateCounts = new Map<string, number>();
+    for (const c of citiesData) if (c.country?.trim() === country && c.state) stateCounts.set(c.state, (stateCounts.get(c.state) || 0) + 1);
+    let state = '';
+    for (const [st, n] of stateCounts) if (!state || n > (stateCounts.get(state) || 0)) state = st;
+    // No city added yet but a province already chosen in "Add a city"
+    if (!state && addingCityFor === country && selectedState) state = selectedState;
+    return state ? `${state}, ${country}` : country;
   })();
 
   // If the trip's country changes, offer fresh choices for the new country

@@ -38,13 +38,26 @@ export function regionOf(country: string): Region | '' {
 }
 
 /** A trip name made from its countries (and cities when there's just one country). */
-export function tripNameFrom(countries: string[], citiesByCountry: Record<string, string[]>, statesByCountry: Record<string, string[]> = {}): string {
+export function tripNameFrom(
+  countries: string[],
+  citiesByCountry: Record<string, string[]>,
+  statesByCountry: Record<string, string[]> = {},
+  areasByCountry: Record<string, string[]> = {}
+): string {
   const list = countries.filter(Boolean);
   const join = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} & ${xs[xs.length - 1]}`);
   if (list.length === 0) return 'My trip';
   if (list.length === 1) {
     const cities = (citiesByCountry[list[0]] || []).filter(Boolean);
     const states = Array.from(new Set((statesByCountry[list[0]] || []).filter(Boolean)));
+    // One travel area: "Florence & Siena, Tuscany" or "Tuscany, Italy" / "Canadian Rockies, Canada"
+    const areas = Array.from(new Set((areasByCountry[list[0]] || []).filter(Boolean)));
+    const allInArea = areas.length === 1 && (areasByCountry[list[0]] || []).length === cities.length;
+    if (allInArea) {
+      const others = cities.filter((c) => c !== areas[0]);
+      if (others.length >= 1 && others.length <= 2) return `${join(others)}, ${areas[0]}`;
+      return `${areas[0]}, ${list[0]}`;
+    }
     // One state / province: "St. John's, Newfoundland and Labrador" or "Newfoundland and Labrador, Canada"
     if (states.length === 1) {
       const others = cities.filter((c) => c !== states[0]);

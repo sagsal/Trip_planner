@@ -10,6 +10,7 @@ import { IMPORT_STORAGE_KEY, type ImportedTrip } from '@/lib/tripImport';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
 import { REGIONS, TRIP_TYPES, countriesIn, regionOf, tripNameFrom } from '@/lib/regions';
 import { statesOf, stateLabel, citiesInState } from '@/lib/states';
+import { areasOf, citiesInArea } from '@/lib/areas';
 import { AIRLINES, TRAVEL_MODES, modeInfo, routeText, parseJson, cleanLegs, cleanArrival, cleanTravel, type FlightLeg, type Arrival } from '@/lib/travel';
 
 interface Hotel {
@@ -60,6 +61,7 @@ interface CityData {
   name: string;
   country: string;
   state?: string; // state / province (US, Canada, …)
+  area?: string; // travel area (Canadian Rockies, Tuscany, …)
   numberOfDays: number;
   hotel: Hotel | null;
   days: Day[];
@@ -112,6 +114,18 @@ function NewTripContent() {
   const [tripCountries, setTripCountries] = useState<string[]>([]);
   const [addingCityFor, setAddingCityFor] = useState<string | null>(null); // country whose "Add a city" form is in use
   const [selectedState, setSelectedState] = useState(''); // state / province for the city being added
+  const [selectedArea, setSelectedArea] = useState(''); // travel area for the city being added ('custom' = typed)
+  const [customArea, setCustomArea] = useState('');
+  // Working in another country's "Add a city": its state and area start fresh
+  const focusCountry = (country: string) => {
+    if (addingCityFor !== country) {
+      setSelectedState('');
+      setSelectedArea('');
+      setCustomArea('');
+    }
+    setAddingCityFor(country);
+    setSelectedCountry(country);
+  };
   // Flights to the destination, e.g. YYZ → JFK (Air Canada), JFK → ATH (Delta)
   const [flightLegs, setFlightLegs] = useState<FlightLeg[]>([]);  // getting there
   const [returnLegs, setReturnLegs] = useState<FlightLeg[]>([]);  // getting home
@@ -145,11 +159,13 @@ function NewTripContent() {
   const autoTitle = useMemo(() => {
     const byCountry: Record<string, string[]> = {};
     const statesBy: Record<string, string[]> = {};
+    const areasBy: Record<string, string[]> = {};
     for (const c of citiesData) {
       (byCountry[c.country] ||= []).push(c.name);
       if (c.state) (statesBy[c.country] ||= []).push(c.state);
+      if (c.area) (areasBy[c.country] ||= []).push(c.area);
     }
-    return tripNameFrom(countryList, byCountry, statesBy);
+    return tripNameFrom(countryList, byCountry, statesBy, areasBy);
   }, [countryList, citiesData]);
 
   // Reopening a saved trip: /trips/new?id=TRIP_ID
@@ -180,6 +196,13 @@ function NewTripContent() {
     for (const [st, n] of stateCounts) if (!state || n > (stateCounts.get(state) || 0)) state = st;
     // No city added yet but a province already chosen in "Add a city"
     if (!state && addingCityFor === country && selectedState) state = selectedState;
+    // A travel area most cities share (e.g. Canadian Rockies, Tuscany) is the best cover of all
+    const areaCounts = new Map<string, number>();
+    for (const c of citiesData) if (c.country?.trim() === country && c.area) areaCounts.set(c.area, (areaCounts.get(c.area) || 0) + 1);
+    let area = '';
+    for (const [ar, n] of areaCounts) if (!area || n > (areaCounts.get(area) || 0)) area = ar;
+    if (!area && addingCityFor === country && selectedArea && selectedArea !== 'custom') area = selectedArea;
+    if (area) return `${area}, ${country}`;
     return state ? `${state}, ${country}` : country;
   })();
 
@@ -427,6 +450,7 @@ function NewTripContent() {
             name: city.name ?? '',
             country: city.country ?? '',
             state: city.state || undefined,
+            area: city.area || undefined,
             numberOfDays: n,
             hotel: hotels[0] ?? null,
             days,
@@ -692,6 +716,8 @@ function NewTripContent() {
   const addCity = (countryOverride?: string) => {
     const nameToAdd = selectedCity === 'custom' ? customCityName.trim() : selectedCity;
     if (nameToAdd === '__whole_state__' && !selectedState) return;
+    const areaToUse = selectedArea === 'custom' ? customArea.trim() : selectedArea;
+    if (nameToAdd === '__whole_area__' && !areaToUse) return;
     const countryToUse = countryOverride || selectedCountry;
     if (!countryToUse || !nameToAdd || !selectedNumberOfDays) return;
     
@@ -708,9 +734,10 @@ function NewTripContent() {
 
     const newCity: CityData = {
       id: Date.now().toString(),
-      name: nameToAdd === '__whole_state__' ? selectedState : nameToAdd,
+      name: nameToAdd === '__whole_state__' ? selectedState : nameToAdd === '__whole_area__' ? areaToUse : nameToAdd,
       country: countryToUse,
       state: statesOf(countryToUse).length ? selectedState || undefined : undefined,
+      area: areaToUse || undefined,
       numberOfDays: numberOfDays,
       hotel: null, // added in the city's own box
       days: days
@@ -1068,6 +1095,7 @@ function NewTripContent() {
           name: city.name,
           country: city.country,
           state: city.state || null,
+          area: city.area || null,
           numberOfDays: city.numberOfDays,
           arrival: city.arrival || null,
           hotels: [
@@ -1239,7 +1267,7 @@ function NewTripContent() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
-                        <p className="text-gray-600">📍 {city.state ? `${city.state}, ` : ''}{city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
+                        <p className="text-gray-600">📍 {city.area && city.area !== city.name ? `${city.area} · ` : ''}{city.state && city.state !== city.name ? `${city.state}, ` : ''}{city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
                       </div>
                     </div>
                     <button
@@ -1575,7 +1603,7 @@ function NewTripContent() {
                                 allowDescribe
                                 className="mb-2"
                                 cityName={city.name}
-                                countryName={city.state && city.state !== city.name ? `${city.state}, ${city.country}` : city.country}
+                                countryName={[city.area && city.area !== city.name ? city.area : '', city.state && city.state !== city.name ? city.state : '', city.country].filter(Boolean).join(', ')}
                               />
                               {selectedHotelData && (
                                 <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-yellow-300">
@@ -1691,7 +1719,7 @@ function NewTripContent() {
                                           allowDescribe
                                     className="mb-2"
                                     cityName={city.name}
-                                    countryName={city.state && city.state !== city.name ? `${city.state}, ${city.country}` : city.country}
+                                    countryName={[city.area && city.area !== city.name ? city.area : '', city.state && city.state !== city.name ? city.state : '', city.country].filter(Boolean).join(', ')}
                                   />
                                   {selectedRestaurantData && (
                                     <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-green-300">
@@ -1893,7 +1921,7 @@ function NewTripContent() {
                                           category="attractions"
                                           allowDescribe
                                           cityName={city.name}
-                                          countryName={city.state && city.state !== city.name ? `${city.state}, ${city.country}` : city.country}
+                                          countryName={[city.area && city.area !== city.name ? city.area : '', city.state && city.state !== city.name ? city.state : '', city.country].filter(Boolean).join(', ')}
                                         />
                                       </div>
                                       <div>
@@ -2214,7 +2242,9 @@ function NewTripContent() {
                 const isAdding = addingCityFor === country;
                 // With a state / province picked, list its main cities; otherwise the country's
                 const stateCities = addingCityFor === country && selectedState ? citiesInState(country, selectedState) : [];
-                const cityOptions = stateCities.length ? stateCities : (countriesData as Record<string, string[]>)[country] || [];
+                const areaCities = addingCityFor === country && selectedArea && selectedArea !== 'custom' ? citiesInArea(country, selectedArea) : [];
+                const areaName = addingCityFor === country ? (selectedArea === 'custom' ? customArea.trim() : selectedArea) : '';
+                const cityOptions = areaCities.length ? areaCities : stateCities.length ? stateCities : (countriesData as Record<string, string[]>)[country] || [];
                 return (
                   <section key={country} className="mb-10 rounded-2xl border border-[#D9D2C7] bg-[#FBF9F5] p-4 sm:p-6">
                     <div className="flex items-center justify-between gap-3 mb-5">
@@ -2254,8 +2284,7 @@ function NewTripContent() {
                             id={`state-${country}`}
                             value={isAdding ? selectedState : ''}
                             onChange={(e) => {
-                              setAddingCityFor(country);
-                              setSelectedCountry(country);
+                              focusCountry(country);
                               setSelectedState(e.target.value);
                               if (selectedCity !== 'custom') setSelectedCity('');
                             }}
@@ -2268,18 +2297,52 @@ function NewTripContent() {
                           </select>
                         </div>
                       )}
+                      <div className="mb-3">
+                        <label className="block text-sm text-gray-600 mb-1" htmlFor={`area-${country}`}>Area <span className="text-gray-400">(optional, e.g. {areasOf(country)[0] || 'a region or coast'})</span></label>
+                        <div className="flex flex-col md:flex-row gap-2">
+                          <select
+                            id={`area-${country}`}
+                            value={isAdding ? selectedArea : ''}
+                            onChange={(e) => {
+                              focusCountry(country);
+                              setSelectedArea(e.target.value);
+                              if (e.target.value !== 'custom') setCustomArea('');
+                              if (selectedCity !== 'custom') setSelectedCity('');
+                            }}
+                            className="w-full md:w-1/2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="">No particular area</option>
+                            {areasOf(country).map((ar) => (
+                              <option key={ar} value={ar}>{ar}</option>
+                            ))}
+                            <option value="custom">+ An area not in the list</option>
+                          </select>
+                          {isAdding && selectedArea === 'custom' && (
+                            <input
+                              type="text"
+                              value={customArea}
+                              onChange={(e) => setCustomArea(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+                              placeholder="Area name, e.g. Algarve"
+                              className="w-full md:w-1/2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            />
+                          )}
+                        </div>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <select
                           value={isAdding ? selectedCity : ''}
                           onChange={(e) => {
-                            setAddingCityFor(country);
-                            setSelectedCountry(country);
+                            focusCountry(country);
                             setSelectedCity(e.target.value);
                             if (e.target.value !== 'custom') setCustomCityName('');
                           }}
                           className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                         >
                           <option value="">Choose a city…</option>
+                          {isAdding && areaName && (
+                            <option value="__whole_area__">All of {areaName} (no single city)</option>
+                          )}
                           {isAdding && selectedState && statesOf(country).length > 0 && (
                             <option value="__whole_state__">All of {selectedState} (no single city)</option>
                           )}
@@ -2301,8 +2364,7 @@ function NewTripContent() {
                           <select
                             value={isAdding ? selectedNumberOfDays : ''}
                             onChange={(e) => {
-                              setAddingCityFor(country);
-                              setSelectedCountry(country);
+                              focusCountry(country);
                               setSelectedNumberOfDays(e.target.value);
                             }}
                             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"

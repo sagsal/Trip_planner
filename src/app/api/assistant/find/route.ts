@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
       title: t.title,
       type: t.tripType || '',
       countries: parseList(t.countries),
-      cities: t.cities_data.map((c) => `${c.name}${c.state && c.state !== c.name ? `, ${c.state}` : ''} (${c.numberOfDays || 1}d)`),
+      cities: t.cities_data.map((c) => `${c.name}${c.area && c.area !== c.name ? ` (${c.area})` : ''}${c.state && c.state !== c.name ? `, ${c.state}` : ''} (${c.numberOfDays || 1}d)`),
       days,
       places: places.slice(0, 15),
       reviews,

@@ -43,6 +43,7 @@ interface CityData {
   name: string;
   country: string;
   state?: string | null;
+  area?: string | null;
   numberOfDays?: number;
   arrival?: string | null;
   hotels: Hotel[];
@@ -225,7 +226,7 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
           <div>
             <h2 className="text-[28px] font-extrabold tracking-tight text-[#13212B]">{city.name}</h2>
             <p className="text-[#5B6A73]">
-              {city.state && city.state !== city.name ? `${city.state}, ` : ''}{city.country}
+              {city.area && city.area !== city.name ? `${city.area} · ` : ''}{city.state && city.state !== city.name ? `${city.state}, ` : ''}{city.country}
               {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
             </p>
           </div>
@@ -1031,7 +1032,7 @@ function TripDetailContent() {
                 ))}
               </div>
               <div className="text-sm flex flex-col gap-1.5">
-                <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Where</span><span className="text-right">{[...Array.from(new Set(cities.map((c) => c.state).filter(Boolean) as string[])), ...parseCountries(t.countries)].join(', ')}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Where</span><span className="text-right">{[...Array.from(new Set(cities.map((c) => c.area).filter(Boolean) as string[])), ...Array.from(new Set(cities.map((c) => c.state).filter(Boolean) as string[])), ...parseCountries(t.countries)].join(', ')}</span></div>
                 {daysTotal > 0 && <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Length</span><span>{daysTotal} {daysTotal === 1 ? 'day' : 'days'}</span></div>}
               </div>
               {(travel.outbound.length > 0 || travel.return.length > 0) && (

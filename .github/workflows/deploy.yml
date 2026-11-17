@@ -98,6 +98,8 @@ jobs:
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
           node scripts/cleanup-test-users.js || true
+          echo "--- area cover check (one-time)"
+          curl -s -m 30 "http://localhost:3000/api/places/cover-photos?query=Canadian%20Rockies%2C%20Canada" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);console.log("Canadian Rockies cover choices:",(j.photos||[]).length)})'
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- recent server errors (types only, no user data)"

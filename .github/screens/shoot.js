@@ -111,6 +111,37 @@ const SITE = 'https://tripshare.org';
       await page.screenshot({ path: `out/new-trip-area.jpg`, type: 'jpeg', quality: 70 });
     }
     await page.screenshot({ path: `out/new-trip-filled.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+
+    // Two stays in one city (rentals need no Google search)
+    try {
+      await page.goto(SITE + '/trips/new', { waitUntil: 'networkidle', timeout: 60000 });
+      await page.waitForTimeout(1200);
+      await page.locator('select').filter({ hasText: 'Choose a country' }).first().selectOption({ label: 'Canada' });
+      await page.waitForTimeout(600);
+      const row = page.locator('#state-Canada').locator('xpath=ancestor::div[2]');
+      await row.locator('select').nth(1).selectOption({ label: 'Toronto' }).catch(async () => {
+        await row.locator('select').nth(1).selectOption({ index: 2 });
+      });
+      await row.locator('select').nth(2).selectOption('2');
+      await page.getByRole('button', { name: '+ Add city' }).click();
+      await page.waitForTimeout(800);
+      for (const name of ['Test rental one', 'Test rental two']) {
+        const add = page.getByRole('button', { name: /Add (another )?hotel or rental/ }).first();
+        await add.click();
+        await page.waitForTimeout(300);
+        await page.getByRole('button', { name: /Rental \(Airbnb/ }).first().click();
+        await page.getByPlaceholder(/name/i).first().fill(name).catch(() => {});
+        await page.getByRole('button', { name: 'Save', exact: true }).first().click();
+        await page.waitForTimeout(500);
+      }
+      const stays = await page.locator('text=/^Stay [0-9]$/').count();
+      const names = await page.locator('input[value^="Test rental"]').count();
+      console.log(`two stays test: ${stays} stay labels, ${names} stays with names`);
+      await page.locator('text=Where we stayed').first().scrollIntoViewIfNeeded().catch(() => {});
+      await page.screenshot({ path: `out/two-stays.jpg`, type: 'jpeg', quality: 70 });
+    } catch (e) {
+      console.log('two stays test failed:', e.message.split('\n')[0]);
+    }
   } catch (e) {
     console.log('signed-in screenshots skipped:', e.message);
   }

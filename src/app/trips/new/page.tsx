@@ -800,9 +800,23 @@ function NewTripContent() {
     }));
   };
 
+  // A city can have several stays: the first is city.hotel, the rest are city.extraHotels
+  const stayList = (city: CityData): Hotel[] => [city.hotel, ...(city.extraHotels || [])].filter((h): h is Hotel => !!h);
+  const setStays = (city: CityData, list: Hotel[]): CityData => ({ ...city, hotel: list[0] || null, extraHotels: list.slice(1) });
+  // Adds a stay (a new one goes after any already there)
   const setHotelForCity = (cityId: string, hotel: Hotel | null) => {
-    setCitiesData(prev => prev.map(city => 
-      city.id === cityId ? { ...city, hotel } : city
+    setCitiesData(prev => prev.map(city =>
+      city.id !== cityId ? city : hotel ? setStays(city, [...stayList(city), hotel]) : setStays(city, [])
+    ));
+  };
+  const updateHotelAt = (cityId: string, index: number, field: keyof Hotel, value: any) => {
+    setCitiesData(prev => prev.map(city =>
+      city.id !== cityId ? city : setStays(city, stayList(city).map((h, i) => (i === index ? { ...h, [field]: value } : h)))
+    ));
+  };
+  const removeHotelAt = (cityId: string, index: number) => {
+    setCitiesData(prev => prev.map(city =>
+      city.id !== cityId ? city : setStays(city, stayList(city).filter((_, i) => i !== index))
     ));
   };
 
@@ -1376,22 +1390,25 @@ function NewTripContent() {
                     )}
                   </div>
 
-                  {/* Hotel Section - Single Hotel */}
+                  {/* Hotels / rentals for this city (one or more) */}
                   <div className="mb-6">
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <span className="text-2xl mr-2">🏨</span>
-                        Hotel
+                        {stayList(city).length > 1 ? 'Where we stayed' : 'Hotel'}
                       </h4>
-                      {city.hotel ? (
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      {stayList(city).map((hotel, hi) => (
+                        <div key={hotel.id || hi} className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
+                          {stayList(city).length > 1 && (
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Stay {hi + 1}</p>
+                          )}
                           {(() => {
                             // Parse TripAdvisor data from review field if available
                             let tripadvisorData: any = null;
                             let imageUrl: string | null = null;
                             let tripadvisorWebUrl: string | null = null;
                             let numReviews: string | null = null;
-                            const details = placeFields(city.hotel);
+                            const details = placeFields(hotel);
                             imageUrl = details.imageUrl;
                             tripadvisorWebUrl = details.webUrl;
                             void tripadvisorData;
@@ -1402,7 +1419,7 @@ function NewTripContent() {
                                   <div className="mb-3">
                                     <img
                                       src={imageUrl}
-                                      alt={city.hotel.name}
+                                      alt={hotel.name}
                                       className="w-full h-48 object-cover rounded-lg"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
@@ -1412,17 +1429,17 @@ function NewTripContent() {
                                 )}
                                 
                                 {/* TripAdvisor Information */}
-                                {(city.hotel.rating || numReviews || tripadvisorWebUrl) && (
+                                {(hotel.rating || numReviews || tripadvisorWebUrl) && (
                                   <div className="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                                     <div className="flex items-center justify-between flex-wrap gap-2">
-                                      {city.hotel.rating && city.hotel.rating > 0 && (
+                                      {hotel.rating && hotel.rating > 0 && (
                                         <div className="flex items-center gap-2">
                                           <div className="flex items-center">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                               <Star
                                                 key={star}
                                                 className={`w-4 h-4 ${
-                                                  city.hotel && star <= (city.hotel.rating || 0)
+                                                  hotel && star <= (hotel.rating || 0)
                                                     ? 'text-yellow-400 fill-yellow-400' 
                                                     : 'text-gray-300'
                                                 }`}
@@ -1430,7 +1447,7 @@ function NewTripContent() {
                                             ))}
                                           </div>
                                           <span className="text-sm font-medium text-gray-700">
-                                            {city.hotel.rating}/5
+                                            {hotel.rating}/5
                                           </span>
                                         </div>
                                       )}
@@ -1453,7 +1470,7 @@ function NewTripContent() {
                                     </div>
                                   </div>
                                 )}
-                                {isRental(city.hotel) && (
+                                {isRental(hotel) && (
                                   <p className="mb-2 inline-flex items-center gap-1 text-xs font-medium bg-[#E3ECEF] text-[#3F5B6A] px-2 py-0.5 rounded-full">
                                     🏠 Rental
                                   </p>
@@ -1464,8 +1481,8 @@ function NewTripContent() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                                     <input
                                       type="text"
-                                      value={city.hotel.name}
-                                      onChange={(e) => updateHotel(city.id, 'name', e.target.value)}
+                                      value={hotel.name}
+                                      onChange={(e) => updateHotelAt(city.id, hi, 'name', e.target.value)}
                                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                                       placeholder="Hotel name"
                                     />
@@ -1474,8 +1491,8 @@ function NewTripContent() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                                     <input
                                       type="text"
-                                      value={city.hotel.location}
-                                      onChange={(e) => updateHotel(city.id, 'location', e.target.value)}
+                                      value={hotel.location}
+                                      onChange={(e) => updateHotelAt(city.id, hi, 'location', e.target.value)}
                                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                                       placeholder="Address"
                                     />
@@ -1488,13 +1505,13 @@ function NewTripContent() {
                                       <button
                                         key={star}
                                         type="button"
-                                        onClick={() => updateHotel(city.id, 'rating', city.hotel && city.hotel.rating === star ? 0 : star)}
+                                        onClick={() => updateHotelAt(city.id, hi, 'rating', hotel && hotel.rating === star ? 0 : star)}
                                         className="p-0.5"
                                         title={`${star} star${star > 1 ? 's' : ''}`}
                                       >
                                         <Star
                                           className={`w-5 h-5 ${
-                                            city.hotel && star <= (city.hotel.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                                            hotel && star <= (hotel.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
                                           }`}
                                         />
                                       </button>
@@ -1504,8 +1521,8 @@ function NewTripContent() {
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Your review</label>
                                   <textarea
-                                    value={city.hotel.review}
-                                    onChange={(e) => updateHotel(city.id, 'review', e.target.value)}
+                                    value={hotel.review}
+                                    onChange={(e) => updateHotelAt(city.id, hi, 'review', e.target.value)}
                                     rows={3}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                                     placeholder="What was it like? Would you stay again?"
@@ -1513,16 +1530,17 @@ function NewTripContent() {
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => setHotelForCity(city.id, null)}
+                                  onClick={() => removeHotelAt(city.id, hi)}
                                   className="mt-3 text-red-500 hover:text-red-700 text-sm"
                                 >
-                                  Remove Hotel
+                                  Remove
                                 </button>
                               </>
                             );
                           })()}
                         </div>
-                      ) : (
+                      ))}
+                      {(
                         <div className="space-y-3">
                           {addingHotel === city.id ? (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
@@ -1681,17 +1699,28 @@ function NewTripContent() {
                             </div>
                           ) : (
                             <>
-                              <div className="text-center py-4">
-                                <p className="text-gray-600 mb-3">No hotel or rental added</p>
+                              {stayList(city).length === 0 ? (
+                                <div className="text-center py-4">
+                                  <p className="text-gray-600 mb-3">No hotel or rental added</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAddingHotel(city.id)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                  >
+                                    <Plus className="w-4 h-4 inline mr-2" />
+                                    Add hotel or rental
+                                  </button>
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
                                   onClick={() => setAddingHotel(city.id)}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                  className="w-full flex items-center justify-center px-3 py-2.5 border-2 border-dashed border-blue-300 text-blue-700 rounded-xl hover:bg-blue-50 transition-colors text-sm font-medium"
                                 >
-                                  <Plus className="w-4 h-4 inline mr-2" />
-                                  Add hotel or rental
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Add another hotel or rental
                                 </button>
-                              </div>
+                              )}
                             </>
                           )}
                         </div>

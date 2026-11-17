@@ -105,6 +105,11 @@ jobs:
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
           node scripts/cleanup-test-users.js || true
+          echo "--- session caching check (one-time)"
+          curl -s -D - -o /dev/null -m 20 https://tripshare.org/api/auth/session | grep -iE "^(HTTP|cache-control|cf-cache-status|x-nextjs-cache|x-cache|age|vary|set-cookie|server)" | sed -E 's/(set-cookie: [^=]*=)[^;]*/\1…/I'
+          echo -n "anonymous answer: "; curl -s -m 20 https://tripshare.org/api/auth/session | head -c 40; echo
+          curl -s -D - -o /dev/null -m 20 https://tripshare.org/ | grep -iE "^(HTTP|cache-control|cf-cache-status|x-nextjs-cache|x-cache|age|server)"
+          sudo grep -rnE "proxy_cache|expires|add_header|fastcgi_cache" /etc/nginx/sites-enabled/ /etc/nginx/nginx.conf 2>/dev/null | head -20
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
           echo "--- Help me plan test (temporary test users, deleted afterwards)"

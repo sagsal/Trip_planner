@@ -21,6 +21,8 @@ model User {
   trips Trip[]
   sandboxTrips SandboxTrip[]
   savedPlaces  SavedPlace[]
+  tripComments TripComment[]
+  commentAgrees TripCommentAgree[]
 
   @@map("users")
 }
@@ -145,10 +147,15 @@ model SandboxTrip {
   startDate String?  // YYYY-MM-DD, optional while planning
   endDate   String?
   notes     String?  @db.Text
+  // "Help me plan": shared with all members for comments
+  feedbackOpen     Boolean   @default(false)
+  feedbackAsk      String?   @db.Text // what the planner wants advice on
+  feedbackOpenedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  places SavedPlace[]
+  places   SavedPlace[]
+  comments TripComment[]
 
   @@index([userId])
   @@map("sandbox_trips")
@@ -196,4 +203,41 @@ model ApiUsage {
   updatedAt DateTime @updatedAt
 
   @@map("api_usage")
+}
+
+// A member's advice on a planned trip shared in "Help me plan"
+model TripComment {
+  id            String      @id @default(cuid())
+  sandboxTripId String
+  sandboxTrip   SandboxTrip @relation(fields: [sandboxTripId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  targetType  String  // "trip" | "city" | "place"
+  targetKey   String? // city name, or the saved place's id
+  targetLabel String? // what it was about, as shown then (place or city name)
+  reaction    String  // e.g. "too_many_days", "skip", "swap", "add_place", "note"
+  text        String? @db.Text
+  suggestion  String? @db.Text // JSON: a suggested place (name, location, photo, link, kind, city)
+  status      String  @default("open") // "open" | "accepted" | "dismissed"
+  createdAt   DateTime @default(now())
+
+  agrees TripCommentAgree[]
+
+  @@index([sandboxTripId])
+  @@index([userId, createdAt])
+  @@map("trip_comments")
+}
+
+model TripCommentAgree {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   TripComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([commentId, userId])
+  @@index([userId, createdAt])
+  @@map("trip_comment_agrees")
 }

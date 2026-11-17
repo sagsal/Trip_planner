@@ -107,6 +107,8 @@ jobs:
           node scripts/cleanup-test-users.js || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
+          echo "--- Help me plan test (temporary test users, deleted afterwards)"
+          node scripts/test-feedback.js || true
           echo "--- recent server errors (types only, no user data)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
             [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|Google Places search failed|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6

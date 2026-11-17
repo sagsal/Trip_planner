@@ -10,6 +10,8 @@ export interface SandboxTripData {
   startDate?: string | null;
   endDate?: string | null;
   notes?: string | null;
+  feedbackOpen?: boolean;
+  feedbackAsk?: string | null;
   createdAt?: string;
 }
 

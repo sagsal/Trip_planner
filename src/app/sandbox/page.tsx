@@ -335,6 +335,7 @@ function SandboxContent() {
                     onDelete={() => deleteTrip(current)}
                     onFinalize={() => turnIntoTrip(current)}
                     onFill={() => { setFillAsk(''); setFillOpen(true); }}
+                    onFeedbackChanged={() => user && load(user)}
                   />
                   {fillOpen && user && (
                     <FillWithAI
@@ -432,6 +433,7 @@ function TripHeader({
   onDelete,
   onFinalize,
   onFill,
+  onFeedbackChanged,
 }: {
   trip: SandboxTripData;
   count: number;
@@ -439,8 +441,30 @@ function TripHeader({
   onDelete: () => void;
   onFinalize: () => void;
   onFill: () => void;
+  onFeedbackChanged: () => void;
 }) {
   const [title, setTitle] = useState(trip.title);
+  // "Ask for feedback": share this plan in Help me plan
+  const [askOpen, setAskOpen] = useState(false);
+  const [ask, setAsk] = useState(trip.feedbackAsk || '');
+  const [askBusy, setAskBusy] = useState(false);
+  const [askError, setAskError] = useState('');
+  useEffect(() => { setAskOpen(false); setAsk(trip.feedbackAsk || ''); setAskError(''); }, [trip.id, trip.feedbackAsk]);
+  const shareForFeedback = async () => {
+    setAskBusy(true);
+    setAskError('');
+    try {
+      const r = await fetch(`/api/feedback/${trip.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'open', ask }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Couldn’t share it.');
+      setAskOpen(false);
+      onFeedbackChanged();
+    } catch (e) {
+      setAskError(e instanceof Error ? e.message : 'Couldn’t share it.');
+    } finally {
+      setAskBusy(false);
+    }
+  };
   const [notes, setNotes] = useState(trip.notes || '');
   useEffect(() => { setTitle(trip.title); setNotes(trip.notes || ''); }, [trip.id, trip.title, trip.notes]);
 
@@ -462,6 +486,19 @@ function TripHeader({
           >
             ✨ Fill with AI
           </button>
+          {trip.feedbackOpen ? (
+            <Link href={`/feedback/${trip.id}`} className="inline-flex items-center px-4 py-2 bg-[#E3F0F0] border border-[#C3DEDF] text-[#16535A] rounded-lg hover:bg-[#D4E9EA] text-sm font-medium">
+              💬 See feedback
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAskOpen((v) => !v)}
+              className="inline-flex items-center px-4 py-2 bg-white border border-[#C9D9DF] text-[#2F4A5C] rounded-lg hover:bg-[#F3F7F8] text-sm font-medium"
+            >
+              💬 Ask for feedback
+            </button>
+          )}
           <button
             type="button"
             onClick={onFinalize}
@@ -481,6 +518,28 @@ function TripHeader({
           </button>
         </div>
       </div>
+      {askOpen && !trip.feedbackOpen && (
+        <div className="mb-4 rounded-xl bg-[#F1F6F6] border border-[#D4E5E6] p-4">
+          <p className="font-semibold text-[#16535A] mb-1">Share this plan in “Help me plan”</p>
+          <p className="text-sm text-[#3F5B6A] mb-3">All members will be able to see this planned trip and its places, and comment: too many days, a hotel to swap, a place not to miss. You can accept a suggestion with one tap, and close feedback any time.</p>
+          <label htmlFor="feedback-ask" className="block text-sm font-medium text-[#2F4A5C] mb-1">What would you like advice on? (optional)</label>
+          <textarea
+            id="feedback-ask"
+            value={ask}
+            onChange={(e) => setAsk(e.target.value.slice(0, 600))}
+            rows={2}
+            placeholder="e.g. Is 4 days in Bogotá too many? Where should we stay in Cartagena?"
+            className="w-full px-3 py-2 border border-[#C9D9DF] rounded-lg text-sm bg-white"
+          />
+          {askError && <p className="text-sm text-red-600 mt-1">{askError}</p>}
+          <div className="flex gap-2 mt-3">
+            <button type="button" onClick={shareForFeedback} disabled={askBusy} className="inline-flex items-center px-4 py-2 bg-[#1F6F78] text-white rounded-lg text-sm font-semibold disabled:opacity-60">
+              {askBusy ? 'Sharing…' : 'Share for feedback'}
+            </button>
+            <button type="button" onClick={() => setAskOpen(false)} className="px-3 py-2 text-sm text-[#5B6B75]">Cancel</button>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <select
           value={trip.region || ''}

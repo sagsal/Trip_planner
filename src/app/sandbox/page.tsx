@@ -270,8 +270,12 @@ function SandboxContent() {
                 return (
                   <button key={t.id} type="button" onClick={() => openTrip(t.id)}
                     className="text-left bg-white border border-[#ECE7DF] rounded-[20px] overflow-hidden hover:shadow-[0_8px_28px_rgba(19,33,43,0.08)] transition-shadow flex flex-col">
-                    <div className="relative h-32 bg-[#E6DED2]">
-                      {photo && <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
+                    <div className="relative h-32" style={{ background: '#DCE8E6' }}>
+                      {photo ? (
+                        <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <span className="absolute inset-0 flex items-center justify-center text-[#1F6F78]/60"><MapPin className="w-8 h-8" /></span>
+                      )}
                       <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                         {f?.open ? (
                           <span className="bg-[#1F6F78] text-white rounded-full px-2.5 py-1 text-xs font-semibold">💬 {f.open} new</span>

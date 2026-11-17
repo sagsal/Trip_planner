@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Share2, Link2, Check, Mail, X } from 'lucide-react';
+import { Share2, Link2, Check, Mail, X, ChevronDown } from 'lucide-react';
 
 /** "Share" on a trip page: the phone's own share sheet where there is one, else copy / WhatsApp / Facebook / email */
 export default function ShareTrip({ title, text, className = '' }: { title: string; text?: string; className?: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -47,7 +49,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
       document.removeEventListener('mousedown', close);
       document.removeEventListener('keydown', esc);
     };
-  }, [open]);
+  }, [open, emailOpen]);
 
   const onClick = async () => {
     const nav: any = typeof navigator !== 'undefined' ? navigator : null;
@@ -55,6 +57,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
     if (nav?.share && /Android|iPhone|iPad|iPod/i.test(nav.userAgent || '')) {
       try { await nav.share({ title, text: message, url }); return; } catch (e: any) { if (e?.name === 'AbortError') return; }
     }
+    setEmailOpen(false);
     setOpen((o) => !o);
   };
 
@@ -72,6 +75,22 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
   };
 
   const enc = encodeURIComponent;
+  // Email: open a new message in the webmail people actually use (a plain "mailto" does nothing without a mail app)
+  const subject = `Trip: ${title}`;
+  const body = `${message}\n\n${url}`;
+  const emailLinks = [
+    { label: 'Gmail', href: `https://mail.google.com/mail/?view=cm&fs=1&su=${enc(subject)}&body=${enc(body)}` },
+    { label: 'Outlook.com / Hotmail', href: `https://outlook.live.com/mail/0/deeplink/compose?subject=${enc(subject)}&body=${enc(body)}` },
+    { label: 'Outlook (work or school)', href: `https://outlook.office.com/mail/deeplink/compose?subject=${enc(subject)}&body=${enc(body)}` },
+    { label: 'Yahoo Mail', href: `https://compose.mail.yahoo.com/?subject=${enc(subject)}&body=${enc(body)}` },
+    { label: 'Mail app on this device', href: `mailto:?subject=${enc(subject)}&body=${enc(body)}` },
+  ];
+  const copyEmail = async () => {
+    const text = `${subject}\n\n${body}`;
+    try { await navigator.clipboard.writeText(text); } catch {}
+    setEmailCopied(true);
+    setTimeout(() => setEmailCopied(false), 2500);
+  };
   const links = [
     { label: 'WhatsApp', href: `https://wa.me/?text=${enc(`${message} ${url}`)}`, color: '#25D366' },
     { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`, color: '#1877F2' },
@@ -111,10 +130,24 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
               {l.label}
             </a>
           ))}
-          <a role="menuitem" href={`mailto:?subject=${enc(title)}&body=${enc(`${message}\n\n${url}`)}`} onClick={() => setOpen(false)}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm">
+          <button type="button" role="menuitem" aria-expanded={emailOpen} onClick={() => setEmailOpen((v) => !v)}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm text-left">
             <Mail className="w-4 h-4" /> Email
-          </a>
+            <ChevronDown className={`w-4 h-4 ml-auto text-[#5B6A73] transition-transform ${emailOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {emailOpen && (
+            <div className="ml-6 mb-1 border-l border-[#ECE7DF] pl-2">
+              {emailLinks.map((l) => (
+                <a key={l.label} role="menuitem" href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener noreferrer" onClick={() => setOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-[#F6F3EE] text-sm">
+                  {l.label}
+                </a>
+              ))}
+              <button type="button" role="menuitem" onClick={copyEmail} className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#F6F3EE] text-sm">
+                {emailCopied ? 'Copied: paste it into any email' : 'Copy email text'}
+              </button>
+            </div>
+          )}
           <p className="px-3 pt-1.5 pb-1 text-xs text-[#5B6A73]">For Instagram, copy the link and add it to your story or bio.</p>
         </div>,
         document.body

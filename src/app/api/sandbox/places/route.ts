@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 import { cleanPlace } from '@/lib/sandbox';
 
 /**
@@ -12,7 +13,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   let body: any = {};
   try { body = await request.json(); } catch {}
-  const userId = typeof body.userId === 'string' ? body.userId : '';
+  const auth = requireUser(request, body.userId);
+  if ('error' in auth) return auth.error;
+  const userId = auth.userId;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { id: true } }) : null;
   if (!user) return NextResponse.json({ error: 'Please sign in to save places.' }, { status: 401 });
 

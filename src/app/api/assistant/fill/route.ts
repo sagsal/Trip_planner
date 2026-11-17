@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 import { askClaudeTool, ANTHROPIC_API_KEY } from '@/lib/claude';
 import { searchGooglePlaces, GOOGLE_PLACES_API_KEY } from '@/lib/googlePlaces';
 import { placeFields } from '@/lib/placeDetails';
@@ -244,7 +245,9 @@ export async function POST(request: NextRequest) {
   if (!ANTHROPIC_API_KEY) return NextResponse.json({ error: 'AI isn’t set up.' }, { status: 503 });
   let body: any = {};
   try { body = await request.json(); } catch {}
-  const userId = typeof body.userId === 'string' ? body.userId : '';
+  const auth = requireUser(request, body.userId);
+  if ('error' in auth) return auth.error;
+  const userId = auth.userId;
   const sandboxTripId = typeof body.sandboxTripId === 'string' ? body.sandboxTripId : '';
   const req = typeof body.request === 'string' ? body.request.trim().slice(0, 2000) : '';
   if (!userId || !sandboxTripId) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
@@ -265,7 +268,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const sp = new URL(request.url).searchParams;
   const job = jobs.get(sp.get('job') || '');
-  if (!job || job.userId !== (sp.get('userId') || '')) {
+  const auth = requireUser(request, sp.get('userId'));
+  if ('error' in auth) return auth.error;
+  if (!job || job.userId !== auth.userId) {
     return NextResponse.json({ status: 'error', error: 'This plan has expired. Please try again.' }, { status: 404 });
   }
   if (job.status === 'running') return NextResponse.json({ status: 'running' });

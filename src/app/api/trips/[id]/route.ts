@@ -4,6 +4,7 @@ import { enrichCitiesData } from '@/lib/placeEnrich';
 import { cleanArrival, travelToStore } from '@/lib/travel';
 import { cleanTripType } from '@/lib/regions';
 import { prisma } from '@/lib/prisma';
+import { requireUser, sessionUserId } from '@/lib/session';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -441,13 +442,12 @@ export async function GET(
     }
 
     // Allow access to public trips or draft trips owned by the user
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    
+    // Owner = the signed-in user (from the session cookie, not a user id in the address)
+    const userId = sessionUserId(request);
+
     // If it's a draft trip, user must own it
     if (trip.isDraft) {
       if (!userId || trip.userId !== userId) {
-        console.log('Access denied to draft trip:', id, 'userId:', userId);
         return NextResponse.json(
           { error: 'Draft trip not found' },
           { status: 404 }
@@ -456,7 +456,6 @@ export async function GET(
     } else if (!trip.isPublic) {
       // Private (non-draft) trips also need ownership check
       if (!userId || trip.userId !== userId) {
-        console.log('Access denied to private trip:', id, 'userId:', userId);
         return NextResponse.json(
           { error: 'Trip not found' },
           { status: 404 }
@@ -550,7 +549,9 @@ export async function PUT(
       );
     }
 
-    if (existingTrip.userId !== userId) {
+    const auth = requireUser(request, userId);
+    if ('error' in auth) return auth.error;
+    if (existingTrip.userId !== auth.userId) {
       return NextResponse.json(
         { error: 'Unauthorized to edit this trip' },
         { status: 403 }
@@ -709,6 +710,12 @@ export async function POST(
     }
 
     const { itemType, item, cityId, dayId } = body;
+
+    // Only the trip's owner can add to it
+    const auth = requireUser(request, body?.userId);
+    if ('error' in auth) return auth.error;
+    const owned = await prisma.trip.findFirst({ where: { id, userId: auth.userId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Not allowed.' }, { status: 403 });
 
     console.log('POST /api/trips/[id] - Request received:', {
       id,
@@ -987,7 +994,9 @@ export async function DELETE(
       );
     }
 
-    if (existingTrip.userId !== userId) {
+    const auth = requireUser(request, userId);
+    if ('error' in auth) return auth.error;
+    if (existingTrip.userId !== auth.userId) {
       return NextResponse.json(
         { error: 'Unauthorized to delete this trip' },
         { status: 403 }

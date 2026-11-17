@@ -3,6 +3,11 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
+const sessionCookie = require('./session-token');
+let COOKIE = '';
+const _fetch = global.fetch;
+// Every request carries the signed-in session of the current test user
+const fetch = (url, opts = {}) => _fetch(url, { ...opts, headers: { ...(opts.headers || {}), ...(COOKIE ? { Cookie: COOKIE } : {}) } });
 const j = (r) => r.json().catch(() => ({}));
 let failures = 0;
 const check = (name, ok) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) failures++; };
@@ -11,6 +16,10 @@ const check = (name, ok) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if
   const email = `sandbox-test-${Date.now()}@example.invalid`;
   const user = await prisma.user.create({ data: { email, name: 'Sandbox Test', password: 'x' } });
   try {
+    COOKIE = '';
+    const noSession = await _fetch(`${BASE}/api/sandbox?userId=${user.id}`);
+    check('no sign-in is refused', noSession.status === 401);
+    COOKIE = sessionCookie(user.id);
     const post = (path, body) => fetch(BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j);
     const patch = (path, body) => fetch(BASE + path, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j);
 
@@ -35,8 +44,14 @@ const check = (name, ok) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if
     check('note and day saved', p1.place?.note === 'go at sunset' && p1.place?.dayNumber === 2);
 
     const other = await prisma.user.create({ data: { email: `x-${email}`, name: 'Other', password: 'x' } });
+    COOKIE = sessionCookie(other.id);
     const p2 = await patch(`/api/sandbox/places/${beach.id}`, { userId: other.id, note: 'hacked' });
     check("someone else can't edit it", p2.error && !p2.place);
+    const p2b = await patch(`/api/sandbox/places/${beach.id}`, { userId: user.id, note: 'hacked' });
+    check("pretending to be the owner is refused", p2b.error && !p2b.place);
+    const drafts = await fetch(`${BASE}/api/trips?drafts=true&userId=${user.id}`).then(j);
+    check("can't list someone else's drafts", (drafts.trips || []).every((t) => t.userId !== user.id));
+    COOKIE = sessionCookie(user.id);
     await prisma.user.delete({ where: { id: other.id } });
 
     const hotel = list.places.find((p) => p.name === 'Test Hotel');

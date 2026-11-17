@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { setSessionCookie } from '@/lib/session';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -22,8 +23,6 @@ export async function POST(request: NextRequest) {
       where: { email }
     });
     
-    console.log('Login attempt for email:', email);
-    console.log('Found user:', user ? 'Yes' : 'No');
 
     if (!user) {
       return NextResponse.json(
@@ -42,16 +41,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return user data (excluding password)
+    // Return user data (excluding password) and start a signed session
     const { password: _, ...userWithoutPassword } = user;
-
-    return NextResponse.json(
-      { 
-        message: 'Login successful',
-        user: userWithoutPassword 
-      },
-      { status: 200 }
-    );
+    const res = NextResponse.json({ message: 'Login successful', user: userWithoutPassword }, { status: 200 });
+    setSessionCookie(res, user.id);
+    return res;
 
   } catch (error) {
     console.error('Login error:', error);

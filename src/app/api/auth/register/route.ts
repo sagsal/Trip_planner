@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { setSessionCookie } from '@/lib/session';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -48,18 +49,13 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('Registration successful for:', email);
 
     // Return user data (excluding password)
     const { password: _, ...user } = newUser;
 
-    return NextResponse.json(
-      { 
-        message: 'User created successfully',
-        user 
-      },
-      { status: 201 }
-    );
+    const res = NextResponse.json({ message: 'User created successfully', user }, { status: 201 });
+    setSessionCookie(res, newUser.id);
+    return res;
 
   } catch (error) {
     console.error('Registration error:', error);

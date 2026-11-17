@@ -62,13 +62,13 @@ const SITE = 'https://tripshare.org';
   // Signed-in pages, with a temporary account (removed by scripts/cleanup-test-users.js on the next deploy)
   try {
     const email = `screenshot-bot-${Date.now()}@example.invalid`;
-    const reg = await (await fetch(`${SITE}/api/auth/register`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Screenshot Bot', email, password: 'Screens-' + Math.random().toString(36).slice(2) + '9!' }),
+    // Registered through the browser, so it gets the sign-in session cookie
+    const reg = await (await ctx.request.post(`${SITE}/api/auth/register`, {
+      data: { name: 'Screenshot Bot', email, password: 'Screens-' + Math.random().toString(36).slice(2) + '9!' },
     })).json();
     const user = reg.user;
     if (!user?.id) throw new Error('could not make a test account');
-    await fetch(`${SITE}/api/sandbox`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, title: 'Greece 2027', region: 'Europe' }) });
+    await ctx.request.post(`${SITE}/api/sandbox`, { data: { userId: user.id, title: 'Greece 2027', region: 'Europe' } });
     await page.goto(SITE + '/', { waitUntil: 'domcontentloaded' });
     await page.evaluate((u) => localStorage.setItem('user', JSON.stringify(u)), user);
     for (const [name, path] of [['account', '/account'], ['new-trip', '/trips/new'], ['sandbox', '/sandbox'], ['import', '/trips/import']]) {

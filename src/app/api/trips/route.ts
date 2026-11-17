@@ -5,6 +5,7 @@ import { enrichCitiesData } from '@/lib/placeEnrich';
 import { cleanArrival, travelToStore } from '@/lib/travel';
 import { cleanTripType } from '@/lib/regions';
 import { prisma } from '@/lib/prisma';
+import { requireUser, sessionUserId } from '@/lib/session';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -444,6 +445,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate user data
+    const auth = requireUser(request, userId);
+    if ('error' in auth) return auth.error;
     if (!userId || !userName || !userEmail) {
       const errorResponse = { error: 'User authentication required', received: { userId: !!userId, userName: !!userName, userEmail: !!userEmail } };
       console.error('Validation error:', errorResponse);
@@ -451,20 +454,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure user exists to satisfy FK constraint
-    let userRecord = await prisma.user.findUnique({ where: { id: userId } });
-    if (!userRecord) {
-      userRecord = await prisma.user.findUnique({ where: { email: userEmail } });
-    }
-    if (!userRecord) {
-      // Create a minimal user record if missing (for demo/local use)
-      userRecord = await prisma.user.create({
-        data: {
-          email: userEmail,
-          name: userName,
-          password: 'placeholder'
-        }
-      });
-    }
+    const userRecord = await prisma.user.findUnique({ where: { id: auth.userId } });
+    if (!userRecord) return NextResponse.json({ error: 'Please sign in again.', signIn: true }, { status: 401 });
 
     // Log received data for debugging
     console.log('Received trip data:', {
@@ -656,7 +647,9 @@ export async function GET(request: NextRequest) {
     const drafts = searchParams.get('drafts') === 'true';
     const publicOnly = searchParams.get('public') === 'true';
     const privateOnly = searchParams.get('private') === 'true';
-    const userId = searchParams.get('userId');
+    // Your own drafts and private trips come from the session, never from a user id in the address
+    const userId = (drafts || privateOnly) ? sessionUserId(request) : searchParams.get('userId');
+    if ((drafts || privateOnly) && !userId) return NextResponse.json({ error: 'Please sign in again.', signIn: true }, { status: 401 });
 
     // Build where clause
     let where: any = {};

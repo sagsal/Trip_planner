@@ -81,6 +81,32 @@ export default function Navigation() {
     return () => { cancelled = true; window.removeEventListener(SANDBOX_EVENT, onChange); };
   }, [user]);
 
+  // The server's sign-in session is the real one: if it has ended (or predates the security update),
+  // sign out here too and ask to sign in again; if it exists but this browser lost the user, restore it
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const stored = localStorage.getItem('user');
+        if (d.user) {
+          if (!stored) {
+            localStorage.setItem('user', JSON.stringify(d.user));
+            window.dispatchEvent(new Event('storage'));
+          }
+        } else if (stored) {
+          localStorage.removeItem('user');
+          window.dispatchEvent(new Event('storage'));
+          const here = window.location.pathname + window.location.search;
+          const needsSignIn = /^\/(account|sandbox|trips\/new|trips\/import)/.test(window.location.pathname);
+          if (needsSignIn) window.location.href = `/login?reason=session&next=${encodeURIComponent(here)}`;
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // Check authentication status on mount and when it changes (login/logout, other tabs)
   useEffect(() => {
     const checkAuth = () => {
@@ -124,6 +150,7 @@ export default function Navigation() {
   }, [isOpen]);
 
   const handleLogout = () => {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setUser(null);

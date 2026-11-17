@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 import { cleanTripFields } from '@/lib/sandbox';
 
 /**
@@ -12,8 +13,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   let body: any = {};
   try { body = await request.json(); } catch {}
-  if (typeof body.userId !== 'string') return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
-  const result = await prisma.sandboxTrip.updateMany({ where: { id, userId: body.userId }, data: cleanTripFields(body) });
+  const auth = requireUser(request, body.userId);
+  if ('error' in auth) return auth.error;
+  const result = await prisma.sandboxTrip.updateMany({ where: { id, userId: auth.userId }, data: cleanTripFields(body) });
   if (result.count === 0) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   const trip = await prisma.sandboxTrip.findUnique({ where: { id } });
   return NextResponse.json({ trip });
@@ -22,8 +24,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const sp = new URL(request.url).searchParams;
-  const userId = sp.get('userId');
-  if (!userId) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
+  const auth = requireUser(request, sp.get('userId'));
+  if ('error' in auth) return auth.error;
+  const userId = auth.userId;
   const trip = await prisma.sandboxTrip.findFirst({ where: { id, userId }, select: { id: true } });
   if (!trip) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   if (sp.get('withPlaces')) {

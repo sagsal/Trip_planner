@@ -63,7 +63,6 @@ function LoginForm() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Login successful, user data:', data.user);
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(data.user));
         // Force navigation update
@@ -177,6 +176,11 @@ function LoginForm() {
               )}
 
               {/* Error Message */}
+              {searchParams.get('reason') === 'session' && !error && (
+                <div className="mb-4 rounded-xl bg-[#E3F0F0] border border-[#C3DEDF] text-[#16535A] px-4 py-3 text-sm">
+                  We’ve made sign-in more secure. Please sign in once more and you’ll be taken back where you were.
+                </div>
+              )}
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}

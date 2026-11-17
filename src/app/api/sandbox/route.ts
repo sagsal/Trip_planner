@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 import { cleanTripFields } from '@/lib/sandbox';
 
 /**
@@ -17,7 +18,9 @@ async function userExists(userId: unknown): Promise<string | null> {
 
 export async function GET(request: NextRequest) {
   const sp = new URL(request.url).searchParams;
-  const userId = await userExists(sp.get('userId'));
+  const auth = requireUser(request, sp.get('userId'));
+  if ('error' in auth) return auth.error;
+  const userId = await userExists(auth.userId);
   if (!userId) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
 
   if (sp.get('countOnly')) {
@@ -34,7 +37,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let body: any = {};
   try { body = await request.json(); } catch {}
-  const userId = await userExists(body.userId);
+  const auth = requireUser(request, body.userId);
+  if ('error' in auth) return auth.error;
+  const userId = await userExists(auth.userId);
   if (!userId) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
   const count = await prisma.sandboxTrip.count({ where: { userId } });
   if (count >= 200) return NextResponse.json({ error: 'You have a lot of planned trips! Remove one first.' }, { status: 400 });

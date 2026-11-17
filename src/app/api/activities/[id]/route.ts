@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 
 export async function PUT(
   request: NextRequest,
@@ -12,8 +13,11 @@ export async function PUT(
     const { name, location, rating, review, liked } = body;
 
     // Check if activity exists
-    const existingActivity = await prisma.activity.findUnique({
-      where: { id }
+    const auth1 = requireUser(request);
+    if ('error' in auth1) return auth1.error;
+    // Only the owner of the trip can change or remove its places
+    const existingActivity = await prisma.activity.findFirst({
+      where: { id, city: { trip: { userId: auth1.userId } } }
     });
 
     if (!existingActivity) {
@@ -57,8 +61,11 @@ export async function DELETE(
     const { id } = await params;
 
     // Check if activity exists
-    const activity = await prisma.activity.findUnique({
-      where: { id }
+    const auth2 = requireUser(request);
+    if ('error' in auth2) return auth2.error;
+    // Only the owner of the trip can change or remove its places
+    const activity = await prisma.activity.findFirst({
+      where: { id, city: { trip: { userId: auth2.userId } } }
     });
 
     if (!activity) {

@@ -65,6 +65,13 @@ jobs:
           git pull origin main
           if [ -f "$ENV_KEEP" ]; then cp "$ENV_KEEP" .env; fi
 
+          # Secret for signing sign-in sessions: made once on the server, never in git
+          if [ ! -s "$HOME/.trip_planner_session_secret" ]; then openssl rand -hex 48 > "$HOME/.trip_planner_session_secret"; chmod 600 "$HOME/.trip_planner_session_secret"; fi
+          touch .env.local
+          grep -v '^SESSION_SECRET=' .env.local > .env.local.tmp || true
+          echo "SESSION_SECRET=$(cat $HOME/.trip_planner_session_secret)" >> .env.local.tmp
+          mv .env.local.tmp .env.local && chmod 600 .env.local
+          echo "session secret: $(grep -c '^SESSION_SECRET=.\{64,\}' .env.local) set"
           npm install
           npx prisma db push --skip-generate
           # One-off data fixes (safe to repeat; print counts only)

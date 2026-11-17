@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 
 export async function PUT(
   request: NextRequest,
@@ -12,8 +13,11 @@ export async function PUT(
     const { name, location, rating, review, liked } = body;
 
     // Check if hotel exists
-    const existingHotel = await prisma.hotel.findUnique({
-      where: { id }
+    const auth1 = requireUser(request);
+    if ('error' in auth1) return auth1.error;
+    // Only the owner of the trip can change or remove its places
+    const existingHotel = await prisma.hotel.findFirst({
+      where: { id, city: { trip: { userId: auth1.userId } } }
     });
 
     if (!existingHotel) {
@@ -55,30 +59,26 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
-    console.log('DELETE /api/hotels/[id] - Hotel ID:', id);
 
     // Check if hotel exists
-    const hotel = await prisma.hotel.findUnique({
-      where: { id }
+    const auth2 = requireUser(request);
+    if ('error' in auth2) return auth2.error;
+    // Only the owner of the trip can change or remove its places
+    const hotel = await prisma.hotel.findFirst({
+      where: { id, city: { trip: { userId: auth2.userId } } }
     });
 
     if (!hotel) {
-      console.log('Hotel not found:', id);
       return NextResponse.json(
         { error: 'Hotel not found', hotelId: id },
         { status: 404 }
       );
     }
 
-    console.log('Deleting hotel:', hotel.name, 'ID:', id);
-
     // Delete the hotel
     await prisma.hotel.delete({
       where: { id }
     });
-
-    console.log('Hotel deleted successfully:', id);
 
     return NextResponse.json(
       { message: 'Hotel deleted successfully', hotelId: id },

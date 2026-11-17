@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/session';
 
 /**
  * PATCH  /api/sandbox/places/ID { userId, note?, dayNumber?, sandboxTripId? }
@@ -11,8 +12,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   let body: any = {};
   try { body = await request.json(); } catch {}
-  const userId = typeof body.userId === 'string' ? body.userId : '';
-  if (!userId) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
+  const auth = requireUser(request, body.userId);
+  if ('error' in auth) return auth.error;
+  const userId = auth.userId;
 
   const data: Record<string, unknown> = {};
   if (body.note !== undefined) data.note = typeof body.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 4000) : null;
@@ -38,8 +40,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const userId = new URL(request.url).searchParams.get('userId') || '';
-  if (!userId) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
+  const auth = requireUser(request, new URL(request.url).searchParams.get('userId'));
+  if ('error' in auth) return auth.error;
+  const userId = auth.userId;
   const result = await prisma.savedPlace.deleteMany({ where: { id, userId } });
   if (result.count === 0) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   const count = await prisma.savedPlace.count({ where: { userId } });

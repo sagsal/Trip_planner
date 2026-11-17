@@ -59,7 +59,14 @@ const STEPS: Step[] = [
     target: 'sandbox-head',
     needsLogin: true,
     title: 'My Travel Sandbox',
-    text: 'Your Sandbox holds every trip you’re planning, as many as you like. Start a new planned trip, add the places you saved, and press Fill with AI to get a day by day plan built from real trips.',
+    text: 'Your Sandbox holds every trip you’re planning, as many as you like. Open one to see its Plan, day by day, and the Ideas you haven’t placed yet. Fill with AI can build the days for you from real trips.',
+  },
+  {
+    path: '/feedback',
+    target: 'help-me-plan',
+    needsLogin: true,
+    title: 'Get feedback',
+    text: 'Want a second opinion? In a planned trip, open the Feedback tab and share it. It appears here, in Help me plan, where members can say too many days, suggest a better hotel, or point out what not to miss. You accept the best ideas with one tap. And you can help others plan their trips too.',
   },
   {
     path: '/trips/new',

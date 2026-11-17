@@ -38,7 +38,7 @@ export default function HelpMePlanPage() {
   return (
     <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Help me plan</h1>
+        <h1 data-tour="help-me-plan" className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Help me plan</h1>
         <p className="text-[#4A5963] max-w-2xl mb-6">
           Trips members are planning right now. Share what you know: too many days somewhere, a hotel you’d skip, or the place they shouldn’t miss.
         </p>

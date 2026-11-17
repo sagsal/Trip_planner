@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 export const metadata = {
   title: 'How to use · Share and Plan',
-  description: 'A quick guide to adding your trips, importing your notes, browsing other travelers’ trips and planning in your Travel Sandbox.',
+  description: 'A quick guide to adding your trips, importing your notes, browsing other travelers’ trips, planning in your Travel Sandbox and getting feedback.',
 };
 
 type Step = { title: string; body: ReactNode };
@@ -68,11 +68,24 @@ const SECTIONS: Section[] = [
     intro: 'Your planning space. Collect ideas from any trip while you plan as many future trips as you like.',
     steps: [
       { title: 'Save what you like', body: <>On any trip, tap <b>＋</b> next to a hotel, restaurant or activity — or <b>Save this day</b> / <b>Save this city</b> to grab a whole itinerary.</> },
-      { title: 'Choose which trip it’s for', body: <>Pick one of your planned trips, start a new one (e.g. “Greece 2027”), or put it in <b>Unsorted</b> to decide later.</> },
-      { title: 'Organise your plan', body: <>Open the 📦 sandbox. Each planned trip groups its places by country and city. Add your own notes, put places on days, or move them to another trip.</> },
-      { title: 'Turn it into a trip', body: <>When you’re ready, tap <b>Turn into a trip</b>. Everything is filled into a new draft trip — after you travel, add your own ratings and reviews and share it.</> },
+      { title: 'Choose which trip it’s for', body: <>Pick one of your planned trips, start a new one (e.g. “Greece 2027”), or keep it in <b>Saved ideas</b> to decide later.</> },
+      { title: 'Organise your plan', body: <>Open the 📦 sandbox and tap a trip. <b>Plan</b> shows where you’ll stay and each day; <b>Ideas</b> holds places not on a day yet — use <b>Add to day</b>. Tap <b>⋯</b> on a place to add a note, move it or remove it, and <b>✨ Fill with AI</b> to build days for you.</> },
+      { title: 'Turn it into a trip', body: <>When you’re ready, open the trip’s <b>⋯</b> menu and choose <b>Turn into a trip to share</b>. Everything is filled into a new draft trip — after you travel, add your own ratings and reviews and share it.</> },
     ],
     tip: <>Each saved place keeps the original traveler’s rating and review, and a link back to their trip.</>,
+  },
+  {
+    id: 'feedback',
+    icon: '💬',
+    title: 'Get feedback on your plans',
+    intro: 'Ask fellow members what they think before you go — and help them with theirs.',
+    steps: [
+      { title: 'Ask for feedback', body: <>In your Sandbox, open a planned trip and go to the <b>Feedback</b> tab. Add what you’d like advice on (e.g. “Is 4 days in Bogotá too many?”) and tap <b>Share for feedback</b>.</> },
+      { title: 'Members weigh in', body: <>Your plan appears in <b>Menu → Help me plan</b>. Members can comment on the whole trip, a city or a single place — “too many days”, “I’d skip it”, or <b>Go here instead…</b> with the actual hotel or restaurant.</> },
+      { title: 'Use the best ideas', body: <>New suggestions show as <b>💬 new</b> on your trip. In the Feedback tab, tap <b>Accept & swap</b> or <b>Accept & add</b> and your plan updates itself, or <b>Set aside</b> the rest. Close feedback whenever you like.</> },
+      { title: 'Help others plan', body: <>Open <b>Help me plan</b>, pick a trip and tap <b>React</b> on any place, or <b>Agree</b> with advice you like.</> },
+    ],
+    tip: <>Help me plan is for signed-in members only, and planners can delete any comment on their trip.</>,
   },
   {
     id: 'manage',

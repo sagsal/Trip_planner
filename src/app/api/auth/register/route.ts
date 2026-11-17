@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { setSessionCookie } from '@/lib/session';
+import { cleanProfile } from '@/lib/profile';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const body = await request.json();
+    const { name, email, password } = body;
+    const profile = cleanProfile(body); // optional: home region, country, age bracket
 
     // Validate input
     if (!name || !email || !password) {
@@ -45,7 +48,8 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        ...profile,
       }
     });
 

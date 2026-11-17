@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, Suspense } from 'react';
+import { REGIONS, countriesIn, regionOf } from '@/lib/regions';
+import { AGE_BRACKETS, ALL_COUNTRIES } from '@/lib/profile';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,7 +14,10 @@ function RegisterContent() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    homeRegion: '',
+    homeCountry: '',
+    ageBracket: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -59,6 +64,9 @@ function RegisterContent() {
             name: formData.name,
             email: formData.email,
             password: formData.password,
+            homeRegion: formData.homeRegion,
+            homeCountry: formData.homeCountry,
+            ageBracket: formData.ageBracket,
           }),
           signal: controller.signal,
         });
@@ -218,6 +226,50 @@ function RegisterContent() {
                   </button>
                 </div>
               </div>
+
+              {/* About you (optional) */}
+              <fieldset className="rounded-xl border border-[#ECE7DF] p-4">
+                <legend className="px-1 text-sm font-medium text-gray-700">About you <span className="font-normal text-gray-500">(optional)</span></legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="homeRegion" className="block text-sm text-gray-600 mb-1">Region you’re from</label>
+                    <select
+                      id="homeRegion"
+                      value={formData.homeRegion}
+                      onChange={(e) => setFormData((f) => ({ ...f, homeRegion: e.target.value, homeCountry: e.target.value && f.homeCountry && regionOf(f.homeCountry) !== e.target.value ? '' : f.homeCountry }))}
+                      className="w-full px-3 py-3 border border-[#E2DCD2] rounded-xl text-black bg-white"
+                    >
+                      <option value="">Choose…</option>
+                      {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="homeCountry" className="block text-sm text-gray-600 mb-1">Country</label>
+                    <select
+                      id="homeCountry"
+                      value={formData.homeCountry}
+                      onChange={(e) => setFormData((f) => ({ ...f, homeCountry: e.target.value, homeRegion: f.homeRegion || regionOf(e.target.value) || '' }))}
+                      className="w-full px-3 py-3 border border-[#E2DCD2] rounded-xl text-black bg-white"
+                    >
+                      <option value="">Choose…</option>
+                      {(formData.homeRegion ? countriesIn(formData.homeRegion) : ALL_COUNTRIES).map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="ageBracket" className="block text-sm text-gray-600 mb-1">Age</label>
+                    <select
+                      id="ageBracket"
+                      value={formData.ageBracket}
+                      onChange={(e) => setFormData((f) => ({ ...f, ageBracket: e.target.value }))}
+                      className="w-full sm:w-1/2 px-3 py-3 border border-[#E2DCD2] rounded-xl text-black bg-white"
+                    >
+                      <option value="">Prefer not to say</option>
+                      {AGE_BRACKETS.map((a) => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">Helps us suggest trips from travelers like you. Never shown to other members.</p>
+              </fieldset>
 
               {/* Error Message */}
               {error && (

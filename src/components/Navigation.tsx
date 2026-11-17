@@ -243,7 +243,7 @@ export default function Navigation() {
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.15 }}
                     role="menu"
-                    className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden"
+                    className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-white rounded-xl border border-gray-200 shadow-xl"
                   >
                     {isAuthenticated && (
                       <div className="px-4 py-3 bg-[#F6F2EC] border-b border-[#EEE8DF]">

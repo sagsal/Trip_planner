@@ -68,7 +68,13 @@ const SITE = 'https://tripshare.org';
     })).json();
     const user = reg.user;
     if (!user?.id) throw new Error('could not make a test account');
-    await ctx.request.post(`${SITE}/api/sandbox`, { data: { userId: user.id, title: 'Greece 2027', region: 'Europe' } });
+    const sb = await (await ctx.request.post(`${SITE}/api/sandbox`, { data: { userId: user.id, title: 'Greece 2027', region: 'Europe' } })).json();
+    await ctx.request.post(`${SITE}/api/sandbox/places`, { data: { userId: user.id, sandboxTripId: sb.trip?.id, places: [
+      { kind: 'hotel', name: 'Test Hotel Chania', city: 'Chania', country: 'Greece' },
+      { kind: 'activity', name: 'Falasarna beach', city: 'Chania', country: 'Greece', sourceReview: 'Go at sunset' },
+      { kind: 'restaurant', name: 'Tamam', city: 'Chania', country: 'Greece' },
+    ] } });
+    await ctx.request.post(`${SITE}/api/sandbox/places`, { data: { userId: user.id, sandboxTripId: null, places: [{ kind: 'activity', name: 'Acropolis Museum', city: 'Athens', country: 'Greece' }] } });
     await page.goto(SITE + '/', { waitUntil: 'domcontentloaded' });
     await page.evaluate((u) => localStorage.setItem('user', JSON.stringify(u)), user);
     for (const [name, path] of [['account', '/account'], ['new-trip', '/trips/new'], ['sandbox', '/sandbox'], ['import', '/trips/import']]) {
@@ -78,6 +84,19 @@ const SITE = 'https://tripshare.org';
       console.log(`${name}: screen ${W[0]}px, page ${W[1]}px`);
       await page.screenshot({ path: `out/${name}.jpg`, type: 'jpeg', quality: 60, fullPage: true });
     }
+    // Inside the planned trip: Plan and Ideas tabs
+    await page.goto(SITE + '/sandbox', { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    await page.getByText('Greece 2027').first().click().catch(() => {});
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: `out/sandbox-trip-plan.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+    await page.getByRole('tab', { name: /Ideas/ }).click().catch(() => {});
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `out/sandbox-trip-ideas.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+    await page.getByRole('tab', { name: /Feedback/ }).click().catch(() => {});
+    await page.waitForTimeout(1200);
+    await page.screenshot({ path: `out/sandbox-trip-feedback.jpg`, type: 'jpeg', quality: 60, fullPage: true });
+
     // The add-trip form with a country and city filled in, if the controls are there
     await page.goto(SITE + '/trips/new', { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
     await page.waitForTimeout(1500);

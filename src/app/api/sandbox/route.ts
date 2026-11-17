@@ -27,11 +27,24 @@ export async function GET(request: NextRequest) {
     const count = await prisma.savedPlace.count({ where: { userId } });
     return NextResponse.json({ count });
   }
-  const [trips, places] = await Promise.all([
+  const [trips, places, comments] = await Promise.all([
     prisma.sandboxTrip.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 200 }),
     prisma.savedPlace.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 3000 }),
+    // Members' feedback on these trips, for the "💬 3 new" badges
+    prisma.tripComment.findMany({
+      where: { sandboxTrip: { userId }, NOT: { userId } },
+      select: { sandboxTripId: true, targetType: true, targetKey: true, status: true },
+      take: 5000,
+    }),
   ]);
-  return NextResponse.json({ trips, places });
+  const feedback: Record<string, { open: number; total: number; byPlace: Record<string, number> }> = {};
+  for (const c of comments) {
+    const f = (feedback[c.sandboxTripId] ||= { open: 0, total: 0, byPlace: {} });
+    f.total++;
+    if (c.status === 'open') f.open++;
+    if (c.targetType === 'place' && c.targetKey) f.byPlace[c.targetKey] = (f.byPlace[c.targetKey] || 0) + 1;
+  }
+  return NextResponse.json({ trips, places, feedback });
 }
 
 export async function POST(request: NextRequest) {

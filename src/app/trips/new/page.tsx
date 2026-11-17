@@ -1039,6 +1039,13 @@ function NewTripContent() {
           }
         : city
     ));
+    // Bring the new, empty activity into view and put the cursor in it, so there's no scrolling to find it
+    setTimeout(() => {
+      const el = document.querySelector(`[data-activity-id="${newActivity.id}"]`) as HTMLElement | null;
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      (el.querySelector('input[type="text"], input:not([type])') as HTMLInputElement | null)?.focus({ preventScroll: true });
+    }, 60);
   };
 
   const updateActivity = (cityId: string, dayId: string, activityId: string, field: keyof Activity, value: any) => {
@@ -1902,7 +1909,7 @@ function NewTripContent() {
                                 <p className="text-gray-500 text-sm text-center py-4">No activities added for this day</p>
                               ) : (
                                 day.activities.map((activity, index) => (
-                                  <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-3 border border-purple-200">
+                                  <div key={activity.id} data-activity-id={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-3 border border-purple-200 scroll-mt-24">
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center space-x-2">
                                         <span className="text-lg">🎯</span>
@@ -1993,6 +2000,16 @@ function NewTripContent() {
                                     </div>
                                   </div>
                                 ))
+                              )}
+                              {day.activities.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => addActivity(city.id, day.id)}
+                                  className="w-full flex items-center justify-center px-3 py-2.5 border-2 border-dashed border-purple-300 text-purple-700 rounded-xl hover:bg-purple-50 transition-colors text-sm font-medium"
+                                >
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Add another activity
+                                </button>
                               )}
                             </div>
                           </div>

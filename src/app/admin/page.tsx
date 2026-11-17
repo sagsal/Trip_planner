@@ -96,6 +96,76 @@ function Card({ title, icon, children, wide }: { title: string; icon: ReactNode;
   );
 }
 
+interface Member {
+  id: string; name: string; email: string; joined: string; from: string | null; age: string | null;
+  shared: number; drafts: number; private: number; planned: number; saved: number; comments: number;
+}
+
+/** Every account (owner only): who joined when, and what they've done */
+function Accounts() {
+  const [list, setList] = useState<Member[] | null>(null);
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  useEffect(() => {
+    if (!open || list) return;
+    fetch('/api/admin/members', { cache: 'no-store' }).then((r) => r.json()).then((d) => setList(d.members || [])).catch(() => setList([]));
+  }, [open, list]);
+  const shown = (list || []).filter((m) => !q || `${m.name} ${m.email} ${m.from || ''}`.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <section className="mt-5 bg-white border border-[#ECE7DF] rounded-2xl p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-bold flex items-center gap-2"><Users className="w-4 h-4 text-[#1F6F78]" />Accounts{list ? ` (${list.length})` : ''}</h2>
+        <button type="button" onClick={() => setOpen((v) => !v)} className="px-3 min-h-[40px] rounded-xl border border-[#E2DCD2] text-sm font-semibold">
+          {open ? 'Hide accounts' : 'Show all accounts'}
+        </button>
+      </div>
+      {open && (
+        <div className="mt-3">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or country" aria-label="Search accounts"
+            className="w-full sm:w-80 px-3 py-2 border border-[#E2DCD2] rounded-xl text-sm mb-3" />
+          {!list ? (
+            <Loader2 className="w-5 h-5 animate-spin text-[#8A969D]" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[760px]">
+                <thead>
+                  <tr className="text-left text-[#5B6A73] border-b border-[#ECE7DF]">
+                    <th className="font-medium py-2 pr-3">Name</th>
+                    <th className="font-medium py-2 pr-3">Email</th>
+                    <th className="font-medium py-2 pr-3">Joined</th>
+                    <th className="font-medium py-2 pr-3">From</th>
+                    <th className="font-medium py-2 pr-3">Age</th>
+                    <th className="font-medium py-2 pr-3 text-right" title="Shared / drafts / private">Trips</th>
+                    <th className="font-medium py-2 pr-3 text-right">Planned</th>
+                    <th className="font-medium py-2 pr-3 text-right">Saved</th>
+                    <th className="font-medium py-2 text-right">Comments</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((m) => (
+                    <tr key={m.id} className="border-b border-[#F1EEE8] align-top">
+                      <td className="py-2 pr-3 font-semibold">{m.name}</td>
+                      <td className="py-2 pr-3 break-all">{m.email}</td>
+                      <td className="py-2 pr-3 whitespace-nowrap">{new Date(m.joined).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                      <td className="py-2 pr-3">{m.from || <span className="text-[#8A969D]">—</span>}</td>
+                      <td className="py-2 pr-3">{m.age || <span className="text-[#8A969D]">—</span>}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums" title={`${m.shared} shared, ${m.drafts} drafts, ${m.private} private`}>{m.shared} / {m.drafts} / {m.private}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{m.planned}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{m.saved}</td>
+                      <td className="py-2 text-right tabular-nums">{m.comments}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-xs text-[#5B6A73] mt-2">Trips = shared / drafts / private. Oldest accounts first.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminDashboard() {
   const [days, setDays] = useState(30);
   const [s, setS] = useState<Stats | null>(null);
@@ -248,7 +318,8 @@ export default function AdminDashboard() {
             </Card>
           </div>
         )}
-        <p className="text-xs text-[#8A969D] mt-5">Totals only. Groups of fewer than 5 members are combined so no one can be singled out. Test accounts aren’t counted.</p>
+        <Accounts />
+        <p className="text-xs text-[#8A969D] mt-5">Charts show totals only. Groups of fewer than 5 members are combined so no one can be singled out. Test accounts aren’t counted.</p>
       </div>
     </div>
   );

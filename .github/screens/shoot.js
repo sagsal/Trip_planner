@@ -123,15 +123,22 @@ const SITE = 'https://tripshare.org';
         await row.locator('select').nth(1).selectOption({ index: 2 });
       });
       await row.locator('select').nth(2).selectOption('2');
-      await page.getByRole('button', { name: '+ Add city' }).click();
+      console.log('step: city chosen =', await row.locator('select').nth(1).inputValue(), 'days =', await row.locator('select').nth(2).inputValue());
+      await page.getByRole('button', { name: '+ Add city' }).click({ timeout: 8000 });
+      console.log('step: city added');
       await page.waitForTimeout(800);
       for (const name of ['Test rental one', 'Test rental two']) {
         const add = page.getByRole('button', { name: /Add (another )?hotel or rental/ }).first();
-        await add.click();
+        await add.click({ timeout: 8000 });
+        console.log('step: add stay opened');
         await page.waitForTimeout(300);
-        await page.getByRole('button', { name: /Rental \(Airbnb/ }).first().click();
+        await page.getByRole('button', { name: /Rental \(Airbnb/ }).first().click({ timeout: 8000 });
+        console.log('step: rental tab');
+        const ph = await page.locator('input[placeholder]').evaluateAll((els) => els.map((e) => e.getAttribute('placeholder')).filter((x) => /rental|name|Airbnb/i.test(x || '')));
+        console.log('step: placeholders', ph.slice(0, 4).join(' | '));
         await page.getByPlaceholder(/name/i).first().fill(name).catch(() => {});
-        await page.getByRole('button', { name: 'Save', exact: true }).first().click();
+        await page.getByRole('button', { name: 'Save', exact: true }).first().click({ timeout: 8000 });
+        console.log('step: saved', name);
         await page.waitForTimeout(500);
       }
       const stays = await page.locator('text=/^Stay [0-9]$/').count();
@@ -141,6 +148,7 @@ const SITE = 'https://tripshare.org';
       await page.screenshot({ path: `out/two-stays.jpg`, type: 'jpeg', quality: 70 });
     } catch (e) {
       console.log('two stays test failed:', e.message.split('\n')[0]);
+      await page.screenshot({ path: `out/two-stays-failed.jpg`, type: 'jpeg', quality: 70 }).catch(() => {});
     }
   } catch (e) {
     console.log('signed-in screenshots skipped:', e.message);

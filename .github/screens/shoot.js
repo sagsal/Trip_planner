@@ -101,11 +101,12 @@ const SITE = 'https://tripshare.org';
       await page.screenshot({ path: `out/new-trip-province.jpg`, type: 'jpeg', quality: 70 });
       const opts = await page.locator('#state-Canada').locator('xpath=ancestor::div[2]').locator('select').nth(1).locator('option').allTextContents().catch(() => []);
       console.log('city list for Newfoundland:', opts.slice(0, 8).join(' | '));
-      await page.selectOption('#area-Canada', 'Canadian Rockies').catch(() => {});
-      await page.waitForTimeout(400);
-      const opts2 = await page.locator('#area-Canada').locator('xpath=ancestor::div[3]').locator('select').nth(2).locator('option').allTextContents().catch(() => []);
-      console.log('city list for Canadian Rockies:', opts2.slice(0, 8).join(' | '));
-      await page.locator('#area-Canada').scrollIntoViewIfNeeded().catch(() => {});
+      await page.selectOption('#trip-area-Canada', 'Canadian Rockies').catch(() => {});
+      await page.waitForTimeout(600);
+      const opts2 = await page.locator('#state-Canada').locator('xpath=ancestor::div[2]').locator('select').nth(1).locator('option').allTextContents().catch(() => []);
+      console.log('city list with Canadian Rockies chosen:', opts2.slice(0, 8).join(' | '));
+      await page.locator('[data-tour="trip-info"]').scrollIntoViewIfNeeded().catch(() => {});
+      await page.screenshot({ path: `out/new-trip-info.jpg`, type: 'jpeg', quality: 70, fullPage: true });
       await page.screenshot({ path: `out/new-trip-area.jpg`, type: 'jpeg', quality: 70 });
     }
     await page.screenshot({ path: `out/new-trip-filled.jpg`, type: 'jpeg', quality: 60, fullPage: true });

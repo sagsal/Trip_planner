@@ -66,14 +66,14 @@ const STEPS: Step[] = [
     target: 'trip-info',
     needsLogin: true,
     title: 'Add your trip',
-    text: 'To share a trip, choose Add your trip. Start with the basics: region, type of trip, the month and year you went, how many days, and your flights. The title fills in for you.',
+    text: 'To share a trip, choose Add your trip. Start with the basics: region, country, and the area if there is one, like Tuscany. Then the type of trip, the month and year, how many days, and your flights. The title fills in for you.',
   },
   {
     path: '/trips/new',
     target: 'countries',
     needsLogin: true,
     title: 'Countries and cities',
-    text: 'Then add your countries and cities. For each city, add where you stayed, where you ate and what you did. Can’t remember a name? Use Describe it. Say something like, the famous restaurant near the park, and the AI finds it, with photos.',
+    text: 'Then add the cities you visited. For each city, add where you stayed, where you ate and what you did. Can’t remember a name? Use Describe it. Say something like, the famous restaurant near the park, and the AI finds it, with photos.',
   },
   {
     path: '/trips/new',

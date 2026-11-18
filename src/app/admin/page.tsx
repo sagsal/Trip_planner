@@ -3,6 +3,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Loader2, Users, Map as MapIcon, Package, MessageCircle, ShieldCheck, Table2, BarChart3 } from 'lucide-react';
+import { REGIONS, countriesIn } from '@/lib/regions';
+import { ALL_COUNTRIES } from '@/lib/profile';
 
 /* Site owner's dashboard: totals and breakdowns only (no names or emails). */
 
@@ -203,6 +205,151 @@ function Accounts() {
   );
 }
 
+
+/* ---------------- Messages: email members, or post a site banner ---------------- */
+function Messages() {
+  const [mode, setMode] = useState<'email' | 'banner'>('email');
+  const [info, setInfo] = useState<{ configured: boolean; from: string; history: { id: string; subject: string; sentCount: number; failed: number; createdAt: string }[] } | null>(null);
+  const [aud, setAud] = useState({ joinedFrom: '', joinedTo: '', region: '', country: '' });
+  const [count, setCount] = useState<number | null>(null);
+  const [msg, setMsg] = useState({ subject: '', body: '', linkUrl: 'https://tripshare.org', linkLabel: 'See what’s new' });
+  const [busy, setBusy] = useState('');
+  const [note, setNote] = useState('');
+  const [banners, setBanners] = useState<{ id: string; title: string; body: string; active: boolean; createdAt: string }[]>([]);
+  const [banner, setBanner] = useState({ title: '', body: '', linkUrl: '/', linkLabel: 'Take a look' });
+
+  const loadInfo = () => fetch('/api/admin/messages', { cache: 'no-store' }).then((r) => r.json()).then(setInfo).catch(() => {});
+  const loadBanners = () => fetch('/api/admin/announcements', { cache: 'no-store' }).then((r) => r.json()).then((d) => setBanners(d.announcements || [])).catch(() => {});
+  useEffect(() => { loadInfo(); loadBanners(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetch('/api/admin/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'count', audience: aud }) })
+        .then((r) => r.json()).then((d) => setCount(typeof d.count === 'number' ? d.count : null)).catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [aud]);
+
+  const post = async (action: 'test' | 'send') => {
+    if (action === 'send' && !confirm(`Send “${msg.subject}” to ${count} ${count === 1 ? 'member' : 'members'} now?`)) return;
+    setBusy(action); setNote('');
+    try {
+      const r = await fetch('/api/admin/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, audience: aud, ...msg }) });
+      const d = await r.json().catch(() => ({}));
+      if (action === 'test') setNote(r.ok ? `Test sent to ${d.to}. Check your inbox (and spam).` : `Couldn’t send: ${d.error || 'something went wrong'}`);
+      else { setNote(r.ok ? `Sent to ${d.sent} ${d.sent === 1 ? 'member' : 'members'}${d.failed ? `, ${d.failed} failed (${d.error})` : ''}.` : `Couldn’t send: ${d.error || 'something went wrong'}`); loadInfo(); }
+    } finally { setBusy(''); }
+  };
+
+  const postBanner = async (action: 'post' | 'end', id?: string) => {
+    setBusy(action); setNote('');
+    try {
+      const r = await fetch('/api/admin/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action === 'post' ? { action, ...banner } : { action, id }) });
+      const d = await r.json().catch(() => ({}));
+      setNote(r.ok ? (action === 'post' ? 'Banner is live. Visitors see it until they close it.' : 'Banner ended.') : d.error || 'Something went wrong.');
+      if (r.ok && action === 'post') setBanner({ title: '', body: '', linkUrl: '/', linkLabel: 'Take a look' });
+      loadBanners();
+    } finally { setBusy(''); }
+  };
+
+  const field = 'w-full px-3 py-2.5 border border-[#E2DCD2] rounded-xl text-sm bg-white';
+  const live = banners.find((b) => b.active);
+
+  return (
+    <section className="mt-5 bg-white border border-[#ECE7DF] rounded-2xl p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h2 className="font-bold flex items-center gap-2"><MessageCircle className="w-4 h-4 text-[#1F6F78]" />Messages to members</h2>
+        <div role="tablist" className="flex rounded-xl border border-[#E2DCD2] overflow-hidden">
+          {(['email', 'banner'] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => { setMode(k); setNote(''); }}
+              className={`px-3 min-h-[40px] text-sm ${mode === k ? 'bg-[#13212B] text-white font-semibold' : 'text-[#3D4C56]'}`}>
+              {k === 'email' ? 'Email' : 'Site banner'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'email' ? (
+        <div className="flex flex-col gap-3">
+          {info && !info.configured && (
+            <p className="text-sm rounded-xl bg-[#FDF3E7] border border-[#F0D9B5] text-[#8A5A1F] px-3 py-2">Email isn’t connected yet — add the Resend key (RESEND_API_KEY) as a GitHub secret. You can still write and preview.</p>
+          )}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#5B6A73] mb-2">Who gets it</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <label className="text-xs text-[#5B6A73]">Joined from<input type="date" value={aud.joinedFrom} onChange={(e) => setAud({ ...aud, joinedFrom: e.target.value })} className={`${field} mt-1`} /></label>
+              <label className="text-xs text-[#5B6A73]">Joined to<input type="date" value={aud.joinedTo} onChange={(e) => setAud({ ...aud, joinedTo: e.target.value })} className={`${field} mt-1`} /></label>
+              <label className="text-xs text-[#5B6A73]">Region
+                <select value={aud.region} onChange={(e) => setAud({ ...aud, region: e.target.value, country: '' })} className={`${field} mt-1`}>
+                  <option value="">Any</option>{REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </label>
+              <label className="text-xs text-[#5B6A73]">Country
+                <select value={aud.country} onChange={(e) => setAud({ ...aud, country: e.target.value })} className={`${field} mt-1`}>
+                  <option value="">Any</option>{(aud.region ? countriesIn(aud.region) : ALL_COUNTRIES).map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="text-sm mt-2"><b className="tabular-nums">{count ?? '…'}</b> {count === 1 ? 'member' : 'members'} will get this <span className="text-[#5B6A73]">(never blocked members or people who unsubscribed)</span></p>
+          </div>
+          <label className="text-sm font-medium">Subject<input value={msg.subject} onChange={(e) => setMsg({ ...msg, subject: e.target.value })} placeholder="Share and Plan has been revamped" className={`${field} mt-1`} /></label>
+          <label className="text-sm font-medium">Message
+            <textarea value={msg.body} onChange={(e) => setMsg({ ...msg, body: e.target.value })} rows={7} className={`${field} mt-1`}
+              placeholder={'Hi {name},\n\nThanks for joining Share and Plan back in August. We’ve rebuilt the site…'} />
+            <span className="block text-xs text-[#5B6A73] font-normal mt-1">{'{name}'} becomes each person’s first name. Leave a blank line between paragraphs.</span>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label className="text-sm font-medium">Button link (optional)<input value={msg.linkUrl} onChange={(e) => setMsg({ ...msg, linkUrl: e.target.value })} className={`${field} mt-1`} /></label>
+            <label className="text-sm font-medium">Button text<input value={msg.linkLabel} onChange={(e) => setMsg({ ...msg, linkLabel: e.target.value })} className={`${field} mt-1`} /></label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled={!!busy || !msg.subject || !msg.body} onClick={() => post('test')} className="px-4 min-h-[44px] rounded-xl border border-[#E2DCD2] text-sm font-semibold disabled:opacity-50">
+              {busy === 'test' ? 'Sending…' : 'Send a test to me'}
+            </button>
+            <button type="button" disabled={!!busy || !msg.subject || !msg.body || !count} onClick={() => post('send')} className="px-4 min-h-[44px] rounded-xl bg-[#1F6F78] text-white text-sm font-semibold disabled:opacity-50">
+              {busy === 'send' ? 'Sending… (keep this page open)' : `Send to ${count ?? 0} ${count === 1 ? 'member' : 'members'}`}
+            </button>
+          </div>
+          {note && <p className="text-sm text-[#16535A]">{note}</p>}
+          {info && info.history.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#5B6A73] mb-1">Sent before</p>
+              <ul className="text-sm divide-y divide-[#F1EEE8]">
+                {info.history.map((h) => (
+                  <li key={h.id} className="py-1.5 flex justify-between gap-3">
+                    <span className="truncate">{h.subject}</span>
+                    <span className="text-[#5B6A73] whitespace-nowrap tabular-nums">{new Date(h.createdAt).toLocaleDateString()} · {h.sentCount} sent{h.failed ? `, ${h.failed} failed` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {info && <p className="text-xs text-[#8A969D]">Sent from {info.from}. Replies go to your email. Every message includes an unsubscribe link.</p>}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {live && (
+            <div className="rounded-xl bg-[#13212B] text-white p-3 flex flex-wrap items-start justify-between gap-2">
+              <div><p className="text-xs text-[#9FD3D6] font-semibold">Live now</p><p className="font-bold">{live.title}</p>{live.body && <p className="text-sm text-white/85">{live.body}</p>}</div>
+              <button type="button" disabled={!!busy} onClick={() => postBanner('end', live.id)} className="px-3 min-h-[36px] rounded-lg bg-white/10 text-sm font-semibold">End banner</button>
+            </div>
+          )}
+          <p className="text-sm text-[#5B6A73]">A short message at the bottom of the screen for everyone who visits, until they close it. Posting a new one replaces the current one.</p>
+          <label className="text-sm font-medium">Headline<input value={banner.title} onChange={(e) => setBanner({ ...banner, title: e.target.value })} placeholder="We’ve had a makeover!" className={`${field} mt-1`} /></label>
+          <label className="text-sm font-medium">Message (optional)<textarea value={banner.body} onChange={(e) => setBanner({ ...banner, body: e.target.value })} rows={2} placeholder="New Sandbox, Help me plan, and a cleaner look." className={`${field} mt-1`} /></label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label className="text-sm font-medium">Link (optional)<input value={banner.linkUrl} onChange={(e) => setBanner({ ...banner, linkUrl: e.target.value })} placeholder="/how-to" className={`${field} mt-1`} /></label>
+            <label className="text-sm font-medium">Link text<input value={banner.linkLabel} onChange={(e) => setBanner({ ...banner, linkLabel: e.target.value })} className={`${field} mt-1`} /></label>
+          </div>
+          <button type="button" disabled={!!busy || !banner.title} onClick={() => postBanner('post')} className="self-start px-4 min-h-[44px] rounded-xl bg-[#1F6F78] text-white text-sm font-semibold disabled:opacity-50">
+            {live ? 'Replace the live banner' : 'Post banner'}
+          </button>
+          {note && <p className="text-sm text-[#16535A]">{note}</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminDashboard() {
   const [days, setDays] = useState(30);
   const [s, setS] = useState<Stats | null>(null);
@@ -355,6 +502,7 @@ export default function AdminDashboard() {
             </Card>
           </div>
         )}
+        <Messages />
         <Accounts />
         <p className="text-xs text-[#8A969D] mt-5">Charts show totals only. Groups of fewer than 5 members are combined so no one can be singled out. Test accounts aren’t counted.</p>
       </div>

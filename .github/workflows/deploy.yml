@@ -28,8 +28,10 @@ jobs:
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
           B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
           ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         run: |
-          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY B2_KEY_ID B2_APP_KEY B2_BUCKET B2_ENDPOINT ADMIN_EMAILS; do
+          for NAME in TRIPADVISOR_API_KEY GOOGLE_PLACES_API_KEY ANTHROPIC_API_KEY B2_KEY_ID B2_APP_KEY B2_BUCKET B2_ENDPOINT ADMIN_EMAILS RESEND_API_KEY EMAIL_FROM; do
             VALUE="${!NAME}"
             if [ -z "$VALUE" ]; then
               echo "$NAME secret not set - skipping"
@@ -105,6 +107,11 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
+          echo "--- messages check (one-time)"
+          echo "email key present: $(grep -c '^RESEND_API_KEY=.\+' .env.local)"
+          echo "banner endpoint: $(curl -s -m 20 http://localhost:3000/api/announcement | head -c 60)"
+          echo "messages without owner sign-in: $(curl -s -o /dev/null -w '%{http_code}' -m 20 http://localhost:3000/api/admin/messages)"
+          echo "bad unsubscribe link: $(curl -s -o /dev/null -w '%{http_code}' -m 20 'http://localhost:3000/api/unsubscribe?u=x&t=y')"
           node scripts/cleanup-test-users.js || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true

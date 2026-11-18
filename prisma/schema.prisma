@@ -19,6 +19,7 @@ model User {
   homeCountry String?
   ageBracket  String?
   blockedAt   DateTime? // set by the site owner: can't sign in, and their trips and comments are hidden
+  emailOptOut Boolean   @default(false) // unsubscribed from the owner's messages
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,4 +246,30 @@ model TripCommentAgree {
   @@unique([commentId, userId])
   @@index([userId, createdAt])
   @@map("trip_comment_agrees")
+}
+
+// Owner's emails to members (a log of what was sent)
+model EmailCampaign {
+  id        String   @id @default(cuid())
+  subject   String
+  body      String   @db.Text
+  audience  String   @db.Text // JSON description of who it went to
+  sentCount Int      @default(0)
+  failed    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("email_campaigns")
+}
+
+// Owner's banner message shown on the site
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String   @db.Text
+  linkUrl   String?
+  linkLabel String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("announcements")
 }

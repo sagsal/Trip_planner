@@ -107,11 +107,6 @@ jobs:
           echo "--- place search (1 Google search)"
           curl -s -m 30 "http://localhost:3000/api/tripadvisor/search?query=Hilton%20Paris&category=hotels" \
             | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).results||[];console.log(r.length?"PASS search ("+r.length+" results)":"FAIL search returned nothing")}catch(e){console.log("FAIL search unreadable")}})'
-          echo "--- messages check (one-time)"
-          echo "email key present: $(grep -c '^RESEND_API_KEY=.\+' .env.local)"
-          echo "banner endpoint: $(curl -s -m 20 http://localhost:3000/api/announcement | head -c 60)"
-          echo "messages without owner sign-in: $(curl -s -o /dev/null -w '%{http_code}' -m 20 http://localhost:3000/api/admin/messages)"
-          echo "bad unsubscribe link: $(curl -s -o /dev/null -w '%{http_code}' -m 20 'http://localhost:3000/api/unsubscribe?u=x&t=y')"
           node scripts/cleanup-test-users.js || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true

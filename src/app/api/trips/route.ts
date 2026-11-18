@@ -671,6 +671,7 @@ export async function GET(request: NextRequest) {
       // Public shared trips (not drafts); with userId, only that person's
       where.isPublic = true;
       where.isDraft = false;
+      where.user = { blockedAt: null }; // blocked members' trips are hidden
       if (userId && searchParams.get('mine') === 'true') where.userId = userId;
     }
 

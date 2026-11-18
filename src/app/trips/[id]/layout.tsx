@@ -42,6 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         description: true,
         isPublic: true,
         isDraft: true,
+        user: { select: { blockedAt: true } },
         coverImageUrl: true,
         countries: true,
         tripType: true,
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         cities_data: { select: { name: true, numberOfDays: true, _count: { select: { hotels: true, restaurants: true, activities: true } } } },
       },
     });
-    if (!t || !t.isPublic || t.isDraft) return generic;
+    if (!t || !t.isPublic || t.isDraft || t.user?.blockedAt) return generic;
 
     const cities = t.cities_data || [];
     const days = daysFromDates(t.startDate, t.endDate) || cities.reduce((n, c) => n + (c.numberOfDays || 0), 0);

@@ -120,7 +120,7 @@ async function runFill(userId: string, sandboxTripId: string, request: string) {
 
   /* 2. Candidates: real trips on the site first */
   const cityNames = cities.map((c) => c.name);
-  const where = { city: { name: { in: cityNames }, trip: { isPublic: true, isDraft: false } } };
+  const where = { city: { name: { in: cityNames }, trip: { isPublic: true, isDraft: false, user: { blockedAt: null } } } };
   const include = { city: { include: { trip: { select: { id: true, title: true, user: { select: { id: true } } } } } } };
   const [hotels, restaurants, activities] = await Promise.all([
     prisma.hotel.findMany({ where, include, take: 60 }),

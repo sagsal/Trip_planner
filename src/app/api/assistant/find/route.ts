@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     user: { select: { id: true } },
     cities_data: { include: { hotels: true, restaurants: true, activities: true } },
   };
-  const base = { isPublic: true, isDraft: false, NOT: [{ title: { contains: 'TEMPLATE' } }, { title: { contains: 'DATABASE:' } }] };
+  const base = { isPublic: true, isDraft: false, user: { blockedAt: null }, NOT: [{ title: { contains: 'TEMPLATE' } }, { title: { contains: 'DATABASE:' } }] };
   const rawCountries: string[] = (Array.isArray(f.countries) ? f.countries : []).map((c: any) => String(c).trim()).filter(Boolean).slice(0, 10);
   const or: any[] = [
     ...rawCountries.map((c) => ({ countries: { contains: `"${c}"` } })),

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       places: { orderBy: [{ city: 'asc' }, { dayNumber: 'asc' }, { createdAt: 'asc' }] },
       comments: {
         orderBy: { createdAt: 'asc' },
+        where: { user: { blockedAt: null } }, // comments from blocked members are hidden
         include: { user: { select: { id: true, name: true } }, agrees: { select: { userId: true } } },
       },
     },

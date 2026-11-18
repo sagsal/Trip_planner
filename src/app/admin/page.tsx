@@ -99,6 +99,7 @@ function Card({ title, icon, children, wide }: { title: string; icon: ReactNode;
 interface Member {
   id: string; name: string; email: string; joined: string; from: string | null; age: string | null;
   shared: number; drafts: number; private: number; planned: number; saved: number; comments: number;
+  blocked: boolean; isYou: boolean;
 }
 
 /** Every account (owner only): who joined when, and what they've done */
@@ -110,6 +111,23 @@ function Accounts() {
     if (!open || list) return;
     fetch('/api/admin/members', { cache: 'no-store' }).then((r) => r.json()).then((d) => setList(d.members || [])).catch(() => setList([]));
   }, [open, list]);
+  const [busy, setBusy] = useState('');
+  const act = async (m: Member, action: 'block' | 'unblock' | 'delete') => {
+    if (action === 'block' && !confirm(`Block ${m.name}?\n\nThey won’t be able to sign in, and their trips and comments will be hidden from everyone. You can unblock them later.`)) return;
+    if (action === 'delete') {
+      const typed = prompt(`Delete ${m.name} (${m.email}) for good?\n\nThis removes the account and everything it made: ${m.shared + m.drafts + m.private} trips, ${m.planned} planned trips, ${m.saved} saved places and ${m.comments} comments. It can’t be undone (only by restoring a nightly backup).\n\nType DELETE to confirm.`);
+      if ((typed || '').trim().toUpperCase() !== 'DELETE') return;
+    }
+    setBusy(m.id);
+    try {
+      const r = await fetch('/api/admin/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id, action }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { alert(d.error || 'Something went wrong.'); return; }
+      setList((prev) => (prev || []).flatMap((x) => (x.id !== m.id ? [x] : action === 'delete' ? [] : [{ ...x, blocked: action === 'block' }])));
+    } finally {
+      setBusy('');
+    }
+  };
   const shown = (list || []).filter((m) => !q || `${m.name} ${m.email} ${m.from || ''}`.toLowerCase().includes(q.toLowerCase()));
   return (
     <section className="mt-5 bg-white border border-[#ECE7DF] rounded-2xl p-4 sm:p-5">
@@ -127,7 +145,7 @@ function Accounts() {
             <Loader2 className="w-5 h-5 animate-spin text-[#8A969D]" />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[760px]">
+              <table className="w-full text-sm min-w-[900px]">
                 <thead>
                   <tr className="text-left text-[#5B6A73] border-b border-[#ECE7DF]">
                     <th className="font-medium py-2 pr-3">Name</th>
@@ -138,13 +156,18 @@ function Accounts() {
                     <th className="font-medium py-2 pr-3 text-right" title="Shared / drafts / private">Trips</th>
                     <th className="font-medium py-2 pr-3 text-right">Planned</th>
                     <th className="font-medium py-2 pr-3 text-right">Saved</th>
-                    <th className="font-medium py-2 text-right">Comments</th>
+                    <th className="font-medium py-2 pr-3 text-right">Comments</th>
+                    <th className="font-medium py-2 text-right"><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {shown.map((m) => (
                     <tr key={m.id} className="border-b border-[#F1EEE8] align-top">
-                      <td className="py-2 pr-3 font-semibold">{m.name}</td>
+                      <td className="py-2 pr-3 font-semibold">
+                        {m.name}
+                        {m.isYou && <span className="ml-1.5 text-xs font-semibold text-[#1F6F78]">(you)</span>}
+                        {m.blocked && <span className="ml-1.5 text-xs font-semibold bg-[#F6E7DC] text-[#8A4B24] rounded-full px-2 py-0.5">Blocked</span>}
+                      </td>
                       <td className="py-2 pr-3 break-all">{m.email}</td>
                       <td className="py-2 pr-3 whitespace-nowrap">{new Date(m.joined).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                       <td className="py-2 pr-3">{m.from || <span className="text-[#8A969D]">—</span>}</td>
@@ -152,7 +175,21 @@ function Accounts() {
                       <td className="py-2 pr-3 text-right tabular-nums" title={`${m.shared} shared, ${m.drafts} drafts, ${m.private} private`}>{m.shared} / {m.drafts} / {m.private}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{m.planned}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{m.saved}</td>
-                      <td className="py-2 text-right tabular-nums">{m.comments}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums">{m.comments}</td>
+                      <td className="py-1.5 text-right whitespace-nowrap">
+                        {!m.isYou && (
+                          <>
+                            <button type="button" disabled={busy === m.id} onClick={() => act(m, m.blocked ? 'unblock' : 'block')}
+                              className="px-2.5 min-h-[34px] rounded-lg border border-[#E2DCD2] text-xs font-semibold mr-1.5 disabled:opacity-50">
+                              {m.blocked ? 'Unblock' : 'Block'}
+                            </button>
+                            <button type="button" disabled={busy === m.id} onClick={() => act(m, 'delete')}
+                              className="px-2.5 min-h-[34px] rounded-lg border border-[#F0C9B5] text-[#B4532A] text-xs font-semibold disabled:opacity-50">
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

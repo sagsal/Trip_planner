@@ -445,6 +445,12 @@ export async function GET(
     // Owner = the signed-in user (from the session cookie, not a user id in the address)
     const userId = sessionUserId(request);
 
+    // Trips by a blocked member are hidden from everyone else
+    if (trip.userId !== userId) {
+      const owner = await prisma.user.findUnique({ where: { id: trip.userId }, select: { blockedAt: true } });
+      if (owner?.blockedAt) return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
+    }
+
     // If it's a draft trip, user must own it
     if (trip.isDraft) {
       if (!userId || trip.userId !== userId) {

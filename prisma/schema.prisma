@@ -18,6 +18,7 @@ model User {
   homeRegion  String?
   homeCountry String?
   ageBracket  String?
+  blockedAt   DateTime? // set by the site owner: can't sign in, and their trips and comments are hidden
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

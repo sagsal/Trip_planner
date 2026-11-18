@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   if ('error' in auth) return auth.error;
 
   const trips = await prisma.sandboxTrip.findMany({
-    where: { feedbackOpen: true },
+    where: { feedbackOpen: true, user: { blockedAt: null } },
     orderBy: { feedbackOpenedAt: 'desc' },
     take: 100,
     select: {

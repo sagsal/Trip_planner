@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 /**
  * Sign-in sessions: a signed, HttpOnly cookie set by the server when you sign in.
@@ -8,6 +9,21 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 export const SESSION_COOKIE = 'tp_session';
+
+// Blocked members (kept in memory so every request can check without a database call)
+const g = globalThis as any;
+const blocked: Set<string> = g.__blockedUsers || (g.__blockedUsers = new Set<string>());
+if (!g.__blockedLoaded) {
+  g.__blockedLoaded = true;
+  prisma.user
+    .findMany({ where: { blockedAt: { not: null } }, select: { id: true } })
+    .then((rows) => rows.forEach((r) => blocked.add(r.id)))
+    .catch(() => { g.__blockedLoaded = false; });
+}
+export function setBlocked(userId: string, isBlocked: boolean) {
+  if (isBlocked) blocked.add(userId);
+  else blocked.delete(userId);
+}
 const MAX_AGE = 60 * 60 * 24 * 60; // 60 days
 
 function secret(): string {
@@ -34,6 +50,7 @@ export function sessionUserId(request: NextRequest): string | null {
     if (expected.length !== sig.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null;
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
     if (typeof data.uid !== 'string' || typeof data.exp !== 'number' || data.exp < Date.now() / 1000) return null;
+    if (blocked.has(data.uid)) return null; // blocked by the site owner
     return data.uid;
   } catch {
     return null;

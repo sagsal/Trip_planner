@@ -41,6 +41,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.blockedAt) {
+      return NextResponse.json({ error: 'This account has been suspended.' }, { status: 403 });
+    }
+
     // Return user data (excluding password) and start a signed session
     const { password: _, ...userWithoutPassword } = user;
     const res = NextResponse.json({ message: 'Login successful', user: userWithoutPassword }, { status: 200 });

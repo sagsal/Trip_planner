@@ -20,7 +20,7 @@ export default function AboutPage() {
         </div>
 
         <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">About Share and Plan</p>
-        <h1 className="text-3xl sm:text-5xl font-semibold text-[#2F4A5C] leading-tight mb-6">
+        <h1 className="text-3xl sm:text-5xl font-normal text-[#2F4A5C] leading-tight mb-6">
           Travel is better when it’s shared.
         </h1>
         <p className="text-lg text-[#4A5A63] leading-relaxed mb-12">
@@ -30,7 +30,7 @@ export default function AboutPage() {
 
         <div className="space-y-6 mb-12">
           <section className="bg-white rounded-xl border border-[#E4DED4] p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-[#2F4A5C] mb-2">Share your trips</h2>
+            <h2 className="text-xl font-normal text-[#2F4A5C] mb-2">Share your trips</h2>
             <p className="text-[#4A5A63] leading-relaxed">
               Add each country and city you visited, your hotel or rental, the restaurants and activities for each day,
               your flights, and your own ratings and reviews. Keep a trip private, or share it so others can learn from it.
@@ -38,7 +38,7 @@ export default function AboutPage() {
           </section>
 
           <section className="bg-white rounded-xl border border-[#E4DED4] p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-[#2F4A5C] mb-2">Plan your next one</h2>
+            <h2 className="text-xl font-normal text-[#2F4A5C] mb-2">Plan your next one</h2>
             <p className="text-[#4A5A63] leading-relaxed">
               Browse trips from travelers like you — a couple’s getaway, a family holiday, a multi-generational
               adventure — and use their real itineraries as the starting point for your own: the places they loved, the

@@ -104,7 +104,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
         type="button"
         onClick={onClick}
         aria-expanded={open}
-        className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DCD2] text-[#13212B] text-sm font-semibold hover:bg-[#F6F3EE]"
+        className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DDD5] text-[#13212B] text-sm font-semibold hover:bg-[#F6F3EE]"
       >
         <Share2 className="w-4 h-4 mr-1.5" /> Share
       </button>
@@ -113,7 +113,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
           ref={menuRef}
           role="menu"
           style={{ position: 'fixed', top: pos?.top ?? -9999, left: pos?.left ?? -9999, width: 256 }}
-          className="z-[80] bg-white rounded-2xl border border-[#E2DCD2] shadow-xl p-2 text-[#13212B]"
+          className="z-[80] bg-white rounded-2xl border border-[#E2DDD5] shadow-xl p-2 text-[#13212B]"
         >
           <div className="flex items-center justify-between px-2 py-1.5">
             <p className="text-sm font-bold">Share this trip</p>
@@ -136,7 +136,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
             <ChevronDown className={`w-4 h-4 ml-auto text-[#5B6A73] transition-transform ${emailOpen ? 'rotate-180' : ''}`} />
           </button>
           {emailOpen && (
-            <div className="ml-6 mb-1 border-l border-[#ECE7DF] pl-2">
+            <div className="ml-6 mb-1 border-l border-[#E2DDD5] pl-2">
               {emailLinks.map((l) => (
                 <a key={l.label} role="menuitem" href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener noreferrer" onClick={() => setOpen(false)}
                   className="block px-3 py-2 rounded-lg hover:bg-[#F6F3EE] text-sm">

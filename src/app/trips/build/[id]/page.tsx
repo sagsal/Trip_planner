@@ -1491,7 +1491,7 @@ function DraftEditContent() {
         <div className="mb-8">
           <Link
             href="/trips/build"
-            className="inline-flex items-center text-[#0160D6] hover:text-[#0160D6]/80 mb-4"
+            className="inline-flex items-center text-[#1F6F78] hover:text-[#1F6F78]/80 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Build Trip
@@ -1499,7 +1499,7 @@ function DraftEditContent() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{draftTrip.title}</h1>
+                <h1 className="text-3xl font-normal text-gray-900">{draftTrip.title}</h1>
                 <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
                   📝 DRAFT
                 </span>
@@ -1529,7 +1529,7 @@ function DraftEditContent() {
               </p>
               <button
                 onClick={handleShareTrip}
-                className="px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors flex items-center justify-center font-semibold shadow-md text-lg"
+                className="px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors flex items-center justify-center font-semibold shadow-md text-lg"
               >
                 <Share2 className="w-6 h-6 mr-2" />
                 Share Trip Now
@@ -1566,7 +1566,7 @@ function DraftEditContent() {
           className="bg-white rounded-lg shadow-lg p-6 mb-8 border-2 border-blue-200"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Trip Details</h2>
+            <h2 className="text-2xl font-normal text-gray-900">Trip Details</h2>
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
               Optional - Fill anytime
             </span>
@@ -1609,7 +1609,7 @@ function DraftEditContent() {
         <div className="mb-6">
           <button
             onClick={() => setShowBrowseTrips(!showBrowseTrips)}
-            className="flex items-center px-6 py-3 bg-[#0160D6] text-white rounded-lg hover:bg-[#0160D6]/90 transition-colors font-semibold"
+            className="flex items-center px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors font-semibold"
           >
             <Eye className="w-5 h-5 mr-2" />
             {showBrowseTrips ? 'Hide' : 'Browse'} Old Trips & Shared Trips
@@ -1627,7 +1627,7 @@ function DraftEditContent() {
             {otherDraftTrips.length > 0 && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Reuse from Your Other Draft Trips</h2>
+                  <h2 className="text-2xl font-normal text-gray-900 mb-2">Reuse from Your Other Draft Trips</h2>
                   <p className="text-gray-600 text-sm">
                     💡 <strong>How it works:</strong> Select a city (and day for restaurants/activities) from your current draft below, then click items from your other draft trips to copy them!
                   </p>
@@ -1650,7 +1650,7 @@ function DraftEditContent() {
             {/* Shared Trips Section */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Browse Shared Trips</h2>
+                <h2 className="text-2xl font-normal text-gray-900 mb-2">Browse Shared Trips</h2>
                 <p className="text-gray-600 text-sm">
                   💡 <strong>How it works:</strong> Select a city (and day for restaurants/activities) from your current draft below, then click items from shared trips to add them to your draft!
                 </p>
@@ -1677,13 +1677,13 @@ function DraftEditContent() {
 
         {/* Draft Trip Details */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Draft Trip</h2>
+          <h2 className="text-2xl font-normal text-gray-900 mb-6">Your Draft Trip</h2>
           
           {/* Select Your Destination Section - Add More Cities */}
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-8 mb-8 border border-blue-200">
+          <div className="bg-blue-50 rounded-xl p-8 mb-8 border border-blue-200">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">🌍</div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">Add More Destinations</h3>
+              <h3 className="text-3xl font-medium text-gray-900 mb-2">Add More Destinations</h3>
               <p className="text-gray-600 text-lg">Add more countries and cities to your trip!</p>
             </div>
 
@@ -1789,7 +1789,7 @@ function DraftEditContent() {
           
           {draftTrip.citiesData.map((city) => (
             <div key={city.id} className="mb-8 border-b border-gray-200 pb-8 last:border-b-0">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <h3 className="text-xl font-medium text-gray-900 mb-4">
                 {city.name}, {city.country} ({city.numberOfDays} days)
               </h3>
 
@@ -1868,7 +1868,7 @@ function DraftEditContent() {
                       }
                       
                       return (
-                        <div key={hotel.id} className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
+                        <div key={hotel.id} className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-2">
                               <span className="text-lg">🏨</span>
@@ -2040,7 +2040,7 @@ function DraftEditContent() {
                           }
                           
                           return (
-                            <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                            <div key={restaurant.id} className="bg-green-50 rounded-xl p-4 border border-green-200">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-2">
                                   <span className="text-lg">🍽️</span>
@@ -2163,7 +2163,7 @@ function DraftEditContent() {
                           }
                           
                           return (
-                            <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                            <div key={activity.id} className="bg-purple-50 rounded-xl p-4 border border-purple-200">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-2">
                                   <span className="text-lg">🎯</span>
@@ -2329,7 +2329,7 @@ function DraftTripCard({
     <div className="border-2 border-green-200 rounded-lg p-4 bg-green-50">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 flex items-center">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
             <span className="text-2xl mr-2">📝</span>
             {draftTrip.title}
           </h3>
@@ -2618,7 +2618,7 @@ function SharedTripCard({
     <div className="border border-gray-200 rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">{trip.title}</h3>
+          <h3 className="text-lg font-medium text-gray-900">{trip.title}</h3>
           
         </div>
         <button

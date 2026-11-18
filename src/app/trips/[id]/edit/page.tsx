@@ -570,7 +570,7 @@ function EditTripContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0160D6] to-[#00AAF8] flex items-center justify-center">
+      <div className="min-h-screen bg-[#1F6F78] flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
@@ -578,13 +578,13 @@ function EditTripContent() {
 
   if (!trip) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0160D6] to-[#00AAF8] flex items-center justify-center">
+      <div className="min-h-screen bg-[#1F6F78] flex items-center justify-center">
         <div className="text-center text-white">
-          <h1 className="text-2xl font-bold mb-4">Trip Not Found</h1>
+          <h1 className="text-2xl font-normal mb-4">Trip Not Found</h1>
           <p className="mb-4">The trip you're looking for doesn't exist.</p>
           <button
             onClick={() => router.push('/account')}
-            className="bg-[#F13B13] text-white px-6 py-2 rounded-full hover:bg-[#F13B13]/90 transition-colors"
+            className="bg-[#1F6F78] text-white px-6 py-2 rounded-full hover:bg-[#1F6F78]/90 transition-colors"
           >
             Back to My Trips
           </button>
@@ -598,10 +598,10 @@ function EditTripContent() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Edit Trip</h1>
+            <h1 className="text-3xl font-normal text-gray-900">Edit Trip</h1>
             <button
               onClick={() => router.push('/account')}
-              className="bg-[#F13B13] text-white px-4 py-2 rounded-lg hover:bg-[#F13B13]/90 transition-colors"
+              className="bg-[#1F6F78] text-white px-4 py-2 rounded-lg hover:bg-[#1F6F78]/90 transition-colors"
             >
               Back to My Trips
             </button>
@@ -698,10 +698,10 @@ function EditTripContent() {
               </div>
 
               {/* Country & City Selection */}
-              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-8 mb-8 border border-blue-200">
+              <div className="bg-blue-50 rounded-xl p-8 mb-8 border border-blue-200">
                 <div className="text-center mb-6">
                   <div className="text-6xl mb-4">🌍</div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-2">Add More Cities</h3>
+                  <h3 className="text-3xl font-medium text-gray-900 mb-2">Add More Cities</h3>
                   <p className="text-gray-600 text-lg">First choose a country, then select a city!</p>
                 </div>
                 
@@ -827,11 +827,11 @@ function EditTripContent() {
                   {/* City Header */}
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                         {cityIndex + 1}
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
+                        <h3 className="text-xl font-medium text-gray-900">{city.name}</h3>
                         <p className="text-gray-600">📍 {city.country}</p>
                       </div>
                     </div>
@@ -1072,7 +1072,7 @@ function EditTripContent() {
                     type="submit"
                     value="publish"
                     disabled={saving}
-                    className="px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50"
+                    className="px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors disabled:opacity-50"
                   >
                     {saving ? 'Publishing...' : 'Publish trip'}
                   </button>
@@ -1081,7 +1081,7 @@ function EditTripContent() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50"
+                  className="px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors disabled:opacity-50"
                 >
                   {saving ? 'Updating...' : 'Update Trip'}
                 </button>

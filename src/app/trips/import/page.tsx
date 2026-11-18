@@ -126,7 +126,7 @@ export default function ImportTripPage() {
         <Link href="/account" className="inline-flex items-center text-sm text-[#5B6B75] hover:text-[#2F4A5C] mb-6">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to my account
         </Link>
-        <h1 className="text-3xl sm:text-4xl font-semibold text-[#2F4A5C] mb-3">Import a trip from a spreadsheet</h1>
+        <h1 className="text-3xl sm:text-4xl font-normal text-[#2F4A5C] mb-3">Import a trip from a spreadsheet</h1>
         <p className="text-[#5B6B75] mb-8">
           {aiAvailable
             ? 'Upload your trip notes in any layout: an Excel or CSV spreadsheet, or a Word document. Our AI reader works out the cities, days, hotels, restaurants and activities and fills in the trip form for you to check. Nothing is saved until you click Save.'
@@ -201,7 +201,7 @@ export default function ImportTripPage() {
                 <span className="text-[#6B7A83]"> · {trip.startDate} to {trip.endDate}</span>
               )}
             </p>
-            <ul className="mt-3 divide-y divide-[#EEE8DF] border border-[#EEE8DF] rounded-lg">
+            <ul className="mt-3 divide-y divide-[#E2DDD5] border border-[#E2DDD5] rounded-lg">
               {trip.cities.map((c, i) => (
                 <li key={i} className="px-4 py-3 text-sm">
                   <span className="font-medium text-[#2F4A5C]">{c.name}</span>

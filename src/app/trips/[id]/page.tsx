@@ -109,60 +109,51 @@ interface DraftTrip {
 type Kind = 'hotel' | 'restaurant' | 'activity';
 const KIND_LABEL: Record<Kind, string> = { hotel: 'Stay', restaurant: 'Eat', activity: 'Do' };
 
-// One hotel / restaurant / activity: photo, name, address, rating, the traveller's review and a link
-function PlaceCard({ place, kind, save }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null }; kind: Kind; save?: PlaceToSave }) {
+// One hotel / restaurant / activity, as a journal entry: kind, name, details in mono, the traveller's own words, a photo
+const HATCH = { background: 'repeating-linear-gradient(135deg, #EFEBE3 0 1px, #F6F3EC 1px 10px)' };
+function PlaceCard({ place, kind, save, boxed }: { place: { name: string; location?: string; rating?: number | null; review?: string | null; liked?: boolean | null; imageUrl?: string | null; webUrl?: string | null; stayType?: string | null }; kind: Kind; save?: PlaceToSave; boxed?: boolean }) {
   const details = placeFields(place);
   const rating = Number(place.rating) || 0;
   const [imgOk, setImgOk] = useState(true);
+  const label = (isRental(place) ? 'Rental' : KIND_LABEL[kind]).toUpperCase();
+  const meta = [
+    place.location,
+    rating > 0 ? `★ ${rating}/5` : '',
+    place.liked === true ? 'Loved it' : place.liked === false ? 'Would skip' : '',
+  ].filter(Boolean).join(' · ');
+  const photo = details.imageUrl && imgOk;
   return (
-    <div className="bg-white border border-[#ECE7DF] rounded-2xl overflow-hidden flex flex-row">
-      {details.imageUrl && imgOk && (
-        <img
-          src={details.imageUrl}
-          alt=""
-          loading="lazy"
-          className="w-20 h-20 m-3 mr-0 rounded-xl sm:m-0 sm:rounded-none sm:w-44 sm:h-auto sm:min-h-[132px] object-cover shrink-0 bg-[#F1EEE8]"
-          onError={() => setImgOk(false)}
-        />
-      )}
-      <div className="p-3 sm:p-4 flex-1 min-w-0 flex flex-col gap-1.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#5B6A73]">
-              {isRental(place) ? 'Rental' : KIND_LABEL[kind]}
-            </p>
-            <h4 className="text-[17px] font-bold text-[#13212B] leading-snug">{place.name}</h4>
-            {place.location && <p className="text-[#5B6A73] text-sm mt-0.5 line-clamp-1">{place.location}</p>}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {place.liked === true && <ThumbsUp className="w-4 h-4 text-[#2F7A4F]" aria-label="Liked" />}
-            {place.liked === false && <ThumbsDown className="w-4 h-4 text-[#B4532A]" aria-label="Didn’t like" />}
-            {save && <SaveToSandbox places={[save]} />}
-          </div>
+    <div className={`flex gap-4 sm:gap-6 ${boxed ? 'p-4 sm:p-5 border border-[#E2DDD5] bg-white' : 'py-5 border-b border-[#E2DDD5]'}`}>
+      {!boxed && <span className="hidden sm:block w-12 shrink-0 font-mono text-[13px] text-[#1F6F78] pt-1.5">{label}</span>}
+      <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+        <span className={`font-mono text-[11px] tracking-[0.12em] text-[#1F6F78] ${boxed ? '' : 'sm:hidden'}`}>{label}</span>
+        <h4 className={`font-serif font-medium leading-tight text-[#13212B] ${boxed ? 'text-[26px] sm:text-[28px]' : 'text-[22px] sm:text-2xl'}`}>{place.name}</h4>
+        {meta && <p className="font-mono text-[11px] tracking-[0.06em] uppercase text-[#5B6A73]">{meta}</p>}
+        {details.review && (
+          <p className="font-serif italic text-[17px] sm:text-lg leading-relaxed text-[#2A3A44] whitespace-pre-line mt-0.5">“{details.review}”</p>
+        )}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1 font-mono text-xs tracking-[0.06em]">
+          {details.webUrl && (
+            <a href={details.webUrl} target="_blank" rel="noopener noreferrer" className="py-2 uppercase text-[#1F6F78] hover:text-[#13212B]">
+              {linkLabel(details.webUrl)} ↗
+            </a>
+          )}
+          {save && <SaveToSandbox places={[save]} />}
         </div>
-        {rating > 0 && (
-          <span className="flex items-center" title={`${rating} out of 5`} aria-label={`${rating} out of 5`}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Star key={n} className={`w-4 h-4 ${n <= rating ? 'text-[#E0A526] fill-[#E0A526]' : 'text-[#D9D4CC]'}`} />
-            ))}
-          </span>
-        )}
-        {details.review && <p className="text-[#3D4C56] text-sm leading-relaxed whitespace-pre-line">{details.review}</p>}
-        {details.webUrl && (
-          <a
-            href={details.webUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center self-start text-sm font-semibold text-[#1F6F78] hover:text-[#16535A]"
-          >
-            {linkLabel(details.webUrl)}
-            <ExternalLink className="w-3.5 h-3.5 ml-1" />
-          </a>
-        )}
         {!isRental(place) && (
           <GoogleReviews name={place.name} location={place.location} city={save?.city} country={save?.country} kind={kind} />
         )}
       </div>
+      {photo && (
+        <img
+          src={details.imageUrl!}
+          alt=""
+          loading="lazy"
+          className={`shrink-0 object-cover border border-[#E2DDD5] ${boxed ? 'w-24 h-24 sm:w-48 sm:h-36' : 'w-20 h-20 sm:w-24 sm:h-24'}`}
+          style={HATCH}
+          onError={() => setImgOk(false)}
+        />
+      )}
     </div>
   );
 }
@@ -220,13 +211,13 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
   const list = (k: Kind) => (k === 'hotel' ? city.hotels : k === 'restaurant' ? city.restaurants : city.activities);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col">
       {showHeader && (
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3 pt-6 pb-4">
           <div>
-            <h2 className="text-[28px] font-extrabold tracking-tight text-[#13212B]">{city.name}</h2>
-            <p className="text-[#5B6A73]">
-              {city.area && city.area !== city.name ? `${city.area} · ` : ''}{city.state && city.state !== city.name ? `${city.state}, ` : ''}{city.country}
+            <h2 className="font-serif font-normal text-[36px] sm:text-[44px] leading-none tracking-[-0.015em] text-[#13212B]">{city.name}</h2>
+            <p className="font-mono text-xs tracking-[0.1em] uppercase text-[#5B6A73] mt-2">
+              {city.area && city.area !== city.name ? `${city.area} · ` : ''}{city.state && city.state !== city.name ? `${city.state} · ` : ''}{city.country}
               {totalDays > 0 && ` · ${totalDays} ${totalDays === 1 ? 'day' : 'days'}`}
             </p>
           </div>
@@ -234,39 +225,38 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
         </div>
       )}
       {arrival && m && (
-        <div className="rounded-xl bg-[#F1F6F6] border border-[#D4E5E6] px-4 py-2.5 text-sm text-[#16535A]">
-          <span className="font-semibold">
-            {m.icon} Arrived by {m.label.toLowerCase()}
-            {arrival.from && ` from ${arrival.from}`}
-          </span>
-          {arrival.operator && <span> · {arrival.operator}</span>}
-          {arrival.details && <p className="mt-1 whitespace-pre-line">{arrival.details}</p>}
+        <div className="py-4 border-y border-[#E2DDD5] font-mono text-[13px] tracking-[0.04em]">
+          <p className="flex flex-wrap gap-x-4 gap-y-1 uppercase">
+            <span className="text-[#1F6F78]">Arrived by</span>
+            <span>{[m.label, arrival.from && `from ${arrival.from}`, arrival.operator].filter(Boolean).join(' · ')}</span>
+          </p>
+          {arrival.details && <p className="mt-2 font-serif text-[17px] tracking-normal text-[#2A3A44] whitespace-pre-line">{arrival.details}</p>}
         </div>
       )}
 
       {pills.length > 2 && (
-        <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
+        <div role="group" aria-label="Show" className="flex flex-wrap gap-x-1 gap-y-1 pt-5 font-mono text-xs tracking-[0.08em]">
           {pills.map((x) => (
             <button
               key={x.k}
               type="button"
               aria-pressed={kind === x.k}
               onClick={() => setKind(x.k)}
-              className={`px-3.5 py-2 rounded-full border text-sm min-h-[40px] ${
-                kind === x.k ? 'bg-[#13212B] border-[#13212B] text-white font-semibold' : 'bg-white border-[#E2DCD2] text-[#3D4C56] hover:bg-[#F6F3EE]'
+              className={`px-3 min-h-[40px] border uppercase ${
+                kind === x.k ? 'bg-[#13212B] border-[#13212B] text-[#F8F6F1]' : 'bg-transparent border-[#E2DDD5] text-[#3A4A54] hover:border-[#13212B]'
               }`}
             >
-              {x.label} <span className={kind === x.k ? 'text-white/70' : 'text-[#8A969D]'}>{x.n}</span>
+              {x.label} <span className={kind === x.k ? 'text-[#F8F6F1]/70' : 'text-[#5B6A73]'}>{x.n}</span>
             </button>
           ))}
         </div>
       )}
 
       {kind !== 'all' ? (
-        <div className="grid grid-cols-1 gap-3">
+        <div className="mt-6 border-t border-[#13212B]">
           {list(kind).map((p: any) => (
-            <div key={p.id} className="flex flex-col gap-1">
-              {p.dayNumber ? <span className="text-xs font-semibold text-[#5B6A73]">Day {p.dayNumber}</span> : null}
+            <div key={p.id}>
+              {p.dayNumber ? <p className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] pt-4">DAY {String(p.dayNumber).padStart(2, '0')}</p> : null}
               <PlaceCard place={p} kind={kind} save={toSave(p, kind)} />
             </div>
           ))}
@@ -274,53 +264,43 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
       ) : (
         <>
           {city.hotels.length > 0 && (
-            <div>
-              <h3 className="text-lg font-bold text-[#13212B] mb-3">Where we stayed</h3>
-              <div className="grid grid-cols-1 gap-3">
-                {city.hotels.map((h) => <PlaceCard key={h.id} place={h} kind="hotel" save={toSave(h, 'hotel')} />)}
+            <section className="pt-9">
+              <h3 className="font-serif font-normal text-[30px] sm:text-[34px] mb-4">Where we stayed</h3>
+              <div className="flex flex-col gap-3">
+                {city.hotels.map((h) => <PlaceCard key={h.id} place={h} kind="hotel" save={toSave(h, 'hotel')} boxed />)}
               </div>
-            </div>
+            </section>
           )}
 
-          {days.length > 0 && (
-            <div className="flex flex-col">
-              {days.map((dayNumber, idx) => {
-                const items = [
-                  ...city.activities.filter((a) => a.dayNumber === dayNumber).map((a) => ({ p: a, k: 'activity' as Kind })),
-                  ...city.restaurants.filter((r) => r.dayNumber === dayNumber).map((r) => ({ p: r, k: 'restaurant' as Kind })),
-                ];
-                const last = idx === days.length - 1 && noDay.length === 0;
-                return (
-                  <div key={dayNumber} className="flex gap-4 sm:gap-5">
-                    <div className="hidden sm:flex flex-col items-center shrink-0">
-                      <span className="w-11 h-11 rounded-full bg-[#1F6F78] text-white flex items-center justify-center font-extrabold">{dayNumber}</span>
-                      {!last && <span className="flex-1 w-0.5 bg-[#E2DCD2] mt-1.5" />}
-                    </div>
-                    <div className={`flex-1 min-w-0 ${last ? '' : 'pb-6 sm:pb-8'} flex flex-col gap-3`}>
-                      <div className="flex flex-wrap items-center justify-between gap-2 min-h-[44px]">
-                        <h3 className="text-xl font-extrabold text-[#13212B] flex items-center gap-2.5">
-                          <span className="sm:hidden w-8 h-8 rounded-full bg-[#1F6F78] text-white text-sm flex items-center justify-center font-extrabold">{dayNumber}</span>
-                          Day {dayNumber}
-                        </h3>
-                        {items.length > 1 && (
-                          <SaveToSandbox places={items.map(({ p, k }) => toSave(p, k))} label="Save this day" variant="pill" />
-                        )}
-                      </div>
-                      {items.map(({ p, k }) => <PlaceCard key={`${k}-${p.id}`} place={p} kind={k} save={toSave(p, k)} />)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {days.map((dayNumber) => {
+            const items = [
+              ...city.activities.filter((a) => a.dayNumber === dayNumber).map((a) => ({ p: a, k: 'activity' as Kind })),
+              ...city.restaurants.filter((r) => r.dayNumber === dayNumber).map((r) => ({ p: r, k: 'restaurant' as Kind })),
+            ];
+            return (
+              <section key={dayNumber} className="pt-10">
+                <div className="flex flex-wrap items-baseline justify-between gap-3 pb-3 border-b border-[#13212B]">
+                  <h3 className="font-serif font-normal text-[30px] sm:text-[34px] flex items-baseline gap-3.5">
+                    Day {dayNumber}
+                    <span className="font-mono text-xs tracking-[0.1em] text-[#5B6A73]">{items.length} {items.length === 1 ? 'STOP' : 'STOPS'}</span>
+                  </h3>
+                  {items.length > 1 && (
+                    <SaveToSandbox places={items.map(({ p, k }) => toSave(p, k))} label="Save this day" variant="pill" />
+                  )}
+                </div>
+                {items.map(({ p, k }) => <PlaceCard key={`${k}-${p.id}`} place={p} kind={k} save={toSave(p, k)} />)}
+              </section>
+            );
+          })}
 
           {noDay.length > 0 && (
-            <div>
-              <h3 className="text-lg font-bold text-[#13212B] mb-3">{days.length > 0 ? `Also in ${city.name}` : 'Places'}</h3>
-              <div className="grid grid-cols-1 gap-3">
+            <section className="pt-10">
+              <h3 className="font-serif font-normal text-[30px] sm:text-[34px]">{days.length > 0 ? `Also in ${city.name}` : 'Places'}</h3>
+              {days.length > 0 && <p className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] mt-1">NO DAY GIVEN</p>}
+              <div className="mt-3 border-t border-[#13212B]">
                 {noDay.map(({ p, k }) => <PlaceCard key={`${k}-${p.id}`} place={p} kind={k} save={toSave(p, k)} />)}
               </div>
-            </div>
+            </section>
           )}
         </>
       )}
@@ -800,7 +780,7 @@ function TripDetailContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-16">
+      <div className="min-h-screen bg-[#F8F6F1] pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
@@ -817,7 +797,7 @@ function TripDetailContent() {
 
   if (error || (!trip && !isLoading)) {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-16">
+      <div className="min-h-screen bg-[#F8F6F1] pt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Back Button */}
           <Link
@@ -828,11 +808,11 @@ function TripDetailContent() {
             Back to All Trips
           </Link>
           
-          <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-8 text-center">
+          <div className="bg-white border border-[#E2DDD5] rounded-[4px] p-8 text-center">
             <div className="mb-6">
               <span className="text-6xl">🔍</span>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Trip Not Found</h1>
+            <h1 className="text-3xl font-normal text-gray-900 mb-4">Trip Not Found</h1>
             <p className="text-gray-600 mb-2 text-lg">
               {error || 'The trip you are looking for does not exist.'}
             </p>
@@ -849,7 +829,7 @@ function TripDetailContent() {
               </Link>
               <Link
                 href="/trips/new"
-                className="inline-flex items-center px-6 py-3 bg-white border border-[#E2DCD2] text-[#13212B] rounded-xl hover:bg-[#F6F3EE] transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-white border border-[#E2DDD5] text-[#13212B] rounded-xl hover:bg-[#F6F3EE] transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your Own Trip
@@ -884,118 +864,113 @@ function TripDetailContent() {
     };
     return [...c.hotels.map((h) => mk(h, 'hotel')), ...c.activities.map((a) => mk(a, 'activity')), ...c.restaurants.map((r) => mk(r, 'restaurant'))];
   });
-  const byline = [
-    monthYear(t.startDate),
+  const country = parseCountries(t.countries);
+  const kicker = [
+    ...country,
     daysTotal ? `${daysTotal} ${daysTotal === 1 ? 'day' : 'days'}` : '',
-    multi ? `${cities.length} cities` : '',
+    monthYear(t.startDate),
+    t.tripType || '',
   ].filter(Boolean).join(' · ');
-  const chips = (light: boolean) => (
-    <div className="flex flex-wrap gap-2">
-      {t.tripType && (
-        <span className={`px-3 py-1.5 rounded-full text-[13px] font-semibold ${light ? 'bg-white text-[#13212B]' : 'bg-[#E3F0F0] text-[#16535A]'}`}>
-          {tripTypeIcon(t.tripType)} {t.tripType}
-        </span>
-      )}
-      {t.region && (
-        <span className={`px-3 py-1.5 rounded-full text-[13px] font-semibold ${light ? 'bg-white/20 text-white' : 'bg-[#F1EEE8] text-[#3D4C56]'}`}>{t.region}</span>
-      )}
-    </div>
-  );
+  const where = [
+    ...Array.from(new Set(cities.map((c) => c.area).filter(Boolean) as string[])),
+    ...Array.from(new Set(cities.map((c) => c.state).filter(Boolean) as string[])),
+    ...country,
+  ].join(', ');
+  const ledger: [string, string][] = ([
+    ['Where', where],
+    ['When', monthYear(t.startDate)],
+    ['Days', daysTotal ? String(daysTotal) : ''],
+    ['Cities', cities.length ? String(cities.length) : ''],
+    ['Stays', String(counts.stays)],
+    ['Restaurants', String(counts.eats)],
+    ['Things to do', String(counts.todo)],
+    ['Who went', t.tripType || ''],
+  ] as [string, string][]).filter(([, v]) => v);
   const legsBlock = (title: string, legs: FlightLeg[]) =>
     legs.length > 0 && (
-      <div className="text-sm">
-        <p className="text-[#5B6A73] mb-1">{title}</p>
-        {routeText(legs) && <p className="font-semibold text-[#13212B]">{routeText(legs)}</p>}
-        <ul className="mt-1 space-y-0.5 text-[#3D4C56]">
-          {legs.map((l, i) => (
-            <li key={i}>
-              {[l.from, l.to].filter(Boolean).join(' → ')}
-              {l.airline && <span> · {l.airline}</span>}
-              {l.flightNumber && <span className="text-[#8A969D]"> · {l.flightNumber}</span>}
-            </li>
-          ))}
-        </ul>
+      <div className="flex flex-col gap-1.5">
+        <p className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] uppercase">{title}</p>
+        {legs.map((l, i) => (
+          <div key={i} className="flex flex-col">
+            <span className="font-mono text-[15px] tracking-[0.03em] uppercase">{[l.from, l.to].filter(Boolean).join(' → ')}</span>
+            {(l.airline || l.flightNumber) && (
+              <span className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">{[l.airline, l.flightNumber].filter(Boolean).join(' · ')}</span>
+            )}
+          </div>
+        ))}
       </div>
     );
+  const actions = (
+    <div className="flex flex-wrap items-center gap-2">
+      {t.isPublic && <ShareTrip title={t.title} />}
+      {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save trip" variant="pill" />}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <Link href="/trips" className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A] mb-4">
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> All trips
+    <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-6 sm:pt-8">
+        <Link href="/trips" className="inline-block font-mono text-xs tracking-[0.1em] text-[#5B6A73] hover:text-[#13212B] py-2.5">
+          ← ALL TRIPS
         </Link>
 
         {success && (
-          <div className="bg-[#E3F0F0] border border-[#C3DEDF] text-[#16535A] px-5 py-3 rounded-xl mb-5 flex items-center justify-between">
+          <div className="border border-[#C3DEDF] bg-[#EEF5F4] text-[#16535A] px-5 py-3 mt-3 flex items-center justify-between">
             <p className="font-semibold">{success}</p>
             <button onClick={() => setSuccess(null)} aria-label="Close" className="ml-4"><X className="w-5 h-5" /></button>
           </div>
         )}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 flex items-center justify-between">
+          <div className="border border-red-200 bg-red-50 text-red-700 px-4 py-3 mt-3 flex items-center justify-between">
             <span>{error}</span>
             <button onClick={() => setError('')} aria-label="Close"><X className="w-4 h-4" /></button>
           </div>
         )}
 
-        {/* Cover with the title on it */}
-        {t.coverImageUrl && coverOk ? (
-          <div className="relative h-[340px] sm:h-[400px] rounded-[24px] sm:rounded-[28px] overflow-hidden bg-[#D9C7AF]">
-            <img src={t.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setCoverOk(false)} />
-            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 bg-[rgba(19,33,43,0.58)] flex flex-wrap items-end justify-between gap-3 sm:gap-4">
-              <div className="flex flex-col gap-2 min-w-0">
-                {chips(true)}
-                <h1 className="text-[28px] leading-tight sm:text-5xl font-extrabold tracking-tight text-white">{t.title}</h1>
-                {byline && <p className="text-sm sm:text-base text-[#F1EEE8]">{byline}</p>}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {t.isPublic && <ShareTrip title={t.title} />}
-                {allPlaces.length > 0 && (
-                  <div className="bg-white rounded-xl"><SaveToSandbox places={allPlaces} label="Save trip" variant="pill" /></div>
-                )}
-              </div>
-            </div>
+        {/* Title block */}
+        <div className="flex flex-wrap gap-x-12 gap-y-6 items-end justify-between pt-4 sm:pt-5 pb-7 sm:pb-8 border-b border-[#13212B]">
+          <div className="flex-[1_1_520px] min-w-0 flex flex-col gap-4">
+            {kicker && <p className="font-mono text-xs tracking-[0.14em] uppercase text-[#1F6F78]">{kicker}</p>}
+            <h1 className="font-serif font-normal text-[42px] sm:text-[60px] lg:text-[76px] leading-[1.02] tracking-[-0.02em]">{t.title}</h1>
+            {multi && (
+              <p className="font-mono text-sm sm:text-[15px] tracking-[0.04em] uppercase flex flex-wrap items-center gap-x-2 gap-y-1">
+                {cities.map((c, i) => {
+                  const a = cleanArrival(parseJson(c.arrival, null));
+                  const mi = i > 0 && a?.mode ? modeInfo(a.mode) : null;
+                  return (
+                    <span key={c.id} className="flex items-center gap-2">
+                      {i > 0 && <span aria-hidden className="text-[#5B6A73]">{mi ? `→ ${mi.label.toUpperCase()} →` : '→'}</span>}
+                      <button type="button" onClick={() => setActiveCityId(c.id)} className="uppercase hover:text-[#1F6F78] underline-offset-4 hover:underline">
+                        {c.name}
+                      </button>
+                    </span>
+                  );
+                })}
+              </p>
+            )}
           </div>
-        ) : (
-          <div className="bg-white border border-[#ECE7DF] rounded-[28px] p-6 sm:p-8 flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-col gap-2 min-w-0">
-              {chips(false)}
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">{t.title}</h1>
-              {byline && <p className="text-[#5B6A73]">{byline}</p>}
+          {actions}
+        </div>
+
+        {/* Cover plate */}
+        {t.coverImageUrl && coverOk && (
+          <figure className="mt-7 sm:mt-8 border border-[#E2DDD5] bg-white p-2.5 sm:p-3.5 pb-0 sm:pb-0">
+            <div className="relative h-[240px] sm:h-[420px] border border-[#E2DDD5] overflow-hidden" style={HATCH}>
+              <img src={t.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setCoverOk(false)} />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {t.isPublic && <ShareTrip title={t.title} />}
-              {allPlaces.length > 0 && <SaveToSandbox places={allPlaces} label="Save trip" variant="pill" />}
-            </div>
-          </div>
+            <figcaption className="flex justify-between gap-3 py-3 px-0.5 font-mono text-[11px] tracking-[0.08em] uppercase text-[#5B6A73]">
+              <span className="truncate">{where || t.title}</span>
+              <span className="shrink-0">{monthYear(t.startDate)}</span>
+            </figcaption>
+          </figure>
         )}
 
-        {/* Route between cities */}
-        {multi && (
-          <div className="mt-5 bg-white border border-[#ECE7DF] rounded-[20px] px-5 py-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-            <span className="font-bold text-[#5B6A73]">Route</span>
-            {cities.map((c, i) => {
-              const a = cleanArrival(parseJson(c.arrival, null));
-              const mi = a?.mode ? modeInfo(a.mode) : null;
-              return (
-                <span key={c.id} className="flex items-center gap-2">
-                  {i > 0 && <span aria-hidden className="text-[#A9B3B9]">→{mi ? ` ${mi.icon} →` : ''}</span>}
-                  <button type="button" onClick={() => setActiveCityId(c.id)} className="font-bold text-[#13212B] hover:text-[#1F6F78] underline-offset-2 hover:underline">
-                    {c.name}
-                  </button>
-                  {c.numberOfDays ? <span className="text-[#8A969D]">{c.numberOfDays} {c.numberOfDays === 1 ? 'day' : 'days'}</span> : null}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="mt-6 flex flex-wrap gap-8 items-start pb-16">
+        <div className="pt-10 sm:pt-12 pb-20 flex flex-wrap gap-12 items-start">
           {/* The trip itself */}
           <div className="flex-[999_1_560px] min-w-0">
             {multi && active && (
-              <div role="tablist" aria-label="Cities" className="flex flex-wrap gap-1 border-b border-[#E2DCD2] mb-6">
-                {cities.map((c) => {
+              <div role="tablist" aria-label="Cities" className="flex flex-wrap gap-x-7 border-b border-[#13212B]">
+                {cities.map((c, i) => {
                   const on = c.id === active.id;
                   return (
                     <button
@@ -1004,9 +979,12 @@ function TripDetailContent() {
                       role="tab"
                       aria-selected={on}
                       onClick={() => setActiveCityId(c.id)}
-                      className={`px-4 min-h-[48px] -mb-px border-b-[3px] text-[15px] ${on ? 'border-[#1F6F78] text-[#13212B] font-bold' : 'border-transparent text-[#5B6A73] hover:text-[#13212B]'}`}
+                      className={`-mb-px border-b-[3px] py-3 pr-1 text-left flex flex-col gap-0.5 ${on ? 'border-[#1F6F78] text-[#13212B]' : 'border-transparent text-[#5B6A73] hover:text-[#13212B]'}`}
                     >
-                      {c.name}
+                      <span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">
+                        {String(i + 1).padStart(2, '0')}{c.numberOfDays ? ` · ${c.numberOfDays} ${c.numberOfDays === 1 ? 'DAY' : 'DAYS'}` : ''}
+                      </span>
+                      <span className="font-serif text-[22px] sm:text-[26px] leading-tight">{c.name}</span>
                     </button>
                   );
                 })}
@@ -1015,43 +993,42 @@ function TripDetailContent() {
             {active ? (
               <CityView city={active} trip={t} showHeader={multi} />
             ) : (
-              <p className="text-[#5B6A73]">No places added to this trip yet.</p>
+              <p className="font-serif italic text-xl text-[#5B6A73]">No places added to this trip yet.</p>
             )}
           </div>
 
-          {/* At a glance */}
-          <aside className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
-            <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-5 flex flex-col gap-4">
-              <h2 className="text-[17px] font-extrabold">Trip at a glance</h2>
-              <div className="grid grid-cols-3 gap-2.5 text-center">
-                {[['stays', counts.stays], ['eats', counts.eats], ['to do', counts.todo]].map(([label, n]) => (
-                  <div key={label as string} className="bg-[#F6F3EE] rounded-xl py-3 px-1.5">
-                    <div className="text-xl font-extrabold">{n}</div>
-                    <div className="text-xs text-[#5B6A73]">{label}</div>
+          {/* Ledger */}
+          <aside aria-label="Trip at a glance" className="flex-[1_1_300px] min-w-0 flex flex-col gap-6">
+            <div className="border border-[#E2DDD5] bg-white">
+              <h2 className="px-5 py-4 border-b border-[#E2DDD5] font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73]">TRIP AT A GLANCE</h2>
+              <dl className="px-5 pt-1 pb-2">
+                {ledger.map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-4 py-3 border-b border-[#EFEBE3] last:border-b-0">
+                    <dt className="font-serif text-lg">{k}</dt>
+                    <dd className="font-mono text-[13px] text-right uppercase">{v}</dd>
                   </div>
                 ))}
-              </div>
-              <div className="text-sm flex flex-col gap-1.5">
-                <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Where</span><span className="text-right">{[...Array.from(new Set(cities.map((c) => c.area).filter(Boolean) as string[])), ...Array.from(new Set(cities.map((c) => c.state).filter(Boolean) as string[])), ...parseCountries(t.countries)].join(', ')}</span></div>
-                {daysTotal > 0 && <div className="flex justify-between gap-3"><span className="text-[#5B6A73]">Length</span><span>{daysTotal} {daysTotal === 1 ? 'day' : 'days'}</span></div>}
-              </div>
-              {(travel.outbound.length > 0 || travel.return.length > 0) && (
-                <div className="pt-3 border-t border-[#ECE7DF] flex flex-col gap-3">
+              </dl>
+            </div>
+            {(travel.outbound.length > 0 || travel.return.length > 0) && (
+              <div className="border border-[#E2DDD5] bg-white">
+                <h2 className="px-5 py-4 border-b border-[#E2DDD5] font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73]">FLIGHTS</h2>
+                <div className="px-5 py-4 flex flex-col gap-4">
                   {legsBlock('Getting there', travel.outbound)}
                   {legsBlock('Getting home', travel.return)}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             {t.description && (
-              <div className="bg-white border border-[#ECE7DF] rounded-[20px] p-5">
-                <h2 className="text-[17px] font-extrabold mb-2">Overall comments</h2>
-                <p className="text-[15px] leading-relaxed text-[#3D4C56] whitespace-pre-line">{t.description}</p>
+              <div className="border-t border-[#13212B] pt-4">
+                <h2 className="font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73] mb-2.5">OVERALL COMMENTS</h2>
+                <p className="font-serif text-[19px] leading-relaxed text-[#2A3A44] whitespace-pre-line">{t.description}</p>
               </div>
             )}
             {allPlaces.length > 0 && (
-              <div className="bg-[#F1F6F6] border border-[#D4E5E6] rounded-[20px] p-5 text-sm text-[#16535A]">
-                Tap <b>＋</b> on any place to save it to your Sandbox, or save a whole day or city at once.
-              </div>
+              <p className="font-mono text-xs leading-relaxed tracking-[0.03em] text-[#5B6A73] border-t border-[#E2DDD5] pt-4">
+                TAP ＋ ON ANY PLACE TO SAVE IT TO YOUR SANDBOX, OR SAVE A WHOLE DAY OR CITY AT ONCE.
+              </p>
             )}
           </aside>
         </div>

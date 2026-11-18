@@ -67,8 +67,8 @@ export default function FeedbackTripPage() {
 
   if (needsSignIn) {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-24 px-4 text-center">
-        <h1 className="text-2xl font-bold mb-2">Sign in to help plan this trip</h1>
+      <div className="min-h-screen bg-[#F8F6F1] pt-24 px-4 text-center">
+        <h1 className="text-2xl font-normal mb-2">Sign in to help plan this trip</h1>
         <p className="text-[#5B6A73] mb-6">Help me plan is for members only.</p>
         <Link href={`/login?next=/feedback/${id}`} className="inline-flex items-center px-6 py-3 bg-[#13212B] text-white rounded-xl font-semibold">Sign in</Link>
       </div>
@@ -76,19 +76,19 @@ export default function FeedbackTripPage() {
   }
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-24 px-4 text-center">
+      <div className="min-h-screen bg-[#F8F6F1] pt-24 px-4 text-center">
         <p className="text-[#5B6A73] mb-6">{error}</p>
         <Link href="/feedback" className="font-semibold text-[#1F6F78]">← Help me plan</Link>
       </div>
     );
   }
-  if (!data) return <div className="min-h-screen bg-[#FBFAF7] pt-24 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#8A969D]" /></div>;
+  if (!data) return <div className="min-h-screen bg-[#F8F6F1] pt-24 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#8A969D]" /></div>;
 
   const { trip, isOwner } = data;
   const openComments = data.comments.filter((c) => c.status === 'open' && !c.byOwner).length;
 
   return (
-    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+    <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Link href={isOwner ? `/sandbox?trip=${trip.id}` : '/feedback'} className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A] mb-4">
           <ArrowLeft className="w-4 h-4 mr-1.5" /> {isOwner ? 'Back to my Sandbox' : 'Help me plan'}
@@ -96,13 +96,13 @@ export default function FeedbackTripPage() {
 
         {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-[#13212B] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
 
-        <div className="bg-white border border-[#ECE7DF] rounded-[24px] p-5 sm:p-7 mb-6">
+        <div className="bg-white border border-[#E2DDD5] rounded-[4px] p-5 sm:p-7 mb-6">
           <div className="flex flex-wrap gap-2 mb-2">
             {trip.tripType && <span className="px-3 py-1 rounded-full bg-[#E3F0F0] text-[#16535A] text-xs font-semibold">{tripTypeIcon(trip.tripType)} {trip.tripType}</span>}
             {trip.region && <span className="px-3 py-1 rounded-full bg-[#F1EEE8] text-[#3D4C56] text-xs font-semibold">{trip.region}</span>}
             {!trip.open && <span className="px-3 py-1 rounded-full bg-[#F6E7DC] text-[#8A4B24] text-xs font-semibold">Not open for feedback</span>}
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">{trip.title}</h1>
+          <h1 className="text-2xl sm:text-4xl font-normal tracking-tight">{trip.title}</h1>
           <p className="text-[#5B6A73] mt-1">{[monthYear(trip.startDate), `${data.places.length} places planned`, cities.length > 1 ? `${cities.length} cities` : ''].filter(Boolean).join(' · ')}</p>
           {trip.ask && (
             <div className="mt-4 rounded-2xl bg-[#F1F6F6] border border-[#D4E5E6] p-4">
@@ -115,7 +115,7 @@ export default function FeedbackTripPage() {
               <span className="text-[#3D4C56]">
                 {trip.open ? `Open for feedback · ${openComments} new ${openComments === 1 ? 'suggestion' : 'suggestions'} to review` : 'Only you can see this page right now.'}
               </span>
-              <button type="button" onClick={() => setOpen(!trip.open)} className="px-3 min-h-[36px] rounded-xl border border-[#E2DCD2] bg-white font-semibold">
+              <button type="button" onClick={() => setOpen(!trip.open)} className="px-3 min-h-[36px] rounded-xl border border-[#E2DDD5] bg-white font-semibold">
                 {trip.open ? 'Close feedback' : 'Open for feedback'}
               </button>
             </div>
@@ -124,7 +124,7 @@ export default function FeedbackTripPage() {
 
         {/* The whole trip */}
         <section className="mb-8">
-          <h2 className="text-xl font-extrabold mb-3">The whole trip</h2>
+          <h2 className="text-xl font-normal mb-3">The whole trip</h2>
           <div className="flex flex-col gap-3">
             {commentsOn('trip').map((c) => <CommentCard key={c.id} c={c} isOwner={isOwner} onChanged={changed} />)}
             {trip.open && <Composer tripId={id} target="trip" onPosted={() => changed()} />}
@@ -146,9 +146,9 @@ export default function FeedbackTripPage() {
           return (
             <section key={g.city} className="mb-8">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <h2 className="text-xl font-extrabold flex items-center gap-2"><MapPin className="w-5 h-5 text-[#1F6F78]" />{g.city}</h2>
+                <h2 className="text-xl font-normal flex items-center gap-2"><MapPin className="w-5 h-5 text-[#1F6F78]" />{g.city}</h2>
                 {trip.open && openFor !== cityKey && (
-                  <button type="button" onClick={() => setOpenFor(cityKey)} className="inline-flex items-center px-3 min-h-[36px] rounded-xl border border-[#E2DCD2] bg-white text-sm font-semibold">
+                  <button type="button" onClick={() => setOpenFor(cityKey)} className="inline-flex items-center px-3 min-h-[36px] rounded-xl border border-[#E2DDD5] bg-white text-sm font-semibold">
                     <MessageCircle className="w-4 h-4 mr-1.5" /> Advice on {g.city}
                   </button>
                 )}
@@ -162,12 +162,12 @@ export default function FeedbackTripPage() {
 
               {order.map((k) => (
                 <div key={k} className="mb-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#5B6A73] mb-2">{k}</h3>
+                  <h3 className="text-sm font-medium uppercase tracking-wider text-[#5B6A73] mb-2">{k}</h3>
                   <div className="flex flex-col gap-3">
                     {byDay.get(k)!.map((p) => {
                       const pc = commentsOn('place', p.id);
                       return (
-                        <div key={p.id} className="bg-white border border-[#ECE7DF] rounded-2xl overflow-hidden">
+                        <div key={p.id} className="bg-white border border-[#E2DDD5] rounded-2xl overflow-hidden">
                           <div className="flex gap-3 p-3">
                             {p.imageUrl ? <img src={p.imageUrl} alt="" loading="lazy" className="w-20 h-20 rounded-xl object-cover shrink-0 bg-[#F1EEE8]" /> : <div className="w-20 h-20 rounded-xl bg-[#F1EEE8] shrink-0" />}
                             <div className="min-w-0 flex-1">
@@ -179,12 +179,12 @@ export default function FeedbackTripPage() {
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               {pc.length > 0 && <span className="text-xs font-semibold text-[#1F6F78]"><MessageCircle className="w-3.5 h-3.5 inline mr-0.5" />{pc.length}</span>}
                               {trip.open && openFor !== p.id && (
-                                <button type="button" onClick={() => setOpenFor(p.id)} className="px-3 min-h-[36px] rounded-xl border border-[#E2DCD2] bg-white text-sm font-semibold">React</button>
+                                <button type="button" onClick={() => setOpenFor(p.id)} className="px-3 min-h-[36px] rounded-xl border border-[#E2DDD5] bg-white text-sm font-semibold">React</button>
                               )}
                             </div>
                           </div>
                           {(pc.length > 0 || openFor === p.id) && (
-                            <div className="border-t border-[#ECE7DF] bg-[#FBFAF7] p-3 flex flex-col gap-3">
+                            <div className="border-t border-[#E2DDD5] bg-[#F8F6F1] p-3 flex flex-col gap-3">
                               {pc.map((c) => <CommentCard key={c.id} c={c} isOwner={isOwner} onChanged={changed} />)}
                               {openFor === p.id && (
                                 <Composer tripId={id} target="place" targetKey={p.id} kind={p.kind} city={p.city} country={p.country}

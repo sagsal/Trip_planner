@@ -119,7 +119,7 @@ function RegisterContent() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#FBFAF7] pt-16">
+    <div className="relative min-h-screen bg-[#F8F6F1] pt-16">
       <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-start sm:items-center justify-center px-4 py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -129,7 +129,7 @@ function RegisterContent() {
         >
                   {/* Header */}
                   <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h1>
+                    <h1 className="text-3xl font-normal text-gray-900 mb-2">Create Your Account</h1>
                     <p className="text-gray-600">Start documenting your amazing journeys</p>
                   </div>
 
@@ -138,7 +138,7 @@ function RegisterContent() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="bg-white rounded-[20px] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-6 sm:p-8 border border-[#ECE7DF]"
+                    className="bg-white rounded-[4px] p-6 sm:p-8 border border-[#E2DDD5]"
                   >
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name Field */}
@@ -155,7 +155,7 @@ function RegisterContent() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-4 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-4 py-3 border border-[#E2DDD5] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -175,7 +175,7 @@ function RegisterContent() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-4 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-4 py-3 border border-[#E2DDD5] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -195,7 +195,7 @@ function RegisterContent() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-12 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-12 py-3 border border-[#E2DDD5] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Create a password"
                   />
                   <button
@@ -222,7 +222,7 @@ function RegisterContent() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                            className="w-full pl-10 pr-12 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
+                            className="w-full pl-10 pr-12 py-3 border border-[#E2DDD5] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Confirm your password"
                   />
                   <button
@@ -236,7 +236,7 @@ function RegisterContent() {
               </div>
 
               {/* About you (optional) */}
-              <fieldset className="rounded-xl border border-[#ECE7DF] p-4">
+              <fieldset className="rounded-xl border border-[#E2DDD5] p-4">
                 <legend className="px-1 text-sm font-medium text-gray-700">About you <span className="font-normal text-gray-500">(optional)</span></legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -245,7 +245,7 @@ function RegisterContent() {
                       id="homeRegion"
                       value={formData.homeRegion}
                       onChange={(e) => setFormData((f) => ({ ...f, homeRegion: e.target.value, homeCountry: e.target.value && f.homeCountry && regionOf(f.homeCountry) !== e.target.value ? '' : f.homeCountry }))}
-                      className="w-full px-3 py-3 border border-[#E2DCD2] rounded-xl text-black bg-white"
+                      className="w-full px-3 py-3 border border-[#E2DDD5] rounded-xl text-black bg-white"
                     >
                       <option value="">Choose…</option>
                       {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -257,7 +257,7 @@ function RegisterContent() {
                       id="homeCountry"
                       value={formData.homeCountry}
                       onChange={(e) => setFormData((f) => ({ ...f, homeCountry: e.target.value, homeRegion: f.homeRegion || regionOf(e.target.value) || '' }))}
-                      className="w-full px-3 py-3 border border-[#E2DCD2] rounded-xl text-black bg-white"
+                      className="w-full px-3 py-3 border border-[#E2DDD5] rounded-xl text-black bg-white"
                     >
                       <option value="">Choose…</option>
                       {(formData.homeRegion ? countriesIn(formData.homeRegion) : ALL_COUNTRIES).map((c) => <option key={c} value={c}>{c}</option>)}
@@ -269,7 +269,7 @@ function RegisterContent() {
                       id="ageBracket"
                       value={formData.ageBracket}
                       onChange={(e) => setFormData((f) => ({ ...f, ageBracket: e.target.value }))}
-                      className="w-full sm:w-1/2 px-3 py-3 border border-[#E2DCD2] rounded-xl text-black bg-white"
+                      className="w-full sm:w-1/2 px-3 py-3 border border-[#E2DDD5] rounded-xl text-black bg-white"
                     >
                       <option value="">Prefer not to say</option>
                       {AGE_BRACKETS.map((a) => <option key={a} value={a}>{a}</option>)}

@@ -30,7 +30,7 @@ const fmtWeek = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en
 
 function Tile({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
   return (
-    <div className="bg-white border border-[#ECE7DF] rounded-2xl p-4">
+    <div className="bg-white border border-[#E2DDD5] rounded-2xl p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-[#5B6A73]">{label}</p>
       <p className="text-3xl font-extrabold tracking-tight mt-1 tabular-nums">{value}</p>
       {sub && <p className="text-sm text-[#5B6A73] mt-0.5">{sub}</p>}
@@ -74,7 +74,7 @@ function Weekly({ data, label }: { data: { start: string; count: number }[]; lab
       <p className="text-sm text-[#3D4C56] h-5 mb-2 tabular-nums">
         {h ? <>Week of {fmtWeek(h.start)}: <b>{h.count}</b> {label}</> : <span className="text-[#8A969D]">Hover a week for its number</span>}
       </p>
-      <div className="flex items-end gap-1.5 h-28 border-b border-[#E2DCD2]" role="img" aria-label={`${label} per week, last ${data.length} weeks`}>
+      <div className="flex items-end gap-1.5 h-28 border-b border-[#E2DDD5]" role="img" aria-label={`${label} per week, last ${data.length} weeks`}>
         {data.map((d, i) => (
           <div key={d.start} className="flex-1 h-full flex items-end" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(i)} tabIndex={0}>
             <div className="w-full rounded-t-[4px]" style={{ height: `${d.count ? Math.max(4, (d.count / max) * 100) : 0}%`, background: ACCENT, opacity: hover === null || hover === i ? 1 : 0.45 }} />
@@ -91,8 +91,8 @@ function Weekly({ data, label }: { data: { start: string; count: number }[]; lab
 
 function Card({ title, icon, children, wide }: { title: string; icon: ReactNode; children: ReactNode; wide?: boolean }) {
   return (
-    <section className={`bg-white border border-[#ECE7DF] rounded-2xl p-4 sm:p-5 ${wide ? 'lg:col-span-2' : ''}`}>
-      <h2 className="font-bold mb-3 flex items-center gap-2">{icon}{title}</h2>
+    <section className={`bg-white border border-[#E2DDD5] rounded-2xl p-4 sm:p-5 ${wide ? 'lg:col-span-2' : ''}`}>
+      <h2 className="font-normal mb-3 flex items-center gap-2">{icon}{title}</h2>
       {children}
     </section>
   );
@@ -132,24 +132,24 @@ function Accounts() {
   };
   const shown = (list || []).filter((m) => !q || `${m.name} ${m.email} ${m.from || ''}`.toLowerCase().includes(q.toLowerCase()));
   return (
-    <section className="mt-5 bg-white border border-[#ECE7DF] rounded-2xl p-4 sm:p-5">
+    <section className="mt-5 bg-white border border-[#E2DDD5] rounded-2xl p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold flex items-center gap-2"><Users className="w-4 h-4 text-[#1F6F78]" />Accounts{list ? ` (${list.length})` : ''}</h2>
-        <button type="button" onClick={() => setOpen((v) => !v)} className="px-3 min-h-[40px] rounded-xl border border-[#E2DCD2] text-sm font-semibold">
+        <h2 className="font-normal flex items-center gap-2"><Users className="w-4 h-4 text-[#1F6F78]" />Accounts{list ? ` (${list.length})` : ''}</h2>
+        <button type="button" onClick={() => setOpen((v) => !v)} className="px-3 min-h-[40px] rounded-xl border border-[#E2DDD5] text-sm font-semibold">
           {open ? 'Hide accounts' : 'Show all accounts'}
         </button>
       </div>
       {open && (
         <div className="mt-3">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or country" aria-label="Search accounts"
-            className="w-full sm:w-80 px-3 py-2 border border-[#E2DCD2] rounded-xl text-sm mb-3" />
+            className="w-full sm:w-80 px-3 py-2 border border-[#E2DDD5] rounded-xl text-sm mb-3" />
           {!list ? (
             <Loader2 className="w-5 h-5 animate-spin text-[#8A969D]" />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[900px]">
                 <thead>
-                  <tr className="text-left text-[#5B6A73] border-b border-[#ECE7DF]">
+                  <tr className="text-left text-[#5B6A73] border-b border-[#E2DDD5]">
                     <th className="font-medium py-2 pr-3">Name</th>
                     <th className="font-medium py-2 pr-3">Email</th>
                     <th className="font-medium py-2 pr-3">Joined</th>
@@ -182,7 +182,7 @@ function Accounts() {
                         {!m.isYou && (
                           <>
                             <button type="button" disabled={busy === m.id} onClick={() => act(m, m.blocked ? 'unblock' : 'block')}
-                              className="px-2.5 min-h-[34px] rounded-lg border border-[#E2DCD2] text-xs font-semibold mr-1.5 disabled:opacity-50">
+                              className="px-2.5 min-h-[34px] rounded-lg border border-[#E2DDD5] text-xs font-semibold mr-1.5 disabled:opacity-50">
                               {m.blocked ? 'Unblock' : 'Block'}
                             </button>
                             <button type="button" disabled={busy === m.id} onClick={() => act(m, 'delete')}
@@ -251,14 +251,14 @@ function Messages() {
     } finally { setBusy(''); }
   };
 
-  const field = 'w-full px-3 py-2.5 border border-[#E2DCD2] rounded-xl text-sm bg-white';
+  const field = 'w-full px-3 py-2.5 border border-[#E2DDD5] rounded-xl text-sm bg-white';
   const live = banners.find((b) => b.active);
 
   return (
-    <section className="mt-5 bg-white border border-[#ECE7DF] rounded-2xl p-4 sm:p-5">
+    <section className="mt-5 bg-white border border-[#E2DDD5] rounded-2xl p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-        <h2 className="font-bold flex items-center gap-2"><MessageCircle className="w-4 h-4 text-[#1F6F78]" />Messages to members</h2>
-        <div role="tablist" className="flex rounded-xl border border-[#E2DCD2] overflow-hidden">
+        <h2 className="font-normal flex items-center gap-2"><MessageCircle className="w-4 h-4 text-[#1F6F78]" />Messages to members</h2>
+        <div role="tablist" className="flex rounded-xl border border-[#E2DDD5] overflow-hidden">
           {(['email', 'banner'] as const).map((k) => (
             <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => { setMode(k); setNote(''); }}
               className={`px-3 min-h-[40px] text-sm ${mode === k ? 'bg-[#13212B] text-white font-semibold' : 'text-[#3D4C56]'}`}>
@@ -302,7 +302,7 @@ function Messages() {
             <label className="text-sm font-medium">Button text<input value={msg.linkLabel} onChange={(e) => setMsg({ ...msg, linkLabel: e.target.value })} className={`${field} mt-1`} /></label>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={!!busy || !msg.subject || !msg.body} onClick={() => post('test')} className="px-4 min-h-[44px] rounded-xl border border-[#E2DCD2] text-sm font-semibold disabled:opacity-50">
+            <button type="button" disabled={!!busy || !msg.subject || !msg.body} onClick={() => post('test')} className="px-4 min-h-[44px] rounded-xl border border-[#E2DDD5] text-sm font-semibold disabled:opacity-50">
               {busy === 'test' ? 'Sending…' : 'Send a test to me'}
             </button>
             <button type="button" disabled={!!busy || !msg.subject || !msg.body || !count} onClick={() => post('send')} className="px-4 min-h-[44px] rounded-xl bg-[#1F6F78] text-white text-sm font-semibold disabled:opacity-50">
@@ -370,15 +370,15 @@ export default function AdminDashboard() {
 
   if (state === 'denied') {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-24 px-4 text-center">
-        <h1 className="text-2xl font-bold mb-2">Page not found</h1>
+      <div className="min-h-screen bg-[#F8F6F1] pt-24 px-4 text-center">
+        <h1 className="text-2xl font-normal mb-2">Page not found</h1>
         <Link href="/" className="font-semibold text-[#1F6F78]">Go to the homepage</Link>
       </div>
     );
   }
   if (!s) {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-24 flex justify-center text-[#5B6A73]">
+      <div className="min-h-screen bg-[#F8F6F1] pt-24 flex justify-center text-[#5B6A73]">
         {state === 'error' ? 'Couldn’t load the numbers. Try again in a moment.' : <Loader2 className="w-6 h-6 animate-spin" />}
       </div>
     );
@@ -394,15 +394,15 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+    <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Site dashboard</h1>
+            <h1 className="text-3xl font-normal tracking-tight">Site dashboard</h1>
             <p className="text-sm text-[#5B6A73]">Only you can see this page · updated {new Date(s.generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="Time period" className="flex rounded-xl border border-[#E2DCD2] bg-white overflow-hidden">
+            <div role="group" aria-label="Time period" className="flex rounded-xl border border-[#E2DDD5] bg-white overflow-hidden">
               {PERIODS.map((d) => (
                 <button key={d} type="button" aria-pressed={days === d} onClick={() => setDays(d)}
                   className={`px-3 min-h-[40px] text-sm ${days === d ? 'bg-[#13212B] text-white font-semibold' : 'text-[#3D4C56] hover:bg-[#F6F3EE]'}`}>
@@ -410,7 +410,7 @@ export default function AdminDashboard() {
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => setAsTable((v) => !v)} className="inline-flex items-center px-3 min-h-[40px] rounded-xl border border-[#E2DCD2] bg-white text-sm">
+            <button type="button" onClick={() => setAsTable((v) => !v)} className="inline-flex items-center px-3 min-h-[40px] rounded-xl border border-[#E2DDD5] bg-white text-sm">
               {asTable ? <><BarChart3 className="w-4 h-4 mr-1.5" /> Charts</> : <><Table2 className="w-4 h-4 mr-1.5" /> Table view</>}
             </button>
           </div>
@@ -426,8 +426,8 @@ export default function AdminDashboard() {
         {asTable ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {tables.map(([title, rows]) => (
-              <section key={title} className="bg-white border border-[#ECE7DF] rounded-2xl p-4">
-                <h2 className="font-bold mb-2">{title}</h2>
+              <section key={title} className="bg-white border border-[#E2DDD5] rounded-2xl p-4">
+                <h2 className="font-normal mb-2">{title}</h2>
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-[#5B6A73]"><th className="font-medium py-1">Name</th><th className="font-medium py-1 text-right">Count</th></tr></thead>
                   <tbody>

@@ -95,7 +95,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#FBFAF7] pt-16">
+    <div className="relative min-h-screen bg-[#F8F6F1] pt-16">
       <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-start sm:items-center justify-center px-4 py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -105,7 +105,7 @@ function LoginForm() {
         >
                   {/* Header */}
                   <div className="text-center mb-8">
-                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#13212B] mb-2">Welcome Back</h1>
+                    <h1 className="text-3xl sm:text-4xl font-normal tracking-tight text-[#13212B] mb-2">Welcome Back</h1>
                     <p className="text-base sm:text-lg text-[#4A5963]">Sign in to your account to continue your journey</p>
                   </div>
 
@@ -114,7 +114,7 @@ function LoginForm() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="bg-white rounded-[20px] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-6 sm:p-8 border border-[#ECE7DF]"
+                    className="bg-white rounded-[4px] p-6 sm:p-8 border border-[#E2DDD5]"
                   >
             <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Email Field */}
@@ -131,7 +131,7 @@ function LoginForm() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-4 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
+                    className="w-full pl-10 pr-4 py-3 border border-[#E2DDD5] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -151,7 +151,7 @@ function LoginForm() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-12 py-3 border border-[#E2DCD2] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
+                    className="w-full pl-10 pr-12 py-3 border border-[#E2DDD5] rounded-xl focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent transition-colors text-black bg-white/80"
                     placeholder="Enter your password"
                   />
                   <button

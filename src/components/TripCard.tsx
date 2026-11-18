@@ -157,13 +157,13 @@ export function FeaturedTripCard({ t }: { t: CardTrip }) {
   const photos = tripPlacePhotos(t, 8);
   const places = tripPlacesToSave(t);
   return (
-    <div className="flex flex-wrap bg-white border border-[#ECE7DF] rounded-3xl overflow-hidden">
+    <div className="flex flex-wrap bg-white border border-[#E2DDD5] rounded-3xl overflow-hidden">
       <Link href={`/trips/${t.id}`} className="block flex-[1_1_480px] min-h-[300px]" aria-label={`Open ${t.title}`}>
         <Cover t={t} className="h-full min-h-[300px]" />
       </Link>
       <div className="flex-[1_1_360px] min-w-0 p-7 sm:p-8 flex flex-col gap-3.5">
         <p className="text-xs font-bold uppercase tracking-wider text-[#1F6F78]">Featured trip</p>
-        <h2 className="text-3xl font-extrabold tracking-tight text-[#13212B]">{t.title}</h2>
+        <h2 className="text-3xl font-normal tracking-tight text-[#13212B]">{t.title}</h2>
         <Byline t={t} />
         <Route t={t} />
         {t.description && <p className="text-[15px] leading-relaxed text-[#4A5963] line-clamp-3">{t.description}</p>}
@@ -195,12 +195,12 @@ export function FeaturedTripCard({ t }: { t: CardTrip }) {
 export default function TripCard({ t }: { t: CardTrip }) {
   const places = tripPlacesToSave(t);
   return (
-    <div className="bg-white border border-[#ECE7DF] rounded-[20px] overflow-hidden flex flex-col hover:shadow-[0_8px_28px_rgba(19,33,43,0.08)] transition-shadow">
+    <div className="bg-white border border-[#E2DDD5] rounded-[4px] overflow-hidden flex flex-col transition-shadow">
       <Link href={`/trips/${t.id}`} className="block" aria-label={`Open ${t.title}`}>
         <Cover t={t} className="h-48" />
       </Link>
       <div className="p-5 flex flex-col gap-2.5 flex-1">
-        <h3 className="text-xl font-bold text-[#13212B] line-clamp-2">
+        <h3 className="text-xl font-medium text-[#13212B] line-clamp-2">
           <Link href={`/trips/${t.id}`} className="hover:underline">{t.title}</Link>
         </h3>
         <Byline t={t} />

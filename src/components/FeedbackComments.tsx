@@ -64,7 +64,7 @@ export function Composer({
   const canPost = !!reaction && !busy && (!wantsPlace || !!suggestion) && (reaction !== 'note' || !!text.trim());
 
   return (
-    <div className="rounded-2xl bg-[#F8F7F4] border border-[#ECE7DF] p-3 sm:p-4">
+    <div className="rounded-2xl bg-[#F8F7F4] border border-[#E2DDD5] p-3 sm:p-4">
       <div className="flex flex-wrap gap-2">
         {REACTIONS[target].map((r) => (
           <button
@@ -72,7 +72,7 @@ export function Composer({
             type="button"
             aria-pressed={reaction === r.key}
             onClick={() => { setReaction(r.key); setSuggestion(null); }}
-            className={`px-3 py-1.5 rounded-full border text-sm min-h-[36px] ${reaction === r.key ? 'bg-[#13212B] border-[#13212B] text-white font-semibold' : 'bg-white border-[#E2DCD2] text-[#2A3A44] hover:bg-[#F1EEE8]'}`}
+            className={`px-3 py-1.5 rounded-full border text-sm min-h-[36px] ${reaction === r.key ? 'bg-[#13212B] border-[#13212B] text-white font-semibold' : 'bg-white border-[#E2DDD5] text-[#2A3A44] hover:bg-[#F1EEE8]'}`}
           >
             {r.label}
           </button>
@@ -85,14 +85,14 @@ export function Composer({
             <div className="flex gap-1.5" role="group" aria-label="Kind of place">
               {(['hotel', 'restaurant', 'activity'] as Kind[]).map((k) => (
                 <button key={k} type="button" aria-pressed={suggestKind === k} onClick={() => { setSuggestKind(k); setSuggestion(null); setQuery(''); }}
-                  className={`px-3 py-1 rounded-lg text-sm ${suggestKind === k ? 'bg-[#1F6F78] text-white font-semibold' : 'bg-white border border-[#E2DCD2] text-[#3D4C56]'}`}>
+                  className={`px-3 py-1 rounded-lg text-sm ${suggestKind === k ? 'bg-[#1F6F78] text-white font-semibold' : 'bg-white border border-[#E2DDD5] text-[#3D4C56]'}`}>
                   {k === 'hotel' ? 'Place to stay' : k === 'restaurant' ? 'Restaurant' : 'Thing to do'}
                 </button>
               ))}
             </div>
           )}
           {suggestion ? (
-            <div className="flex items-center gap-3 bg-white rounded-xl border border-[#E2DCD2] p-2">
+            <div className="flex items-center gap-3 bg-white rounded-xl border border-[#E2DDD5] p-2">
               {suggestion.imageUrl && <img src={suggestion.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover" />}
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-sm">{suggestion.name}</p>
@@ -132,7 +132,7 @@ export function Composer({
           onChange={(e) => setText(e.target.value.slice(0, LIMITS.textMax))}
           rows={2}
           placeholder={reaction === 'note' ? 'Your comment…' : 'Why? (optional)'}
-          className="mt-3 w-full px-3 py-2 rounded-xl border border-[#E2DCD2] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6F78]"
+          className="mt-3 w-full px-3 py-2 rounded-xl border border-[#E2DDD5] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6F78]"
         />
       )}
       {error && <p className="mt-2 text-sm text-[#B4532A]">{error}</p>}
@@ -169,7 +169,7 @@ export function CommentCard({ c, isOwner, onChanged }: { c: Comment; isOwner: bo
   const changesPlan = (c.reaction === 'swap' || c.reaction === 'add_place') ? !!s : c.reaction === 'skip';
 
   return (
-    <div className={`rounded-2xl border p-3 sm:p-4 ${c.status === 'accepted' ? 'bg-[#F1F8F3] border-[#CFE5D6]' : c.status === 'dismissed' ? 'bg-[#F8F7F4] border-[#ECE7DF] opacity-70' : 'bg-white border-[#ECE7DF]'}`}>
+    <div className={`rounded-2xl border p-3 sm:p-4 ${c.status === 'accepted' ? 'bg-[#F1F8F3] border-[#CFE5D6]' : c.status === 'dismissed' ? 'bg-[#F8F7F4] border-[#E2DDD5] opacity-70' : 'bg-white border-[#E2DDD5]'}`}>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <span className="font-semibold text-[#13212B]">{c.author}</span>
         <span className="px-2 py-0.5 rounded-full bg-[#F1EEE8] text-[#2A3A44] text-xs font-semibold">{reactionLabel(c.targetType, c.reaction).replace('…', '')}</span>
@@ -178,7 +178,7 @@ export function CommentCard({ c, isOwner, onChanged }: { c: Comment; isOwner: bo
         {c.status === 'dismissed' && <span className="text-xs text-[#5B6A73]">Set aside</span>}
       </div>
       {s && (
-        <div className="mt-2 flex items-center gap-3 bg-[#FBFAF7] rounded-xl border border-[#ECE7DF] p-2">
+        <div className="mt-2 flex items-center gap-3 bg-[#F8F6F1] rounded-xl border border-[#E2DDD5] p-2">
           {s.imageUrl && <img src={s.imageUrl} alt="" loading="lazy" className="w-14 h-14 rounded-lg object-cover" />}
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-sm">{s.name}</p>
@@ -193,7 +193,7 @@ export function CommentCard({ c, isOwner, onChanged }: { c: Comment; isOwner: bo
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {!c.mine && (
           <button type="button" onClick={() => act('agree')} disabled={!!busy} aria-pressed={c.agreedByMe}
-            className={`inline-flex items-center px-3 min-h-[34px] rounded-full border text-xs font-semibold ${c.agreedByMe ? 'bg-[#E3F0F0] border-[#C3DEDF] text-[#16535A]' : 'bg-white border-[#E2DCD2] text-[#3D4C56]'}`}>
+            className={`inline-flex items-center px-3 min-h-[34px] rounded-full border text-xs font-semibold ${c.agreedByMe ? 'bg-[#E3F0F0] border-[#C3DEDF] text-[#16535A]' : 'bg-white border-[#E2DDD5] text-[#3D4C56]'}`}>
             <ThumbsUp className="w-3.5 h-3.5 mr-1" /> Agree{c.agrees ? ` · ${c.agrees}` : ''}
           </button>
         )}
@@ -206,7 +206,7 @@ export function CommentCard({ c, isOwner, onChanged }: { c: Comment; isOwner: bo
               {changesPlan ? (c.reaction === 'swap' ? 'Accept & swap' : c.reaction === 'skip' ? 'Accept & remove' : 'Accept & add') : 'Accept'}
             </button>
             <button type="button" onClick={() => act('dismiss')} disabled={!!busy}
-              className="inline-flex items-center px-3 min-h-[34px] rounded-full bg-white border border-[#E2DCD2] text-[#3D4C56] text-xs font-semibold">
+              className="inline-flex items-center px-3 min-h-[34px] rounded-full bg-white border border-[#E2DDD5] text-[#3D4C56] text-xs font-semibold">
               <X className="w-3.5 h-3.5 mr-1" /> Set aside
             </button>
           </>

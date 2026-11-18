@@ -105,7 +105,7 @@ export default function HowToPage() {
     <div className="min-h-screen bg-[#F6F2EC] pt-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">How to use</p>
-        <h1 className="text-3xl sm:text-5xl font-semibold text-[#2F4A5C] leading-tight mb-4">Share your trips. Plan your next one.</h1>
+        <h1 className="text-3xl sm:text-5xl font-normal text-[#2F4A5C] leading-tight mb-4">Share your trips. Plan your next one.</h1>
         <p className="text-lg text-[#4A5A63] mb-5">A quick guide to everything on Share and Plan.</p>
         <TourButton className="mb-8" />
         <p className="text-sm text-[#5B6B75] mb-3">Or jump to what you need:</p>
@@ -126,7 +126,7 @@ export default function HowToPage() {
         <div className="space-y-10">
           {SECTIONS.map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-24 bg-white rounded-2xl border border-[#E4DED4] p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-[#2F4A5C] flex items-center gap-2 mb-1">
+              <h2 className="text-2xl font-normal text-[#2F4A5C] flex items-center gap-2 mb-1">
                 <span>{s.icon}</span> {s.title}
               </h2>
               <p className="text-[#5B6B75] mb-6">{s.intro}</p>

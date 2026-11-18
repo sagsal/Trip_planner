@@ -121,7 +121,7 @@ export default function FillWithAI({
         {it.imageUrl ? (
           <img src={it.imageUrl} alt="" loading="lazy" className="w-14 h-14 rounded-md object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         ) : (
-          <span className="w-14 h-14 rounded-md bg-[#EEE8DF] flex items-center justify-center text-xl shrink-0">{KIND_ICON[it.kind]}</span>
+          <span className="w-14 h-14 rounded-md bg-[#E2DDD5] flex items-center justify-center text-xl shrink-0">{KIND_ICON[it.kind]}</span>
         )}
         <span className="min-w-0">
           <span className="block font-medium text-[#2F4A5C] text-sm">{KIND_ICON[it.kind]} {it.name}</span>

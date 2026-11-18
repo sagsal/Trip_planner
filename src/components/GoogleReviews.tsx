@@ -77,7 +77,7 @@ export default function GoogleReviews({
       </button>
 
       {open && !busy && (
-        <div className="mt-2 rounded-xl bg-[#F8F7F4] border border-[#ECE7DF] p-3 text-sm">
+        <div className="mt-2 rounded-xl bg-[#F8F7F4] border border-[#E2DDD5] p-3 text-sm">
           {fallback && (
             <p className="text-[#3D4C56]">
               {fallback.why && <span>{fallback.why} </span>}

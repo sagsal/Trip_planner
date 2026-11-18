@@ -1312,11 +1312,11 @@ function NewTripContent() {
                   {/* City Header */}
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                         {cityIndex + 1}
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
+                        <h3 className="text-xl font-medium text-gray-900">{city.name}</h3>
                         <p className="text-gray-600">📍 {city.area && city.area !== city.name ? `${city.area} · ` : ''}{city.state && city.state !== city.name ? `${city.state}, ` : ''}{city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
                       </div>
                     </div>
@@ -1835,7 +1835,7 @@ function NewTripContent() {
                                   void tripadvisorData;
                                   
                                   return (
-                                    <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 mb-3 border border-green-200">
+                                    <div key={restaurant.id} className="bg-green-50 rounded-xl p-4 mb-3 border border-green-200">
                                       <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center space-x-2">
                                           <span className="text-lg">🍽️</span>
@@ -1938,7 +1938,7 @@ function NewTripContent() {
                                 <p className="text-gray-500 text-sm text-center py-4">No activities added for this day</p>
                               ) : (
                                 day.activities.map((activity, index) => (
-                                  <div key={activity.id} data-activity-id={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-3 border border-purple-200 scroll-mt-24">
+                                  <div key={activity.id} data-activity-id={activity.id} className="bg-purple-50 rounded-xl p-4 mb-3 border border-purple-200 scroll-mt-24">
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center space-x-2">
                                         <span className="text-lg">🎯</span>
@@ -2062,7 +2062,7 @@ function NewTripContent() {
         >
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{editingId ? 'Continue your trip' : 'Add New Trip'}</h1>
+            <h1 className="text-3xl font-normal text-gray-900 mb-2">{editingId ? 'Continue your trip' : 'Add New Trip'}</h1>
             <p className="text-gray-600">
               {editingId
                 ? 'Keep adding places, reviews and details, then save your changes'
@@ -2076,7 +2076,7 @@ function NewTripContent() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Trip Information */}
             <div data-tour="trip-info" className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Trip Information</h2>
+              <h2 className="text-xl font-normal text-gray-900 mb-6">Trip Information</h2>
               
               <div className="grid grid-cols-1 gap-6">
                 <div>
@@ -2378,7 +2378,7 @@ function NewTripContent() {
             {/* Cities and their data */}
             <div data-tour="countries" className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Countries & Cities</h2>
+                <h2 className="text-xl font-normal text-gray-900">Countries & Cities</h2>
               </div>
 
               {countryList.length === 0 && (
@@ -2406,7 +2406,7 @@ function NewTripContent() {
                   <section key={country} className="mb-10 rounded-2xl border border-[#D9D2C7] bg-[#FBF9F5] p-4 sm:p-6">
                     <div className="flex items-center justify-between gap-3 mb-5">
                       <div>
-                        <h3 className="text-2xl font-bold text-[#2F4A5C]">{country}</h3>
+                        <h3 className="text-2xl font-medium text-[#2F4A5C]">{country}</h3>
                         <p className="text-sm text-[#6B7A83]">
                           {citiesHere.length === 0
                             ? 'No cities yet'
@@ -2593,7 +2593,7 @@ function NewTripContent() {
                 type="submit"
                 value="publish"
                 disabled={isLoading || loadingTrip}
-                className="flex items-center px-6 py-3 bg-[#F13B13] text-white rounded-lg hover:bg-[#F13B13]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {isLoading

@@ -208,14 +208,14 @@ function SandboxContent() {
   /* ---------------- signed out ---------------- */
   if (checked && !user) {
     return (
-      <div className="min-h-screen bg-[#FBFAF7] pt-16">
+      <div className="min-h-screen bg-[#F8F6F1] pt-16">
         <div className="max-w-xl mx-auto px-4 py-20 text-center">
           <Package className="w-12 h-12 text-[#1F6F78] mx-auto mb-4" />
-          <h1 className="text-3xl font-extrabold text-[#13212B] mb-3">My Travel Sandbox</h1>
+          <h1 className="text-3xl font-normal text-[#13212B] mb-3">My Travel Sandbox</h1>
           <p className="text-[#4A5963] mb-6">Collect hotels, restaurants and activities from other travelers’ trips while you plan your own. Sign in to start.</p>
           <div className="flex gap-3 justify-center">
             <Link href="/login?next=%2Fsandbox" className="px-5 py-3 bg-[#13212B] text-white rounded-xl font-semibold">Sign in</Link>
-            <Link href="/register" className="px-5 py-3 border border-[#E2DCD2] bg-white text-[#13212B] rounded-xl font-semibold">Create an account</Link>
+            <Link href="/register" className="px-5 py-3 border border-[#E2DDD5] bg-white text-[#13212B] rounded-xl font-semibold">Create an account</Link>
           </div>
         </div>
       </div>
@@ -223,7 +223,7 @@ function SandboxContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+    <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {error && <p className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
 
@@ -236,14 +236,14 @@ function SandboxContent() {
           <>
             <div data-tour="sandbox-head" className="flex flex-wrap items-end justify-between gap-3 mb-6">
               <div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">My Travel Sandbox</h1>
+                <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">My Travel Sandbox</h1>
                 <p className="text-[#5B6A73] mt-1">The trips you’re planning. Tap ＋ on any shared trip to save ideas here.</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href="/feedback" className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DCD2] text-sm font-semibold hover:bg-[#F6F3EE]">
+                <Link href="/feedback" className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DDD5] text-sm font-semibold hover:bg-[#F6F3EE]">
                   <MessageCircle className="w-4 h-4 mr-1.5" /> Help others plan
                 </Link>
-                <Link href="/trips" className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DCD2] text-sm font-semibold hover:bg-[#F6F3EE]">
+                <Link href="/trips" className="inline-flex items-center px-4 min-h-[44px] rounded-xl bg-white border border-[#E2DDD5] text-sm font-semibold hover:bg-[#F6F3EE]">
                   Browse trips <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>
               </div>
@@ -269,7 +269,7 @@ function SandboxContent() {
                 const f = feedback[t.id];
                 return (
                   <button key={t.id} type="button" onClick={() => openTrip(t.id)}
-                    className="text-left bg-white border border-[#ECE7DF] rounded-[20px] overflow-hidden hover:shadow-[0_8px_28px_rgba(19,33,43,0.08)] transition-shadow flex flex-col">
+                    className="text-left bg-white border border-[#E2DDD5] rounded-[4px] overflow-hidden transition-shadow flex flex-col">
                     <div className="relative h-32" style={{ background: '#DCE8E6' }}>
                       {photo ? (
                         <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
@@ -296,10 +296,10 @@ function SandboxContent() {
               })}
 
               {/* New planned trip */}
-              <div className="border-2 border-dashed border-[#DCD5CA] rounded-[20px] p-4 flex flex-col justify-center gap-2 min-h-[200px]">
+              <div className="border-2 border-dashed border-[#DCD5CA] rounded-[4px] p-4 flex flex-col justify-center gap-2 min-h-[200px]">
                 <label htmlFor="new-trip" className="font-bold">Start a new planned trip</label>
                 <input id="new-trip" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') createTrip(); }}
-                  placeholder="e.g. Japan in spring" className="w-full px-3 py-2.5 border border-[#E2DCD2] rounded-xl text-sm bg-white" />
+                  placeholder="e.g. Japan in spring" className="w-full px-3 py-2.5 border border-[#E2DDD5] rounded-xl text-sm bg-white" />
                 <button type="button" onClick={createTrip} disabled={creating}
                   className="inline-flex items-center justify-center px-4 min-h-[44px] bg-[#13212B] text-white rounded-xl text-sm font-semibold disabled:opacity-60">
                   <Plus className="w-4 h-4 mr-1" /> Create
@@ -311,7 +311,7 @@ function SandboxContent() {
           /* ================= Saved ideas (not in a trip) ================= */
           <>
             <BackLink onClick={() => openTrip(null)} />
-            <h1 className="text-3xl font-extrabold tracking-tight mb-1">Saved ideas</h1>
+            <h1 className="text-3xl font-normal tracking-tight mb-1">Saved ideas</h1>
             <p className="text-[#5B6A73] mb-5">Places you saved without choosing a trip. Use <b>Add to trip</b> to sort each one.</p>
             {unsorted.length === 0 ? (
               <EmptyState text="Nothing waiting to be sorted." />
@@ -321,7 +321,7 @@ function SandboxContent() {
                   <PlaceRow key={p.id} place={p} trips={trips} onPatch={(f) => patchPlace(p.id, f)} onRemove={() => removePlace(p.id)}
                     quick={
                       <select value="" onChange={(e) => e.target.value && patchPlace(p.id, { sandboxTripId: e.target.value })} aria-label="Add to a trip"
-                        className="px-2.5 min-h-[36px] border border-[#E2DCD2] rounded-lg text-sm bg-white">
+                        className="px-2.5 min-h-[36px] border border-[#E2DDD5] rounded-lg text-sm bg-white">
                         <option value="">Add to trip…</option>
                         {trips.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
                       </select>
@@ -403,7 +403,7 @@ function MoreMenu({ items, label = 'More options' }: { items: { label: string; o
         <MoreHorizontal className="w-5 h-5" />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full mt-1 z-30 w-56 bg-white rounded-xl border border-[#E2DCD2] shadow-xl p-1.5">
+        <div role="menu" className="absolute right-0 top-full mt-1 z-30 w-56 bg-white rounded-xl border border-[#E2DDD5] shadow-xl p-1.5">
           {items.map((it) => (
             <button key={it.label} type="button" role="menuitem" onClick={() => { setOpen(false); it.onClick(); }}
               className={`w-full text-left px-3 py-2.5 rounded-lg text-sm hover:bg-[#F6F3EE] ${it.danger ? 'text-[#B4532A]' : 'text-[#13212B]'}`}>
@@ -432,7 +432,7 @@ function PlaceRow({
   const source = !place.sourceTripId && place.sourceUserName === AI_SUGGESTION ? '✨ Suggested by AI' : place.sourceTripTitle ? `From ${place.sourceTripTitle}` : '';
 
   return (
-    <div className="bg-white border border-[#ECE7DF] rounded-2xl">
+    <div className="bg-white border border-[#E2DDD5] rounded-2xl">
       <div className="flex items-center gap-3 p-2.5 sm:p-3">
         <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-3 flex-1 min-w-0 text-left" aria-expanded={open}>
           {place.imageUrl ? (
@@ -466,7 +466,7 @@ function PlaceRow({
       {quick && <div className="sm:hidden px-3 pb-3 -mt-1">{quick}</div>}
 
       {open && (
-        <div className="border-t border-[#ECE7DF] px-3 py-3 flex flex-col gap-2 text-sm">
+        <div className="border-t border-[#E2DDD5] px-3 py-3 flex flex-col gap-2 text-sm">
           {place.location && <p className="text-[#5B6A73] flex items-start gap-1"><MapPin className="w-4 h-4 mt-0.5 shrink-0" />{place.location}</p>}
           <div className="flex flex-wrap items-center gap-3">
             {rating > 0 && (
@@ -481,12 +481,12 @@ function PlaceRow({
             )}
             {place.sourceTripId && <Link href={`/trips/${place.sourceTripId}`} className="text-[#1F6F78] underline">See the trip it came from</Link>}
           </div>
-          {place.sourceReview && <p className="text-[#3D4C56] whitespace-pre-line bg-[#FBFAF7] rounded-xl p-2.5">“{place.sourceReview}”</p>}
+          {place.sourceReview && <p className="text-[#3D4C56] whitespace-pre-line bg-[#F8F6F1] rounded-xl p-2.5">“{place.sourceReview}”</p>}
           {noteEdit ? (
             <div className="flex gap-2">
               <input autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder="Your note (e.g. book ahead, go at sunset)"
                 onKeyDown={(e) => { if (e.key === 'Enter') { onPatch({ note }); setNoteEdit(false); } }}
-                className="flex-1 min-w-0 px-3 py-2 border border-[#E2DCD2] rounded-xl" />
+                className="flex-1 min-w-0 px-3 py-2 border border-[#E2DDD5] rounded-xl" />
               <button type="button" onClick={() => { onPatch({ note }); setNoteEdit(false); }} className="px-3 rounded-xl bg-[#13212B] text-white font-semibold">Save</button>
             </div>
           ) : place.note ? (
@@ -494,7 +494,7 @@ function PlaceRow({
           ) : null}
           {moving && (
             <select autoFocus value="" onChange={(e) => { const v = e.target.value; if (!v) return; onPatch({ sandboxTripId: v === UNSORTED ? null : v }); setMoving(false); }}
-              aria-label="Move to another trip" className="px-3 py-2 border border-[#E2DCD2] rounded-xl bg-white">
+              aria-label="Move to another trip" className="px-3 py-2 border border-[#E2DDD5] rounded-xl bg-white">
               <option value="">Move to…</option>
               {place.sandboxTripId && <option value={UNSORTED}>Saved ideas (no trip)</option>}
               {trips.filter((t) => t.id !== place.sandboxTripId).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
@@ -539,7 +539,7 @@ function TripView({
     const max = Math.min(21, Math.max(3, ...sameCity.map((x) => x.dayNumber || 0)) + 1);
     return (
       <select value={p.dayNumber || ''} onChange={(e) => onPatchPlace(p.id, { dayNumber: e.target.value ? Number(e.target.value) : null })}
-        aria-label="Day" className="px-2.5 min-h-[36px] border border-[#E2DCD2] rounded-lg text-sm bg-white">
+        aria-label="Day" className="px-2.5 min-h-[36px] border border-[#E2DDD5] rounded-lg text-sm bg-white">
         <option value="">Add to day…</option>
         {Array.from({ length: max }, (_, i) => i + 1).map((d) => <option key={d} value={d}>Day {d}{p.city ? ` in ${p.city}` : ''}</option>)}
       </select>
@@ -550,7 +550,7 @@ function TripView({
     <>
       <BackLink onClick={onBack} />
       <div className="flex items-start justify-between gap-3 mb-1">
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">{trip.title}</h1>
+        <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">{trip.title}</h1>
         <MoreMenu label="Trip options" items={[
           { label: 'Edit details', onClick: () => setEditing(true) },
           { label: 'Turn into a trip to share', onClick: onFinalize },
@@ -564,7 +564,7 @@ function TripView({
 
       {editing && <EditDetails trip={trip} onSave={(f) => { onPatchTrip(f); setEditing(false); }} onCancel={() => setEditing(false)} />}
 
-      <div role="tablist" aria-label="Trip sections" className="flex gap-1 border-b border-[#E2DCD2] mb-5">
+      <div role="tablist" aria-label="Trip sections" className="flex gap-1 border-b border-[#E2DDD5] mb-5">
         {tabs.map((t) => (
           <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
             className={`px-4 min-h-[48px] -mb-px border-b-[3px] text-[15px] inline-flex items-center gap-1.5 ${tab === t.key ? 'border-[#1F6F78] font-bold' : 'border-transparent text-[#5B6A73] hover:text-[#13212B]'}`}>
@@ -597,10 +597,10 @@ function TripView({
               if (!stays.length && !days.length) return null;
               return (
                 <section key={city}>
-                  {cities.length > 1 && <h2 className="text-xl font-extrabold mb-3 flex items-center gap-2"><MapPin className="w-5 h-5 text-[#1F6F78]" />{city}</h2>}
+                  {cities.length > 1 && <h2 className="text-xl font-normal mb-3 flex items-center gap-2"><MapPin className="w-5 h-5 text-[#1F6F78]" />{city}</h2>}
                   {stays.length > 0 && (
                     <div className="mb-4">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#5B6A73] mb-2">Where to stay</h3>
+                      <h3 className="text-sm font-medium uppercase tracking-wider text-[#5B6A73] mb-2">Where to stay</h3>
                       <div className="flex flex-col gap-2">
                         {stays.map((p) => <PlaceRow key={p.id} place={p} trips={trips} comments={byPlace[p.id]} onPatch={(f) => onPatchPlace(p.id, f)} onRemove={() => onRemovePlace(p.id)} />)}
                       </div>
@@ -608,7 +608,7 @@ function TripView({
                   )}
                   {days.map((d) => (
                     <div key={d} className="mb-4">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#5B6A73] mb-2 flex items-center gap-2">
+                      <h3 className="text-sm font-medium uppercase tracking-wider text-[#5B6A73] mb-2 flex items-center gap-2">
                         <span className="w-7 h-7 rounded-full bg-[#1F6F78] text-white text-xs flex items-center justify-center normal-case tracking-normal">{d}</span> Day {d}
                       </h3>
                       <div className="flex flex-col gap-2">
@@ -653,11 +653,11 @@ function EditDetails({ trip, onSave, onCancel }: { trip: SandboxTripData; onSave
     title: trip.title, region: trip.region || '', tripType: trip.tripType || '',
     startDate: trip.startDate || '', endDate: trip.endDate || '', notes: trip.notes || '',
   });
-  const field = 'w-full px-3 py-2.5 border border-[#E2DCD2] rounded-xl text-sm bg-white';
+  const field = 'w-full px-3 py-2.5 border border-[#E2DDD5] rounded-xl text-sm bg-white';
   return (
-    <div className="mb-5 rounded-2xl bg-white border border-[#ECE7DF] p-4 sm:p-5 flex flex-col gap-3">
+    <div className="mb-5 rounded-2xl bg-white border border-[#E2DDD5] p-4 sm:p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold">Trip details</h2>
+        <h2 className="font-normal">Trip details</h2>
         <button type="button" onClick={onCancel} aria-label="Close" className="p-1.5 text-[#5B6A73]"><X className="w-4 h-4" /></button>
       </div>
       <label className="text-sm font-medium">Name<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={`${field} mt-1`} /></label>
@@ -726,7 +726,7 @@ function FeedbackTab({ trip, onChanged }: { trip: SandboxTripData; onChanged: ()
   if (!data.open && others.length === 0) {
     return (
       <div className="rounded-2xl bg-[#F1F6F6] border border-[#D4E5E6] p-4 sm:p-5">
-        <h2 className="font-bold text-[#16535A] mb-1">Ask members for advice</h2>
+        <h2 className="font-normal text-[#16535A] mb-1">Ask members for advice</h2>
         <p className="text-sm text-[#3F5B6A] mb-3">Your plan appears in <b>Help me plan</b> for all members. They can say “too many days”, suggest a better hotel, or point out a place not to miss. You accept a suggestion with one tap, and can close feedback any time.</p>
         <label htmlFor="ask" className="block text-sm font-medium text-[#16535A] mb-1">What would you like advice on? (optional)</label>
         <textarea id="ask" value={ask} onChange={(e) => setAsk(e.target.value.slice(0, 600))} rows={2}
@@ -742,13 +742,13 @@ function FeedbackTab({ trip, onChanged }: { trip: SandboxTripData; onChanged: ()
   return (
     <div className="flex flex-col gap-4">
       {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-[#13212B] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white border border-[#ECE7DF] p-3 sm:p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white border border-[#E2DDD5] p-3 sm:p-4">
         <p className="text-sm text-[#3D4C56]">
           {data.open ? <>Open in <b>Help me plan</b> · {fresh.length} new {fresh.length === 1 ? 'suggestion' : 'suggestions'}</> : 'Feedback is closed. Members can’t see this trip.'}
         </p>
         <div className="flex gap-2">
-          <Link href={`/feedback/${trip.id}`} className="inline-flex items-center px-3 min-h-[40px] rounded-xl border border-[#E2DCD2] text-sm font-semibold">See it as members do</Link>
-          <button type="button" onClick={() => setOpen(!data.open)} disabled={busy} className="px-3 min-h-[40px] rounded-xl border border-[#E2DCD2] text-sm font-semibold">
+          <Link href={`/feedback/${trip.id}`} className="inline-flex items-center px-3 min-h-[40px] rounded-xl border border-[#E2DDD5] text-sm font-semibold">See it as members do</Link>
+          <button type="button" onClick={() => setOpen(!data.open)} disabled={busy} className="px-3 min-h-[40px] rounded-xl border border-[#E2DDD5] text-sm font-semibold">
             {data.open ? 'Close feedback' : 'Reopen'}
           </button>
         </div>
@@ -759,14 +759,14 @@ function FeedbackTab({ trip, onChanged }: { trip: SandboxTripData; onChanged: ()
         <EmptyState text="No comments yet. Members will see your trip in Help me plan." />
       ) : (
         <>
-          {fresh.length > 0 && <h2 className="text-sm font-bold uppercase tracking-wider text-[#5B6A73]">New</h2>}
+          {fresh.length > 0 && <h2 className="text-sm font-normal uppercase tracking-wider text-[#5B6A73]">New</h2>}
           {fresh.map((c) => (
             <div key={c.id}>
               <p className="text-xs font-semibold text-[#5B6A73] mb-1">About: {about(c)}</p>
               <CommentCard c={c} isOwner onChanged={(msg) => { load(); onChanged(); if (msg) { setToast(msg); setTimeout(() => setToast(''), 3500); } }} />
             </div>
           ))}
-          {done.length > 0 && <h2 className="text-sm font-bold uppercase tracking-wider text-[#5B6A73] mt-2">Done</h2>}
+          {done.length > 0 && <h2 className="text-sm font-normal uppercase tracking-wider text-[#5B6A73] mt-2">Done</h2>}
           {done.map((c) => (
             <div key={c.id}>
               <p className="text-xs font-semibold text-[#5B6A73] mb-1">About: {about(c)}</p>

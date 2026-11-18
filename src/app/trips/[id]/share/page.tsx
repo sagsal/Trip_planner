@@ -205,12 +205,12 @@ function ShareTripContent() {
         <div className="mb-8">
           <Link
             href={`/trips/build/${tripId}`}
-            className="inline-flex items-center text-[#0160D6] hover:text-[#0160D6]/80 mb-4"
+            className="inline-flex items-center text-[#1F6F78] hover:text-[#1F6F78]/80 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Draft
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Share Your Trip</h1>
+          <h1 className="text-3xl font-normal text-gray-900 mb-2">Share Your Trip</h1>
           <p className="text-gray-600">Convert your draft trip to a shared trip for others to see</p>
         </div>
 
@@ -235,7 +235,7 @@ function ShareTripContent() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-lg shadow-lg p-6 mb-8"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{draftTrip.title}</h2>
+          <h2 className="text-2xl font-normal text-gray-900 mb-4">{draftTrip.title}</h2>
           {draftTrip.description && (
             <p className="text-gray-600 mb-4">{draftTrip.description}</p>
           )}
@@ -281,7 +281,7 @@ function ShareTripContent() {
           transition={{ delay: 0.1 }}
           className="bg-white rounded-lg shadow-lg p-6"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Trip Details</h2>
+          <h2 className="text-2xl font-normal text-gray-900 mb-6">Trip Details</h2>
 
           <div className="space-y-6">
             {/* Dates */}
@@ -316,7 +316,7 @@ function ShareTripContent() {
             <div className="flex gap-4">
               <button
                 onClick={handleShareTrip}
-                className="flex-1 px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors font-semibold flex items-center justify-center"
+                className="flex-1 px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors font-semibold flex items-center justify-center"
               >
                 <Save className="w-5 h-5 mr-2" />
                 Share Trip

@@ -172,13 +172,13 @@ export default function Navigation() {
   const firstName = user?.name?.split(' ')[0];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#F8F6F1] border-b border-[#E2DDD5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <Plane className="w-8 h-8 text-[#0160D6]" />
-            <span className="text-lg sm:text-2xl font-bold text-black whitespace-nowrap">Share and Plan</span>
+          <Link href="/" className="flex items-baseline gap-3">
+            <span className="font-serif font-semibold text-[22px] sm:text-[27px] tracking-[-0.01em] text-[#13212B] whitespace-nowrap">Share and Plan</span>
+            <span className="hidden md:inline font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">TRIPSHARE.ORG</span>
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-5">
@@ -186,19 +186,19 @@ export default function Navigation() {
             {isAuthenticated ? (
               <Link
                 href="/account"
-                className="hidden sm:flex items-center text-base font-semibold text-black hover:text-[#3F5B6A] transition-colors"
+                className="hidden sm:flex items-center text-[15px] text-[#13212B] hover:text-[#1F6F78] transition-colors"
               >
                 <User className="w-4 h-4 mr-1" />
                 {user?.name || 'My account'}
               </Link>
             ) : (
               <>
-                <Link href="/login" className="hidden sm:block text-base font-semibold text-black hover:text-[#3F5B6A] transition-colors">
+                <Link href="/login" className="hidden sm:block text-[15px] text-[#13212B] hover:text-[#1F6F78] transition-colors">
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="hidden sm:flex items-center bg-[#F13B13] text-white px-4 py-2 rounded-full hover:bg-[#F13B13]/90 transition-colors"
+                  className="hidden sm:flex items-center border border-[#13212B] text-[#13212B] px-4 py-2 font-mono text-xs tracking-[0.1em] uppercase hover:bg-[#13212B] hover:text-[#F8F6F1] transition-colors"
                 >
                   <User className="w-4 h-4 mr-1" />
                   Register
@@ -213,11 +213,11 @@ export default function Navigation() {
                 id="sandbox-nav-icon"
                 title="My Travel Sandbox"
                 aria-label={`My Travel Sandbox${sandboxCount ? `, ${sandboxCount} saved` : ''}`}
-                className="relative flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 text-black hover:bg-gray-50"
+                className="relative flex items-center justify-center w-11 h-11 border border-[#E2DDD5] text-[#13212B] hover:border-[#13212B]"
               >
                 <Package className="w-5 h-5" />
                 {!!sandboxCount && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#F13B13] text-white text-xs font-semibold flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#1F6F78] text-white text-[11px] font-mono flex items-center justify-center">
                     {sandboxCount > 99 ? '99+' : sandboxCount}
                   </span>
                 )}
@@ -232,8 +232,8 @@ export default function Navigation() {
                 onClick={() => setIsOpen((o) => !o)}
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-base font-semibold transition-colors ${
-                  isOpen ? 'border-[#4A6878] bg-[#F3F7F8] text-[#2F4A5C]' : 'border-gray-300 text-black hover:bg-gray-50'
+                className={`flex items-center gap-1.5 px-3.5 min-h-[44px] border font-mono text-xs tracking-[0.1em] uppercase transition-colors ${
+                  isOpen ? 'border-[#13212B] bg-[#13212B] text-[#F8F6F1]' : 'border-[#13212B] text-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]'
                 }`}
               >
                 {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -249,18 +249,18 @@ export default function Navigation() {
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.15 }}
                     role="menu"
-                    className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-white rounded-xl border border-gray-200 shadow-xl"
+                    className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-[#FFFFFF] border border-[#13212B]"
                   >
                     {isAuthenticated && (
-                      <div className="px-4 py-3 bg-[#F6F2EC] border-b border-[#EEE8DF]">
-                        <p className="text-xs text-[#6B7A83]">Signed in as</p>
-                        <p className="font-semibold text-[#2F4A5C] truncate">{user?.name || user?.email}</p>
+                      <div className="px-4 py-3 bg-[#F8F6F1] border-b border-[#E2DDD5]">
+                        <p className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">SIGNED IN AS</p>
+                        <p className="font-serif text-lg text-[#13212B] truncate">{user?.name || user?.email}</p>
                       </div>
                     )}
 
                     {sections.map((section) => (
-                      <div key={section.title} className="py-2 border-b border-gray-100 last:border-b-0">
-                        <p className="px-4 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{section.title}</p>
+                      <div key={section.title} className="py-2 border-b border-[#E2DDD5] last:border-b-0">
+                        <p className="px-4 pt-1 pb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-[#5B6A73]">{section.title}</p>
                         {section.items.map(({ href, label, hint, icon: Icon }) => {
                           const current = isCurrent(href);
                           return (
@@ -274,13 +274,13 @@ export default function Navigation() {
                                 if (href.includes('tour=1')) startSiteTour();
                               }}
                               className={`flex items-start gap-3 px-4 py-2.5 transition-colors ${
-                                current ? 'bg-[#E3ECEF] text-[#2F4A5C]' : 'text-gray-800 hover:bg-gray-50'
+                                current ? 'bg-[#EEF5F4] text-[#13212B]' : 'text-[#13212B] hover:bg-[#F8F6F1]'
                               }`}
                             >
-                              <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${current ? 'text-[#3F5B6A]' : 'text-gray-500'}`} />
+                              <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${current ? 'text-[#1F6F78]' : 'text-[#5B6A73]'}`} />
                               <span className="min-w-0">
-                                <span className="block font-medium">{label}</span>
-                                {hint && <span className="block text-xs text-gray-500">{hint}</span>}
+                                <span className="block font-serif text-[18px] leading-snug">{label}</span>
+                                {hint && <span className="block text-xs text-[#5B6A73]">{hint}</span>}
                               </span>
                             </Link>
                           );

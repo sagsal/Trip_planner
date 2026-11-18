@@ -139,12 +139,12 @@ function TripsContent() {
   const anyFilter = !!(searchTerm || filterCountry || filterRegion || filterType);
   const featured = !anyFilter && filteredTrips.length > 1 ? filteredTrips.find((t) => t.coverImageUrl) || filteredTrips[0] : null;
   const rest = featured ? filteredTrips.filter((t) => t.id !== featured.id) : filteredTrips;
-  const selectCls = 'shrink-0 px-3.5 py-2.5 rounded-full border border-[#E2DCD2] bg-white text-sm text-[#3D4C56] min-h-[42px]';
+  const selectCls = 'shrink-0 px-3.5 py-2.5 rounded-full border border-[#E2DDD5] bg-white text-sm text-[#3D4C56] min-h-[42px]';
 
   return (
-    <div className="min-h-screen bg-[#FBFAF7] text-[#13212B] pt-16">
+    <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Find a trip to build on</h1>
+        <h1 className="text-3xl sm:text-4xl font-normal tracking-tight mb-2">Find a trip to build on</h1>
         <p className="text-[#5B6A73] mb-6">Real itineraries shared by fellow travelers. Describe what you want, or filter below.</p>
 
         {/* One box: typing filters the trips below; Enter asks the AI assistant */}
@@ -182,12 +182,12 @@ function TripsContent() {
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3].map((i) => <div key={i} className="h-[400px] rounded-[20px] bg-white border border-[#ECE7DF] animate-pulse" />)}
+            {[1, 2, 3].map((i) => <div key={i} className="h-[400px] rounded-[4px] bg-white border border-[#E2DDD5] animate-pulse" />)}
           </div>
         ) : filteredTrips.length === 0 ? (
-          <div className="text-center py-14 bg-white border border-[#ECE7DF] rounded-[20px]">
+          <div className="text-center py-14 bg-white border border-[#E2DDD5] rounded-[4px]">
             <MapPin className="w-12 h-12 text-[#C9D2D6] mx-auto mb-4" />
-            <h3 className="text-lg font-bold mb-2">No trips found</h3>
+            <h3 className="text-lg font-medium mb-2">No trips found</h3>
             <p className="text-[#5B6A73] mb-6">
               {anyFilter ? 'Try changing your search or filters.' : 'Be the first to share your travel experience!'}
             </p>
@@ -211,7 +211,7 @@ function TripsContent() {
                   type="button"
                   onClick={() => load(page + 1)}
                   disabled={loadingMore}
-                  className="px-6 min-h-[48px] rounded-xl bg-white border border-[#E2DCD2] font-semibold text-[#13212B] hover:bg-[#F6F3EE] disabled:opacity-60"
+                  className="px-6 min-h-[48px] rounded-xl bg-white border border-[#E2DDD5] font-semibold text-[#13212B] hover:bg-[#F6F3EE] disabled:opacity-60"
                 >
                   {loadingMore ? 'Loading…' : `Load more trips (${total - trips.length} more)`}
                 </button>

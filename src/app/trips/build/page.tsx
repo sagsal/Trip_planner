@@ -1492,12 +1492,12 @@ function BuildTripContent() {
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center text-[#0160D6] hover:text-[#0160D6]/80 mb-4"
+            className="inline-flex items-center text-[#1F6F78] hover:text-[#1F6F78]/80 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Build Your Trip</h1>
+          <h1 className="text-3xl font-normal text-gray-900 mb-2">Build Your Trip</h1>
           <p className="text-gray-600">Create draft trips and get ideas from shared trips</p>
         </div>
 
@@ -1531,7 +1531,7 @@ function BuildTripContent() {
               // Reload draft trips to ensure we have the latest list
               loadDraftTrips();
             }}
-            className="flex items-center px-6 py-3 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors font-semibold"
+            className="flex items-center px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors font-semibold"
           >
             <Plus className="w-5 h-5 mr-2" />
             New Draft Trip
@@ -1541,7 +1541,7 @@ function BuildTripContent() {
               setShowBrowseTrips(!showBrowseTrips);
               setShowCreateDraft(false);
             }}
-            className="flex items-center px-6 py-3 bg-[#0160D6] text-white rounded-lg hover:bg-[#0160D6]/90 transition-colors font-semibold"
+            className="flex items-center px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors font-semibold"
           >
             <Eye className="w-5 h-5 mr-2" />
             {showBrowseTrips ? 'Hide' : 'Browse'} Shared Trips
@@ -1678,7 +1678,7 @@ function BuildTripContent() {
             {/* Trip Information Section */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Trip Information</h2>
+                <h2 className="text-xl font-normal text-gray-900">Trip Information</h2>
                 {/* Prominent Save Draft Button */}
                 {user && (
                   <button
@@ -1689,7 +1689,7 @@ function BuildTripContent() {
                       handleCreateDraft();
                     }}
                     disabled={isLoadingDraft || !formData.title || citiesData.length === 0}
-                    className="px-6 py-3 bg-gradient-to-r from-[#AAB624] to-[#8B9A1E] text-white rounded-lg hover:from-[#8B9A1E] hover:to-[#6B7A15] transition-all font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
+                    className="px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#16535A] transition-all font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
                   >
                     <Save className="w-5 h-5" />
                     {isLoadingDraft ? 'Saving...' : editingDraftId ? 'Update Draft' : 'Save Draft'}
@@ -1772,14 +1772,14 @@ function BuildTripContent() {
             {/* Cities & Details Section */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Cities & Details</h2>
+                <h2 className="text-xl font-normal text-gray-900">Cities & Details</h2>
               </div>
 
               {/* Country & City Selection */}
-              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-8 mb-8 border border-blue-200">
+              <div className="bg-blue-50 rounded-xl p-8 mb-8 border border-blue-200">
                 <div className="text-center mb-6">
                   <div className="text-6xl mb-4">🌍</div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-2">Select Your Destination</h3>
+                  <h3 className="text-3xl font-medium text-gray-900 mb-2">Select Your Destination</h3>
                   <p className="text-gray-600 text-lg">First choose a country, then select a city!</p>
                 </div>
                 
@@ -1891,11 +1891,11 @@ function BuildTripContent() {
                       {/* City Header */}
                       <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                             {cityIndex + 1}
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900">{city.name}</h3>
+                            <h3 className="text-xl font-medium text-gray-900">{city.name}</h3>
                             <p className="text-gray-600">📍 {city.country} • 📅 {city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'}</p>
                           </div>
                         </div>
@@ -2139,7 +2139,7 @@ function BuildTripContent() {
                                     <p className="text-gray-500 text-sm text-center py-4">No restaurants added for this day</p>
                                   ) : (
                                     day.restaurants.map((restaurant, index) => (
-                                      <div key={restaurant.id} className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 mb-3 border border-green-200">
+                                      <div key={restaurant.id} className="bg-green-50 rounded-xl p-4 mb-3 border border-green-200">
                                         <div className="flex items-center justify-between mb-3">
                                           <div className="flex items-center space-x-2">
                                             <span className="text-lg">🍽️</span>
@@ -2207,7 +2207,7 @@ function BuildTripContent() {
                                     day.activities.map((activity, index) => {
                                       console.log('Rendering activity:', activity.name, 'in day', day.dayNumber, 'city', city.name);
                                       return (
-                                      <div key={activity.id} className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-3 border border-purple-200">
+                                      <div key={activity.id} className="bg-purple-50 rounded-xl p-4 mb-3 border border-purple-200">
                                         <div className="flex items-center justify-between mb-3">
                                           <div className="flex items-center space-x-2">
                                             <span className="text-lg">🎯</span>
@@ -2263,7 +2263,7 @@ function BuildTripContent() {
                 <button
                   onClick={handleCreateDraft}
                   disabled={isLoadingDraft}
-                  className="px-6 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoadingDraft ? 'Loading...' : editingDraftId ? 'Update Draft' : 'Create Draft'}
                 </button>
@@ -2290,7 +2290,7 @@ function BuildTripContent() {
 
         {/* Draft Trips List */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Draft Trips</h2>
+          <h2 className="text-2xl font-normal text-gray-900 mb-4">Your Draft Trips</h2>
           {draftTrips.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <p className="text-gray-600 mb-4">No draft trips yet. Create one to get started!</p>
@@ -2301,7 +2301,7 @@ function BuildTripContent() {
                 <div key={draft.id} className="bg-white rounded-lg shadow-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">{draft.title}</h3>
+                      <h3 className="text-xl font-medium text-gray-900">{draft.title}</h3>
                       <p className="text-gray-600 text-sm">
                         {Array.isArray(draft.countries) && draft.countries.length > 0
                           ? draft.countries.join(', ')
@@ -2318,7 +2318,7 @@ function BuildTripContent() {
                       </Link>
                       <Link
                         href={`/trips/${draft.id}/share`}
-                        className="px-4 py-2 bg-[#AAB624] text-white rounded-lg hover:bg-[#AAB624]/90 transition-colors flex items-center"
+                        className="px-4 py-2 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors flex items-center"
                       >
                         <Share2 className="w-4 h-4 mr-2" />
                         Share Trip
@@ -2349,7 +2349,7 @@ function BuildTripContent() {
             {draftTrips.length > 0 && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Reuse from Your Draft Trips</h2>
+                  <h2 className="text-2xl font-normal text-gray-900 mb-2">Reuse from Your Draft Trips</h2>
                   <p className="text-gray-600 text-sm">
                     💡 <strong>How it works:</strong> Browse your existing draft trips below. Select "Current Draft" and a city (and day for restaurants/activities) from your new trip, then click items from your old drafts to reuse them in your new trip!
                   </p>
@@ -2372,7 +2372,7 @@ function BuildTripContent() {
             {/* Shared Trips Section */}
             <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Browse Shared Trips</h2>
+              <h2 className="text-2xl font-normal text-gray-900 mb-2">Browse Shared Trips</h2>
               <p className="text-gray-600 text-sm">
                   💡 <strong>How it works:</strong> Select "Current Draft" (if you're creating/editing a draft) or an existing saved draft, then select a city (and day for restaurants/activities) from the dropdowns below. Click on any item from shared trips to add it to your draft. This is your sandbox to collect ideas before finalizing your trip!
               </p>
@@ -2526,7 +2526,7 @@ function DraftTripCard({
     <div className="border-2 border-green-200 rounded-lg p-4 bg-green-50">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 flex items-center">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
             <span className="text-2xl mr-2">📝</span>
             {draftTrip.title}
           </h3>
@@ -3003,7 +3003,7 @@ function SharedTripCard({
     <div className="border border-gray-200 rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">{trip.title}</h3>
+          <h3 className="text-lg font-medium text-gray-900">{trip.title}</h3>
           
         </div>
         <button

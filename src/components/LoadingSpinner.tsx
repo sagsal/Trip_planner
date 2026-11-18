@@ -1,100 +1,14 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Plane } from 'lucide-react';
-
+/* A quiet loading page in the travel-journal style */
 export default function LoadingSpinner() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-[#0160D6] to-[#00AAF8]">
-      {/* Animated Airplane */}
-      <motion.div
-        animate={{
-          x: [0, 100, -50, 80, -30, 0],
-          y: [0, -20, 10, -15, 5, 0],
-          rotate: [0, 10, -5, 15, -8, 0],
-          scale: [1, 1.1, 0.9, 1.05, 0.95, 1],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="relative mb-8"
-      >
-        {/* Vapor trail effect */}
-        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 w-8 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full"></div>
-        
-        {/* Glow effect */}
-        <div className="absolute inset-0 bg-white/20 rounded-full blur-lg animate-pulse"></div>
-        
-        {/* Airplane */}
-        <Plane className="w-16 h-16 text-white drop-shadow-lg relative z-10" />
-      </motion.div>
-
-      {/* Loading Text */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 0] }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="text-white text-xl font-semibold"
-      >
-        Loading your journey...
-      </motion.div>
-
-      {/* Animated Dots */}
-      <div className="flex space-x-2 mt-4">
-        {[0, 1, 2].map((index) => (
-          <motion.div
-            key={index}
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.5, 1, 0.5],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: index * 0.2,
-              ease: "easeInOut",
-            }}
-            className="w-3 h-3 bg-white rounded-full"
-          />
-        ))}
+    <div className="min-h-screen bg-[#F8F6F1] flex flex-col items-center justify-center gap-5 px-6" role="status" aria-live="polite">
+      <span className="font-serif italic text-3xl text-[#13212B]">Share and Plan</span>
+      <div className="w-48 h-px bg-[#E2DDD5] overflow-hidden relative" aria-hidden>
+        <span className="absolute inset-y-0 left-0 w-1/3 bg-[#1F6F78] animate-[journal-load_1.4s_ease-in-out_infinite]" />
       </div>
-
-      {/* Floating Elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[
-          { left: 20, top: 30, duration: 3.5, delay: 0 },
-          { left: 80, top: 20, duration: 4, delay: 0.5 },
-          { left: 60, top: 70, duration: 3.2, delay: 1 },
-          { left: 30, top: 80, duration: 4.2, delay: 1.5 },
-          { left: 90, top: 60, duration: 3.8, delay: 0.8 },
-          { left: 10, top: 50, duration: 3.6, delay: 1.2 },
-        ].map((config, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full"
-            style={{
-              left: `${config.left}%`,
-              top: `${config.top}%`,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              opacity: [0.2, 0.8, 0.2],
-            }}
-            transition={{
-              duration: config.duration,
-              repeat: Infinity,
-              delay: config.delay,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
+      <span className="font-mono text-[11px] tracking-[0.14em] text-[#5B6A73]">LOADING…</span>
     </div>
   );
 }

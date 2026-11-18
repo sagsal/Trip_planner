@@ -236,9 +236,9 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
   const conversation = messages.length > 0;
 
   return (
-    <div data-tour="finder" className="bg-white rounded-[20px] border border-[#E2DCD2] shadow-[0_6px_24px_rgba(19,33,43,0.06)] p-5 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+    <div data-tour="finder" className="bg-white rounded-[4px] border border-[#E2DDD5] p-5 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-xl font-semibold text-[#2F4A5C] flex items-center gap-2">
+        <h2 className="text-xl font-normal text-[#2F4A5C] flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#4A6878]" /> Find a trip for you
         </h2>
         {conversation && (

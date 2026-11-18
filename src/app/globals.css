@@ -1,28 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8F6F1;
+  --foreground: #13212B;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-jakarta), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-jakarta), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /* Ken Burns animation for background image */
@@ -104,3 +98,158 @@ body {
     transform: translateY(-15px) rotate(2deg);
   }
 }
+
+/* ---- Travel-journal theme: warm paper, ink, one teal accent, sharp corners, no drop shadows ---- */
+@theme {
+  --color-gray-50: #F8F6F1;
+  --color-gray-100: #F1EEE8;
+  --color-gray-200: #E2DDD5;
+  --color-gray-300: #CFC8BC;
+  --color-gray-400: #8A969D;
+  --color-gray-500: #5B6A73;
+  --color-gray-600: #4A5963;
+  --color-gray-700: #3A4A54;
+  --color-gray-800: #24394A;
+  --color-gray-900: #13212B;
+  --color-gray-950: #0B151C;
+  --color-slate-50: #F8F6F1;
+  --color-slate-100: #F1EEE8;
+  --color-slate-200: #E2DDD5;
+  --color-slate-300: #CFC8BC;
+  --color-slate-400: #8A969D;
+  --color-slate-500: #5B6A73;
+  --color-slate-600: #4A5963;
+  --color-slate-700: #3A4A54;
+  --color-slate-800: #24394A;
+  --color-slate-900: #13212B;
+  --color-slate-950: #0B151C;
+  --color-zinc-50: #F8F6F1;
+  --color-zinc-100: #F1EEE8;
+  --color-zinc-200: #E2DDD5;
+  --color-zinc-300: #CFC8BC;
+  --color-zinc-400: #8A969D;
+  --color-zinc-500: #5B6A73;
+  --color-zinc-600: #4A5963;
+  --color-zinc-700: #3A4A54;
+  --color-zinc-800: #24394A;
+  --color-zinc-900: #13212B;
+  --color-zinc-950: #0B151C;
+  --color-neutral-50: #F8F6F1;
+  --color-neutral-100: #F1EEE8;
+  --color-neutral-200: #E2DDD5;
+  --color-neutral-300: #CFC8BC;
+  --color-neutral-400: #8A969D;
+  --color-neutral-500: #5B6A73;
+  --color-neutral-600: #4A5963;
+  --color-neutral-700: #3A4A54;
+  --color-neutral-800: #24394A;
+  --color-neutral-900: #13212B;
+  --color-neutral-950: #0B151C;
+  --color-stone-50: #F8F6F1;
+  --color-stone-100: #F1EEE8;
+  --color-stone-200: #E2DDD5;
+  --color-stone-300: #CFC8BC;
+  --color-stone-400: #8A969D;
+  --color-stone-500: #5B6A73;
+  --color-stone-600: #4A5963;
+  --color-stone-700: #3A4A54;
+  --color-stone-800: #24394A;
+  --color-stone-900: #13212B;
+  --color-stone-950: #0B151C;
+  --color-blue-50: #EEF5F4;
+  --color-blue-100: #E3F0F0;
+  --color-blue-200: #C3DEDF;
+  --color-blue-300: #9CC7C9;
+  --color-blue-400: #4F9AA1;
+  --color-blue-500: #1F6F78;
+  --color-blue-600: #1F6F78;
+  --color-blue-700: #16535A;
+  --color-blue-800: #123F44;
+  --color-blue-900: #0E3236;
+  --color-blue-950: #0A2427;
+  --color-indigo-50: #EEF5F4;
+  --color-indigo-100: #E3F0F0;
+  --color-indigo-200: #C3DEDF;
+  --color-indigo-300: #9CC7C9;
+  --color-indigo-400: #4F9AA1;
+  --color-indigo-500: #1F6F78;
+  --color-indigo-600: #1F6F78;
+  --color-indigo-700: #16535A;
+  --color-indigo-800: #123F44;
+  --color-indigo-900: #0E3236;
+  --color-indigo-950: #0A2427;
+  --color-purple-50: #EEF5F4;
+  --color-purple-100: #E3F0F0;
+  --color-purple-200: #C3DEDF;
+  --color-purple-300: #9CC7C9;
+  --color-purple-400: #4F9AA1;
+  --color-purple-500: #1F6F78;
+  --color-purple-600: #1F6F78;
+  --color-purple-700: #16535A;
+  --color-purple-800: #123F44;
+  --color-purple-900: #0E3236;
+  --color-purple-950: #0A2427;
+  --color-violet-50: #EEF5F4;
+  --color-violet-100: #E3F0F0;
+  --color-violet-200: #C3DEDF;
+  --color-violet-300: #9CC7C9;
+  --color-violet-400: #4F9AA1;
+  --color-violet-500: #1F6F78;
+  --color-violet-600: #1F6F78;
+  --color-violet-700: #16535A;
+  --color-violet-800: #123F44;
+  --color-violet-900: #0E3236;
+  --color-violet-950: #0A2427;
+  --color-sky-50: #EEF5F4;
+  --color-sky-100: #E3F0F0;
+  --color-sky-200: #C3DEDF;
+  --color-sky-300: #9CC7C9;
+  --color-sky-400: #4F9AA1;
+  --color-sky-500: #1F6F78;
+  --color-sky-600: #1F6F78;
+  --color-sky-700: #16535A;
+  --color-sky-800: #123F44;
+  --color-sky-900: #0E3236;
+  --color-sky-950: #0A2427;
+  --color-cyan-50: #EEF5F4;
+  --color-cyan-100: #E3F0F0;
+  --color-cyan-200: #C3DEDF;
+  --color-cyan-300: #9CC7C9;
+  --color-cyan-400: #4F9AA1;
+  --color-cyan-500: #1F6F78;
+  --color-cyan-600: #1F6F78;
+  --color-cyan-700: #16535A;
+  --color-cyan-800: #123F44;
+  --color-cyan-900: #0E3236;
+  --color-cyan-950: #0A2427;
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+  --radius-4xl: 4px;
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 0 0 1px #E2DDD5;
+  --shadow-lg: 0 0 0 1px #E2DDD5;
+  --shadow-xl: 0 0 0 1px #CFC8BC;
+  --shadow-2xl: 0 0 0 1px #CFC8BC;
+  --drop-shadow-sm: 0 0 #0000;
+  --drop-shadow-md: 0 0 #0000;
+  --drop-shadow-lg: 0 0 #0000;
+}
+
+@layer base {
+  h1, h2, h3, h4 { font-family: var(--font-newsreader), Georgia, serif; letter-spacing: -0.01em; }
+  h1, h2 { font-weight: 400; }
+  h3, h4 { font-weight: 500; }
+  /* small uppercase labels read as journal metadata */
+  .uppercase { font-family: var(--font-space-mono), ui-monospace, monospace; letter-spacing: 0.1em; }
+  input, select, textarea { border-radius: 2px; }
+  ::selection { background: #C3DEDF; }
+}
+
+@keyframes journal-load { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }

@@ -409,7 +409,7 @@ function AccountContent() {
 
         {/* My Trips: one list of every trip the user has made */}
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-semibold text-[#2F4A5C] mb-4">My Trips</h2>
+          <h2 className="text-2xl font-normal text-[#2F4A5C] mb-4">My Trips</h2>
 
           {error && allMyTrips.length === 0 ? (
             <div className="bg-white rounded-xl border border-[#E4DED4] p-8 text-center">
@@ -433,7 +433,7 @@ function AccountContent() {
               </p>
             </div>
           ) : (
-            <ul className="bg-white rounded-xl border border-[#E4DED4] divide-y divide-[#EEE8DF] overflow-hidden">
+            <ul className="bg-white rounded-xl border border-[#E4DED4] divide-y divide-[#E2DDD5] overflow-hidden">
               {allMyTrips.map(({ trip, status }) => {
                 const places = [...parseCities(trip.cities), ...parseCountries(trip.countries)]
                   .filter(Boolean)
@@ -462,7 +462,7 @@ function AccountContent() {
                         />
                       </Link>
                     ) : (
-                      <div className="shrink-0 w-16 h-12 rounded-md bg-[#EEE8DF]" />
+                      <div className="shrink-0 w-16 h-12 rounded-md bg-[#E2DDD5]" />
                     )}
                     <Link href={openHref} className="flex-1 min-w-0" title="Continue working on this trip">
                       <div className="flex items-center gap-2 mb-1">

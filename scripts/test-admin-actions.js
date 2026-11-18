@@ -14,6 +14,7 @@ const call = async (cookie, method, path, body) => {
 (async () => {
   const admins = ((fs.readFileSync('.env.local', 'utf8').match(/^ADMIN_EMAILS=(.+)$/m) || [])[1] || '').split(/[,\s]+/).filter(Boolean);
   const owner = await prisma.user.findFirst({ where: { email: { in: admins } } });
+  console.log('owner found:', !!owner);
   const email = `screenshot-bot-admin-${Date.now()}@example.invalid`;
   const member = await prisma.user.create({ data: { email, name: 'Block Test', password: await bcrypt.hash('Pw-test-123!', 10) } });
   try {
@@ -31,7 +32,7 @@ const call = async (cookie, method, path, body) => {
     check('delete', (await call(O, 'POST', '/api/admin/members', { id: member.id, action: 'delete' })).deleted === true);
     check('deleted: account and trip gone', !(await prisma.user.findUnique({ where: { id: member.id } })) && !(await prisma.trip.findUnique({ where: { id: trip.id } })));
   } catch (e) {
-    console.log('FAIL crashed:', e.message); fails++;
+    console.log('FAIL crashed:', e && e.name, String((e && e.message) || e).replace(/\s+/g, ' ').slice(-300)); fails++;
   } finally {
     await prisma.user.deleteMany({ where: { id: member.id } }).catch(() => {});
     await prisma.$disconnect();

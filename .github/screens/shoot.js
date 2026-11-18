@@ -64,7 +64,7 @@ const SITE = 'https://tripshare.org';
     const email = `screenshot-bot-${Date.now()}@example.invalid`;
     // Registered through the browser, so it gets the sign-in session cookie
     const reg = await (await ctx.request.post(`${SITE}/api/auth/register`, {
-      data: { name: 'Screenshot Bot', email, password: 'Screens-' + Math.random().toString(36).slice(2) + '9!' },
+      data: { name: 'Screenshot Bot', email, password: 'Screens-' + Math.random().toString(36).slice(2) + '9!', acceptTerms: true },
     })).json();
     const user = reg.user;
     if (!user?.id) throw new Error('could not make a test account');

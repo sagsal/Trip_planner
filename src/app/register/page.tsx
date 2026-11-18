@@ -17,7 +17,8 @@ function RegisterContent() {
     confirmPassword: '',
     homeRegion: '',
     homeCountry: '',
-    ageBracket: ''
+    ageBracket: '',
+    acceptTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -32,6 +33,12 @@ function RegisterContent() {
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.acceptTerms) {
+      setError('Please agree to the Terms of Use and Privacy Policy');
       setIsLoading(false);
       return;
     }
@@ -67,6 +74,7 @@ function RegisterContent() {
             homeRegion: formData.homeRegion,
             homeCountry: formData.homeCountry,
             ageBracket: formData.ageBracket,
+            acceptTerms: formData.acceptTerms,
           }),
           signal: controller.signal,
         });
@@ -270,6 +278,22 @@ function RegisterContent() {
                 </div>
                 <p className="mt-2 text-xs text-gray-500">Helps us suggest trips from travelers like you. Never shown to other members.</p>
               </fieldset>
+
+              {/* Terms and privacy */}
+              <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptTerms}
+                  onChange={(e) => setFormData((f) => ({ ...f, acceptTerms: e.target.checked }))}
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 accent-[#1F6F78]"
+                  required
+                />
+                <span>
+                  I’m 18 or older and I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-[#1F6F78] underline font-medium">Terms of Use</Link>{' '}and{' '}
+                  <Link href="/privacy" target="_blank" className="text-[#1F6F78] underline font-medium">Privacy Policy</Link>.
+                </span>
+              </label>
 
               {/* Error Message */}
               {error && (

@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (body.acceptTerms !== true) {
+      return NextResponse.json(
+        { error: 'Please agree to the Terms of Use and Privacy Policy' },
+        { status: 400 }
+      );
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters long' },
@@ -50,6 +57,7 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         ...profile,
+        termsAcceptedAt: new Date(),
       }
     });
 

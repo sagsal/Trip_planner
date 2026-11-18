@@ -18,6 +18,7 @@ model User {
   homeRegion  String?
   homeCountry String?
   ageBracket  String?
+  termsAcceptedAt DateTime? // when they agreed to the Terms of Use and Privacy Policy
   blockedAt   DateTime? // set by the site owner: can't sign in, and their trips and comments are hidden
   emailOptOut Boolean   @default(false) // unsubscribed from the owner's messages
   password  String

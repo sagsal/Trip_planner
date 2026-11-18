@@ -128,9 +128,11 @@ function HomeContent() {
       <footer className="border-t border-[#ECE7DF] bg-white">
         <div className="max-w-6xl mx-auto px-6 py-7 flex flex-wrap gap-5 justify-between text-sm text-[#5B6A73]">
           <span>Share and Plan · tripshare.org</span>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link href="/about" className="hover:text-[#13212B]">About</Link>
             <Link href="/how-to" className="hover:text-[#13212B]">How to use</Link>
+            <Link href="/privacy" className="hover:text-[#13212B]">Privacy</Link>
+            <Link href="/terms" className="hover:text-[#13212B]">Terms</Link>
             <button type="button" onClick={startSiteTour} className="hover:text-[#13212B]">Take the tour</button>
           </div>
         </div>

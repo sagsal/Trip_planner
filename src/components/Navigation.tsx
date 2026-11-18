@@ -301,6 +301,10 @@ export default function Navigation() {
                         </button>
                       </div>
                     )}
+                    <div className="px-4 py-2.5 flex gap-4 text-xs text-gray-500">
+                      <Link href="/privacy" onClick={() => setIsOpen(false)} className="hover:text-gray-800">Privacy</Link>
+                      <Link href="/terms" onClick={() => setIsOpen(false)} className="hover:text-gray-800">Terms</Link>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

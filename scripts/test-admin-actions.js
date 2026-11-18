@@ -19,7 +19,7 @@ const call = async (cookie, method, path, body) => {
   const member = await prisma.user.create({ data: { email, name: 'Block Test', password: await bcrypt.hash('Pw-test-123!', 10) } });
   try {
     const O = sessionCookie(owner.id), M = sessionCookie(member.id);
-    const trip = await prisma.trip.create({ data: { title: 'Block test trip', userId: member.id, isPublic: true, isDraft: false, startDate: new Date(), endDate: new Date(), countries: '["Canada"]' } });
+    const trip = await prisma.trip.create({ data: { title: 'Block test trip', userId: member.id, isPublic: true, isDraft: false, startDate: new Date(), endDate: new Date(), countries: '["Canada"]', cities: '[]' } });
     check('member can’t use owner tools', (await call(M, 'POST', '/api/admin/members', { id: owner.id, action: 'block' })).status === 404);
     check('owner can’t block themself', (await call(O, 'POST', '/api/admin/members', { id: owner.id, action: 'block' })).status === 400);
     check('block', (await call(O, 'POST', '/api/admin/members', { id: member.id, action: 'block' })).blocked === true);
@@ -32,7 +32,7 @@ const call = async (cookie, method, path, body) => {
     check('delete', (await call(O, 'POST', '/api/admin/members', { id: member.id, action: 'delete' })).deleted === true);
     check('deleted: account and trip gone', !(await prisma.user.findUnique({ where: { id: member.id } })) && !(await prisma.trip.findUnique({ where: { id: trip.id } })));
   } catch (e) {
-    console.log('FAIL crashed:', e && e.name, String((e && e.message) || e).replace(/\s+/g, ' ').slice(-300)); fails++;
+    console.log('FAIL crashed:', e && e.name, String((e && e.message) || e).replace(/\s+/g, ' ').slice(-120).replace(/[a-z0-9]{20,}/g, '…')); fails++;
   } finally {
     await prisma.user.deleteMany({ where: { id: member.id } }).catch(() => {});
     await prisma.$disconnect();

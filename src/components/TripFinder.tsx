@@ -29,14 +29,6 @@ type Result = {
   places: PlaceToSave[];
 };
 
-const EXAMPLES = [
-  'Japan with my family',
-  'Create a Mexico sandbox with places from family trips to Mexico',
-  'A romantic week in Italy',
-  'Two weeks backpacking in Central America',
-  'Food trip to Mexico City',
-];
-
 // "Medellín" → "medellin", for matching city names loosely
 const cityKey = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, '').trim();
 
@@ -330,16 +322,6 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
         </p>
       )}
       {!conversation && children && <div className="mt-3">{children}</div>}
-      {!conversation && (
-        <div className="flex sm:flex-wrap gap-2 mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 overflow-x-auto sm:overflow-visible pb-1 [scrollbar-width:none]">
-          {EXAMPLES.map((ex) => (
-            <button key={ex} type="button" onClick={() => start(ex)} className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border border-[#D9D2C7] bg-white text-sm text-[#2F4A5C] hover:bg-[#FBF9F5]">
-              {ex}
-            </button>
-          ))}
-        </div>
-      )}
-
       {error && <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 
       {/* Results */}

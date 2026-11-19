@@ -50,7 +50,7 @@ export default function OutreachEmail() {
         <h1 className="font-normal text-[34px] leading-tight mb-3">Email to travel bloggers</h1>
         <ol className="list-decimal pl-5 text-[15px] text-[#3A4A54] space-y-1 mb-4">
           <li>Press <b>Copy email</b>, open a new Gmail message and paste. The pictures come with it.</li>
-          <li>Replace every <b>[bracket]</b>, especially the line about their post. A specific compliment is what gets replies.</li>
+          <li>Replace the <b>[brackets]</b>: their first name and the destination they write about.</li>
           <li>Pick a subject below, send one at a time from your own address, and mark it Sent in your list.</li>
         </ol>
         <div className="border border-[#E2DDD5] bg-white px-4 py-3 mb-4">
@@ -68,10 +68,7 @@ export default function OutreachEmail() {
             <div style={{ maxWidth: 600, fontFamily: serif, fontSize: 17, lineHeight: 1.55, color: ink }}>
               <p style={{ margin: '0 0 16px' }}>Hi [First name],</p>
               <p style={{ margin: '0 0 16px' }}>
-                I really enjoyed your [post title], especially [one specific thing you liked, e.g. the tip about hiring a driver from Belize City].
-              </p>
-              <p style={{ margin: '0 0 16px' }}>
-                I’m [Your name], and I built <a href={SITE} style={{ color: teal }}>tripshare.org</a>, a free, ad-free site where travellers share real day-by-day trips: where they stayed, ate and explored, and what they’d skip. Here’s what a trip looks like:
+                I’m Scott Greene, and I built <a href={SITE} style={{ color: teal }}>tripshare.org</a>, a free, ad-free site where travellers share real day-by-day trips: where they stayed, ate and explored, and what they’d skip. Here’s what a trip looks like:
               </p>
               <a href={`${SITE}/creators`} style={{ display: 'block', textDecoration: 'none' }}>
                 <img src={`${SITE}/outreach/trip-review.jpg`} alt="A shared trip on tripshare.org: stays, days and the traveller’s honest review" width={600} style={{ display: 'block', width: '100%', maxWidth: 600, height: 'auto', border: `1px solid ${rule}` }} />
@@ -108,7 +105,7 @@ export default function OutreachEmail() {
                 It’s free with no ads, you keep ownership of what you post, and you can remove it any time. Would you be up for sharing one trip, maybe your [destination] itinerary?
               </p>
               <p style={{ margin: '0 0 4px' }}>Thanks,</p>
-              <p style={{ margin: '0 0 2px' }}>[Your name]</p>
+              <p style={{ margin: '0 0 2px' }}>Scott Greene</p>
               <p style={{ margin: '0 0 20px', fontFamily: mono, fontSize: 12, color: quiet }}>
                 <a href={SITE} style={{ color: quiet }}>tripshare.org</a>
               </p>

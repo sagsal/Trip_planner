@@ -35,14 +35,14 @@ export async function POST(request: NextRequest) {
   const wanted = new Set(requests.flatMap((r) => r.countries.map(norm)));
   const trips = await prisma.trip.findMany({
     where: { user: { emailOptOut: false, blockedAt: null } },
-    select: { userId: true, countries: true, cities: { select: { country: true } } },
+    select: { userId: true, countries: true, cities_data: { select: { country: true } } },
     take: 20000,
   });
   const been = new Map<string, Set<string>>();
   for (const t of trips) {
     let list: string[] = [];
     try { let x: any = t.countries; for (let i = 0; i < 2 && typeof x === 'string'; i++) x = JSON.parse(x); if (Array.isArray(x)) list = x.map(String); } catch {}
-    for (const c of [...list, ...t.cities.map((c) => c.country)]) {
+    for (const c of [...list, ...t.cities_data.map((c) => c.country)]) {
       if (c && wanted.has(norm(c))) (been.get(t.userId) || been.set(t.userId, new Set()).get(t.userId)!).add(c);
     }
   }

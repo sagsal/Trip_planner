@@ -21,12 +21,12 @@ const parseList = (v: unknown): string[] => {
 export async function countriesBeen(userId: string): Promise<Map<string, string>> {
   const trips = await prisma.trip.findMany({
     where: { userId },
-    select: { countries: true, cities: { select: { country: true } } },
+    select: { countries: true, cities_data: { select: { country: true } } },
     take: 500,
   });
   const out = new Map<string, string>();
   for (const t of trips) {
-    for (const c of [...parseList(t.countries), ...t.cities.map((x) => x.country)]) if (c) out.set(norm(c), c);
+    for (const c of [...parseList(t.countries), ...t.cities_data.map((x) => x.country)]) if (c) out.set(norm(c), c);
   }
   return out;
 }

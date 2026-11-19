@@ -102,6 +102,8 @@ function HomeContent() {
   const [successMessage, setSuccessMessage] = useState('');
   const [q, setQ] = useState('');
   const [trips, setTrips] = useState<CardTrip[] | null>(null);
+  const [covers, setCovers] = useState<CardTrip[]>([]);
+  const [slide, setSlide] = useState(0);
 
   useEffect(() => {
     const message = searchParams.get('message');
@@ -109,15 +111,25 @@ function HomeContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    fetch('/api/trips?public=true&limit=6')
+    fetch('/api/trips?public=true&limit=24')
       .then((r) => r.json())
-      .then((d) =>
-        setTrips(
-          (d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:')).slice(0, 3)
-        )
-      )
+      .then((d) => {
+        const shared = (d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:'));
+        setTrips(shared.slice(0, 3));
+        // Every shared trip's cover photo, for the rotating picture at the top
+        const seen = new Set<string>();
+        setCovers(shared.filter((t: CardTrip) => t.coverImageUrl && !seen.has(t.coverImageUrl) && seen.add(t.coverImageUrl)));
+      })
       .catch(() => setTrips([]));
   }, []);
+
+  // Cycle the top picture every few seconds (held still for people who prefer less motion)
+  useEffect(() => {
+    if (covers.length < 2) return;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const id = setInterval(() => setSlide((i) => (i + 1) % covers.length), 5500);
+    return () => clearInterval(id);
+  }, [covers.length]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -125,7 +137,7 @@ function HomeContent() {
     router.push(t ? `/trips?ask=${encodeURIComponent(t)}` : '/trips');
   };
 
-  const cover = trips?.find((t) => t.coverImageUrl) || null;
+  const cover = covers[slide] || null;
 
   return (
     <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
@@ -172,13 +184,32 @@ function HomeContent() {
           <figure className="flex-[1_1_380px] min-w-0 m-0 flex flex-col">
             <div className="border border-[#E2DDD5] bg-white p-3.5 pb-0 flex flex-col gap-3.5 flex-grow">
               <div className="relative flex-grow min-h-[260px] sm:min-h-[380px] border border-[#E2DDD5] overflow-hidden" style={HATCH}>
-                <img src={cover?.coverImageUrl || '/sea-warm.jpg'} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                {covers.length === 0 ? (
+                  <img src="/sea-warm.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  covers.map((t, i) => (
+                    <img
+                      key={t.id}
+                      src={t.coverImageUrl!}
+                      alt=""
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      aria-hidden={i !== slide}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${i === slide ? 'opacity-100' : 'opacity-0'}`}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ))
+                )}
               </div>
               <figcaption style={MONO} className="flex justify-between gap-3 px-0.5 pb-3.5 text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">
                 {cover ? (
                   <>
                     <Link href={`/trips/${cover.id}`} className="truncate hover:text-[#13212B]">{cover.title}</Link>
-                    <span className="shrink-0">{monthYear(cover.startDate)}</span>
+                    <span className="shrink-0 flex items-center gap-3">
+                      {monthYear(cover.startDate)}
+                      {covers.length > 1 && (
+                        <span className="hidden sm:inline">{String(slide + 1).padStart(2, '0')} / {String(covers.length).padStart(2, '0')}</span>
+                      )}
+                    </span>
                   </>
                 ) : (
                   <span>Share and Plan</span>

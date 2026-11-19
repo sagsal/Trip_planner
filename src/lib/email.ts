@@ -31,13 +31,13 @@ export function renderEmail(m: Message, name: string, userId: string) {
   const body = m.body.replace(/\{name\}/g, first);
   const paras = body.split(/\n{2,}/).map((p) => `<p style="margin:0 0 16px;line-height:1.6">${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
   const button = m.linkUrl
-    ? `<p style="margin:24px 0"><a href="${esc(m.linkUrl)}" style="background:#1F6F78;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600;display:inline-block">${esc(m.linkLabel || 'Visit Share and Plan')}</a></p>`
+    ? `<p style="margin:24px 0"><a href="${esc(m.linkUrl)}" style="background:#13212B;color:#F8F6F1;text-decoration:none;padding:13px 22px;font-family:Courier New,monospace;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;display:inline-block">${esc(m.linkLabel || 'Visit Share and Plan')}</a></p>`
     : '';
   const unsub = unsubscribeUrl(userId);
-  const html = `<!doctype html><html><body style="margin:0;background:#FBFAF7;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#13212B">
+  const html = `<!doctype html><html><body style="margin:0;background:#F8F6F1;font-family:Georgia,Times New Roman,serif;color:#13212B">
 <div style="max-width:560px;margin:0 auto;padding:32px 20px">
-<p style="margin:0 0 24px;font-weight:800;font-size:18px">✈ Share and Plan</p>
-<div style="background:#ffffff;border:1px solid #ECE7DF;border-radius:16px;padding:24px;font-size:16px">${paras}${button}</div>
+<p style="margin:0 0 20px;font-size:24px;font-weight:600">Share and Plan <span style="font-family:Courier New,monospace;font-size:11px;letter-spacing:0.12em;color:#5B6A73;font-weight:400">TRIPSHARE.ORG</span></p>
+<div style="background:#ffffff;border:1px solid #E2DDD5;padding:24px;font-size:17px">${paras}${button}</div>
 <p style="margin:20px 4px 0;font-size:12px;line-height:1.5;color:#5B6A73">You’re getting this because you have an account on <a href="${SITE}" style="color:#5B6A73">tripshare.org</a>. <a href="${esc(unsub)}" style="color:#5B6A73">Unsubscribe</a></p>
 </div></body></html>`;
   const text = `${body}\n\n${m.linkUrl ? `${m.linkLabel || 'Visit Share and Plan'}: ${m.linkUrl}\n\n` : ''}—\nYou’re getting this because you have an account on tripshare.org.\nUnsubscribe: ${unsub}\n`;

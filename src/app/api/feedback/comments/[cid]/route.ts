@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailAdviserAccepted } from '@/lib/advice';
 import { requireUser } from '@/lib/session';
 import { LIMITS, cleanSuggestion } from '@/lib/feedback';
 
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       changed = 'removed';
     }
     await prisma.tripComment.update({ where: { id: cid }, data: { status: 'accepted' } });
+    emailAdviserAccepted(cid); // best effort, not awaited
     return NextResponse.json({ ok: true, changed });
   }
 

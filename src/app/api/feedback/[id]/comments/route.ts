@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailPlannerAboutAdvice } from '@/lib/advice';
 import { requireUser } from '@/lib/session';
 import { LIMITS, REACTIONS, Target, cleanSuggestion, needsPlace } from '@/lib/feedback';
 
@@ -61,5 +62,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       suggestion: suggestion ? JSON.stringify(suggestion) : null,
     },
   });
+  emailPlannerAboutAdvice(c.id); // best effort, not awaited
   return NextResponse.json({ ok: true, id: c.id });
 }

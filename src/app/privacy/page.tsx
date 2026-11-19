@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <ul>
           <li><b>Your account:</b> your name, email address and password. Passwords are stored scrambled (hashed), so we can’t read them.</li>
           <li><b>About you (optional):</b> the region and country you’re from and your age bracket, if you choose to give them.</li>
-          <li><b>What you add:</b> your trips (countries, cities, month and year, number of days, flights, hotels, restaurants, activities, ratings, reviews, notes and links), your Sandbox (planned trips and saved places), and comments you post in Help me plan.</li>
+          <li><b>What you add:</b> your trips (countries, cities, month and year, number of days, flights, hotels, restaurants, activities, ratings, reviews, notes and links), your Sandbox (planned trips and saved places), and comments you post in Advice.</li>
           <li><b>What you type into AI features:</b> for example a description in “Describe it”, a question to the trip finder, a request to Fill with AI, or notes you import.</li>
           <li><b>Technical information:</b> a sign-in cookie that keeps you signed in, small settings saved in your browser (such as tour progress or a closed announcement), and standard server logs (such as IP address, browser type and time of a request) used for security and fixing problems.</li>
         </ul>
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <h2>2. How we use it</h2>
         <ul>
           <li>To run the site: create your account, keep you signed in, save and show your trips and plans.</li>
-          <li>To power features you use, such as place search and photos, AI suggestions, and Help me plan.</li>
+          <li>To power features you use, such as place search and photos, AI suggestions, and Advice.</li>
           <li>To email you about your account and about the site (for example, important changes or new features). Every non-essential email has an unsubscribe link.</li>
           <li>To keep the site safe: preventing spam and abuse, and suspending accounts that break our Terms of Use.</li>
           <li>To understand how the site is used, through totals and summaries (for example, how many members joined this month). Small groups are combined so individuals can’t be singled out.</li>
@@ -43,8 +43,8 @@ export default function PrivacyPage() {
         <ul>
           <li><b>Shared trips</b> can be seen by anyone, including people without an account, and can be shared as links. Your name is not shown on them.</li>
           <li><b>Drafts and private trips</b> are visible only to you.</li>
-          <li><b>Your Sandbox</b> is private, unless you choose “Ask for feedback” on a planned trip. Then members who are signed in can see that planned trip and comment on it.</li>
-          <li><b>Comments</b> in Help me plan show your first name only.</li>
+          <li><b>Your Sandbox</b> is private, unless you choose “Ask for advice” on a planned trip. Then members who are signed in can see that planned trip and comment on it.</li>
+          <li><b>Comments</b> in Advice show your first name only.</li>
           <li>Your <b>email address</b> is never shown to other members.</li>
         </ul>
       </section>

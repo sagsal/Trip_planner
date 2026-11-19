@@ -69,7 +69,7 @@ export default function FeedbackTripPage() {
     return (
       <div className="min-h-screen bg-[#F8F6F1] pt-24 px-4 text-center">
         <h1 className="text-2xl font-normal mb-2">Sign in to help plan this trip</h1>
-        <p className="text-[#5B6A73] mb-6">Help me plan is for members only.</p>
+        <p className="text-[#5B6A73] mb-6">Advice is for members only.</p>
         <Link href={`/login?next=/feedback/${id}`} className="inline-flex items-center px-6 py-3 bg-[#13212B] text-white rounded-xl font-semibold">Sign in</Link>
       </div>
     );
@@ -78,7 +78,7 @@ export default function FeedbackTripPage() {
     return (
       <div className="min-h-screen bg-[#F8F6F1] pt-24 px-4 text-center">
         <p className="text-[#5B6A73] mb-6">{error}</p>
-        <Link href="/feedback" className="font-semibold text-[#1F6F78]">← Help me plan</Link>
+        <Link href="/feedback" className="font-semibold text-[#1F6F78]">← Advice</Link>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function FeedbackTripPage() {
     <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Link href={isOwner ? `/sandbox?trip=${trip.id}` : '/feedback'} className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A] mb-4">
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> {isOwner ? 'Back to my Sandbox' : 'Help me plan'}
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> {isOwner ? 'Back to my Sandbox' : 'Advice'}
         </Link>
 
         {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-[#13212B] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
@@ -113,10 +113,10 @@ export default function FeedbackTripPage() {
           {isOwner && (
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
               <span className="text-[#3D4C56]">
-                {trip.open ? `Open for feedback · ${openComments} new ${openComments === 1 ? 'suggestion' : 'suggestions'} to review` : 'Only you can see this page right now.'}
+                {trip.open ? `Asking for advice · ${openComments} new ${openComments === 1 ? 'suggestion' : 'suggestions'} to review` : 'Only you can see this page right now.'}
               </span>
               <button type="button" onClick={() => setOpen(!trip.open)} className="px-3 min-h-[36px] rounded-xl border border-[#E2DDD5] bg-white font-semibold">
-                {trip.open ? 'Close feedback' : 'Open for feedback'}
+                {trip.open ? 'Stop asking' : 'Ask for advice'}
               </button>
             </div>
           )}

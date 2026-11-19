@@ -475,7 +475,7 @@ export default function AdminDashboard() {
               <ul className="text-sm flex flex-col gap-2">
                 <li className="flex justify-between"><span>New planned trips ({period})</span><b className="tabular-nums">{p.newSandboxTrips}</b></li>
                 <li className="flex justify-between"><span>Places saved ({period})</span><b className="tabular-nums">{p.newSavedPlaces}</b></li>
-                <li className="flex justify-between"><span>Trips open for feedback</span><b className="tabular-nums">{f.openTrips}</b></li>
+                <li className="flex justify-between"><span>Trips asking for advice</span><b className="tabular-nums">{f.openTrips}</b></li>
                 <li className="flex justify-between"><span>New comments ({period})</span><b className="tabular-nums">{f.newComments}</b></li>
                 <li className="flex justify-between"><span>Suggestions accepted (all time)</span><b className="tabular-nums">{f.accepted}</b></li>
               </ul>

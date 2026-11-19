@@ -77,15 +77,15 @@ const SECTIONS: Section[] = [
   {
     id: 'feedback',
     icon: '💬',
-    title: 'Get feedback on your plans',
+    title: 'Ask for advice on your plans',
     intro: 'Ask fellow members what they think before you go — and help them with theirs.',
     steps: [
-      { title: 'Ask for feedback', body: <>In your Sandbox, open a planned trip and go to the <b>Feedback</b> tab. Add what you’d like advice on (e.g. “Is 4 days in Bogotá too many?”) and tap <b>Share for feedback</b>.</> },
-      { title: 'Members weigh in', body: <>Your plan appears in <b>Menu → Help me plan</b>. Members can comment on the whole trip, a city or a single place — “too many days”, “I’d skip it”, or <b>Go here instead…</b> with the actual hotel or restaurant.</> },
-      { title: 'Use the best ideas', body: <>New suggestions show as <b>💬 new</b> on your trip. In the Feedback tab, tap <b>Accept & swap</b> or <b>Accept & add</b> and your plan updates itself, or <b>Set aside</b> the rest. Close feedback whenever you like.</> },
-      { title: 'Help others plan', body: <>Open <b>Help me plan</b>, pick a trip and tap <b>React</b> on any place, or <b>Agree</b> with advice you like.</> },
+      { title: 'Ask for advice', body: <>In your Sandbox, open a planned trip and go to the <b>Advice</b> tab. Add what you’d like advice on (e.g. “Is 4 days in Bogotá too many?”) and tap <b>Share for feedback</b>.</> },
+      { title: 'Members weigh in', body: <>Your plan appears in <b>Menu → Advice</b>. Members can comment on the whole trip, a city or a single place — “too many days”, “I’d skip it”, or <b>Go here instead…</b> with the actual hotel or restaurant.</> },
+      { title: 'Use the best ideas', body: <>New suggestions show as <b>💬 new</b> on your trip. In the Advice tab, tap <b>Accept & swap</b> or <b>Accept & add</b> and your plan updates itself, or <b>Set aside</b> the rest. Close feedback whenever you like.</> },
+      { title: 'Help others plan', body: <>Open <b>Advice</b>, pick a trip and tap <b>React</b> on any place, or <b>Agree</b> with advice you like.</> },
     ],
-    tip: <>Help me plan is for signed-in members only, and planners can delete any comment on their trip.</>,
+    tip: <>Advice is for signed-in members only, and planners can delete any comment on their trip.</>,
   },
   {
     id: 'manage',

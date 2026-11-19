@@ -28,7 +28,7 @@ const SIGNED_IN: { title: string; items: Item[] }[] = [
     items: [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
       { href: '/', label: 'Home', icon: Home },
-      { href: '/feedback', label: 'Help me plan', hint: 'Give and get advice on trips being planned', icon: MessageCircle },
+      { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there, or share your tips', icon: MessageCircle },
       { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
       { href: '/?tour=1', label: 'Take the tour', hint: 'A guided walk-through with voiceover', icon: PlayCircle },
       { href: '/about', label: 'About', icon: Info },
@@ -42,7 +42,7 @@ const SIGNED_OUT: { title: string; items: Item[] }[] = [
     items: [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
       { href: '/', label: 'Home', icon: Home },
-      { href: '/feedback', label: 'Help me plan', hint: 'Give and get advice on trips being planned', icon: MessageCircle },
+      { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there, or share your tips', icon: MessageCircle },
       { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
       { href: '/?tour=1', label: 'Take the tour', hint: 'A guided walk-through with voiceover', icon: PlayCircle },
       { href: '/about', label: 'About', icon: Info },
@@ -65,6 +65,7 @@ export default function Navigation() {
   const [isAdmin, setIsAdmin] = useState(false); // site owner: sees "Site dashboard" 
   const menuRef = useRef<HTMLDivElement>(null);
   const [sandboxCount, setSandboxCount] = useState<number | null>(null);
+  const [advice, setAdvice] = useState<{ newAdvice: number; wantedCount: number } | null>(null);
 
   // Sandbox counter: load once signed in, and update whenever something is saved or removed
   useEffect(() => {
@@ -133,6 +134,17 @@ export default function Navigation() {
     return () => window.removeEventListener('storage', checkAuth);
   }, []);
 
+  // Advice: new replies to my plans, and requests about places I've been
+  useEffect(() => {
+    if (!isAuthenticated) { setAdvice(null); return; }
+    let cancelled = false;
+    fetch('/api/advice/summary', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d?.signedIn) setAdvice({ newAdvice: d.newAdvice || 0, wantedCount: d.wantedCount || 0 }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isAuthenticated, pathname]);
+
   // Close the menu on page change, click outside, or Escape
   useEffect(() => {
     setIsOpen(false);
@@ -177,11 +189,11 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-baseline gap-3">
-            <span className="font-serif font-semibold text-[22px] sm:text-[27px] tracking-[-0.01em] text-[#13212B] whitespace-nowrap">Share and Plan</span>
+            <span className="font-serif font-semibold text-[20px] sm:text-[27px] tracking-[-0.01em] text-[#13212B] whitespace-nowrap">Share and Plan</span>
             <span className="hidden md:inline font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">TRIPSHARE.ORG</span>
           </Link>
 
-          <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Quick links stay on the bar (hidden on small phones; they're in the menu) */}
             {isAuthenticated ? (
               <Link
@@ -205,6 +217,25 @@ export default function Navigation() {
                 </Link>
               </>
             )}
+
+            {/* Advice, always in sight: a number for new advice on my plans, a dot when someone's planning a place I've been */}
+            <Link
+              href={advice?.newAdvice ? '/account' : '/feedback'}
+              aria-label={`Advice${advice?.newAdvice ? `, ${advice.newAdvice} new on your plans` : advice?.wantedCount ? `, ${advice.wantedCount} asking about places you’ve been` : ''}`}
+              className={`relative flex items-center justify-center gap-2 h-11 w-11 sm:w-auto sm:px-3.5 border font-mono text-xs tracking-[0.1em] uppercase transition-colors ${
+                pathname?.startsWith('/feedback') ? 'border-[#1F6F78] bg-[#EEF5F4] text-[#16535A]' : 'border-[#E2DDD5] text-[#13212B] hover:border-[#13212B]'
+              }`}
+            >
+              <MessageCircle className="w-5 h-5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Advice</span>
+              {!!advice?.newAdvice ? (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#A4462B] text-white text-[11px] font-mono flex items-center justify-center">
+                  {advice.newAdvice > 99 ? '99+' : advice.newAdvice}
+                </span>
+              ) : !!advice?.wantedCount && (
+                <span aria-hidden className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#1F6F78] border-2 border-[#F8F6F1]" />
+              )}
+            </Link>
 
             {/* My Travel Sandbox (saved places), with a counter */}
             {isAuthenticated && (
@@ -232,13 +263,13 @@ export default function Navigation() {
                 onClick={() => setIsOpen((o) => !o)}
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
-                className={`flex items-center gap-1.5 px-3.5 min-h-[44px] border font-mono text-xs tracking-[0.1em] uppercase transition-colors ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 min-h-[44px] border font-mono text-xs tracking-[0.1em] uppercase transition-colors ${
                   isOpen ? 'border-[#13212B] bg-[#13212B] text-[#F8F6F1]' : 'border-[#13212B] text-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]'
                 }`}
               >
                 {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 <span>Menu</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`hidden sm:block w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </button>
 
               <AnimatePresence>

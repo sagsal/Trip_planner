@@ -280,7 +280,7 @@ function SandboxContent() {
                         {f?.open ? (
                           <span className="bg-[#1F6F78] text-white rounded-full px-2.5 py-1 text-xs font-semibold">💬 {f.open} new</span>
                         ) : t.feedbackOpen ? (
-                          <span className="bg-white/90 text-[#16535A] rounded-full px-2.5 py-1 text-xs font-semibold">💬 Open for feedback</span>
+                          <span className="bg-white/90 text-[#16535A] rounded-full px-2.5 py-1 text-xs font-semibold">💬 Asking for advice</span>
                         ) : null}
                       </div>
                     </div>
@@ -531,7 +531,7 @@ function TripView({
   const tabs: { key: Tab; label: string; badge?: string }[] = [
     { key: 'plan', label: 'Plan' },
     { key: 'ideas', label: 'Ideas', badge: ideas.length ? String(ideas.length) : undefined },
-    { key: 'feedback', label: 'Feedback', badge: feedback?.open ? `${feedback.open} new` : undefined },
+    { key: 'feedback', label: 'Advice', badge: feedback?.open ? `${feedback.open} new` : undefined },
   ];
 
   const daySelect = (p: SavedPlaceData) => {
@@ -563,6 +563,27 @@ function TripView({
       {trip.notes && !editing && <p className="text-sm text-[#3D4C56] mb-4 whitespace-pre-line">{trip.notes}</p>}
 
       {editing && <EditDetails trip={trip} onSave={(f) => { onPatchTrip(f); setEditing(false); }} onCancel={() => setEditing(false)} />}
+
+      {/* A second opinion, always one tap away */}
+      {tab !== 'feedback' && (
+        trip.feedbackOpen ? (
+          <button type="button" onClick={() => setTab('feedback')}
+            className="w-full mb-4 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border border-[#C3DEDF] bg-[#EEF5F4] text-left">
+            <span className="font-mono text-xs tracking-[0.1em] text-[#16535A] uppercase">Asking members for advice{feedback?.open ? ` · ${feedback.open} new` : ''}</span>
+            <span className="font-mono text-xs tracking-[0.1em] text-[#1F6F78]">{feedback?.open ? 'READ IT →' : 'SEE ADVICE →'}</span>
+          </button>
+        ) : places.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 sm:px-5 py-4 border border-[#13212B] bg-white">
+            <div className="min-w-0 flex-[1_1_260px]">
+              <p className="font-serif text-[22px] leading-tight">Get a second opinion on this plan</p>
+              <p className="text-sm text-[#5B6A73] mt-1">Members who’ve been {cities.filter((c) => c !== 'Anywhere').length ? `to ${cities.filter((c) => c !== 'Anywhere').slice(0, 2).join(' or ')}` : 'there'} can tell you what to change.</p>
+            </div>
+            <button type="button" onClick={() => setTab('feedback')} className="min-h-[48px] px-5 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em] hover:bg-[#24394A]">
+              ASK FOR ADVICE
+            </button>
+          </div>
+        )
+      )}
 
       <div role="tablist" aria-label="Trip sections" className="flex gap-1 border-b border-[#E2DDD5] mb-5">
         {tabs.map((t) => (
@@ -726,14 +747,21 @@ function FeedbackTab({ trip, onChanged }: { trip: SandboxTripData; onChanged: ()
   if (!data.open && others.length === 0) {
     return (
       <div className="rounded-2xl bg-[#F1F6F6] border border-[#D4E5E6] p-4 sm:p-5">
-        <h2 className="font-normal text-[#16535A] mb-1">Ask members for advice</h2>
-        <p className="text-sm text-[#3F5B6A] mb-3">Your plan appears in <b>Help me plan</b> for all members. They can say “too many days”, suggest a better hotel, or point out a place not to miss. You accept a suggestion with one tap, and can close feedback any time.</p>
-        <label htmlFor="ask" className="block text-sm font-medium text-[#16535A] mb-1">What would you like advice on? (optional)</label>
+        <h2 className="font-normal text-[#16535A] mb-1">Ask members who’ve been there</h2>
+        <p className="text-sm text-[#3F5B6A] mb-3">Your plan appears in <b>Advice</b> for signed-in members, and members who’ve shared trips to the same country are told about it. They can say “too many days”, suggest a better hotel, or point out a place not to miss. You accept a suggestion with one tap, and can stop asking any time.</p>
+        <p className="text-sm font-medium text-[#16535A] mb-1.5">Pick a question, or write your own</p>
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
+          {['Too many days?', 'Which hotel would you pick?', 'What am I missing?', 'Is this a good time of year?', 'Is the route in the right order?'].map((q) => (
+            <button key={q} type="button" onClick={() => setAsk((a) => (a.includes(q) ? a : (a.trim() ? `${a.trim()} ${q}` : q).slice(0, 600)))}
+              className="px-3 min-h-[36px] border border-[#C3DEDF] bg-white text-sm text-[#16535A] hover:border-[#1F6F78]">{q}</button>
+          ))}
+        </div>
+        <label htmlFor="ask" className="sr-only">What would you like advice on?</label>
         <textarea id="ask" value={ask} onChange={(e) => setAsk(e.target.value.slice(0, 600))} rows={2}
           placeholder="e.g. Is 4 days in Bogotá too many? Where should we stay in Cartagena?" className="w-full px-3 py-2 border border-[#C9D9DF] rounded-xl text-sm bg-white" />
         {err && <p className="text-sm text-red-600 mt-1">{err}</p>}
         <button type="button" onClick={() => setOpen(true)} disabled={busy} className="mt-3 inline-flex items-center px-4 min-h-[44px] bg-[#1F6F78] text-white rounded-xl text-sm font-semibold disabled:opacity-60">
-          {busy && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Share for feedback
+          {busy && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Ask for advice
         </button>
       </div>
     );
@@ -744,19 +772,19 @@ function FeedbackTab({ trip, onChanged }: { trip: SandboxTripData; onChanged: ()
       {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-[#13212B] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white border border-[#E2DDD5] p-3 sm:p-4">
         <p className="text-sm text-[#3D4C56]">
-          {data.open ? <>Open in <b>Help me plan</b> · {fresh.length} new {fresh.length === 1 ? 'suggestion' : 'suggestions'}</> : 'Feedback is closed. Members can’t see this trip.'}
+          {data.open ? <>Asking for advice · {fresh.length} new {fresh.length === 1 ? 'suggestion' : 'suggestions'}</> : 'You’ve stopped asking. Members can’t see this trip.'}
         </p>
         <div className="flex gap-2">
           <Link href={`/feedback/${trip.id}`} className="inline-flex items-center px-3 min-h-[40px] rounded-xl border border-[#E2DDD5] text-sm font-semibold">See it as members do</Link>
           <button type="button" onClick={() => setOpen(!data.open)} disabled={busy} className="px-3 min-h-[40px] rounded-xl border border-[#E2DDD5] text-sm font-semibold">
-            {data.open ? 'Close feedback' : 'Reopen'}
+            {data.open ? 'Stop asking' : 'Ask again'}
           </button>
         </div>
       </div>
       {err && <p className="text-sm text-red-600">{err}</p>}
 
       {others.length === 0 ? (
-        <EmptyState text="No comments yet. Members will see your trip in Help me plan." />
+        <EmptyState text="No advice yet. Members who’ve been there are being told about your trip, and we’ll email you when advice arrives." />
       ) : (
         <>
           {fresh.length > 0 && <h2 className="text-sm font-normal uppercase tracking-wider text-[#5B6A73]">New</h2>}

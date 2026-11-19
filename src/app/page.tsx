@@ -19,10 +19,81 @@ const STEPS = [
   { n: '01', title: 'Share your trip', text: 'Add your cities, hotels, restaurants and activities for each day. Or import your notes and let AI fill it in.' },
   { n: '02', title: 'Find trips like yours', text: 'Ask in plain words, like “a family week in Mexico”, and see real itineraries that fit.' },
   { n: '03', title: 'Plan in your Sandbox', text: 'Save the places you like into planned trips, and let AI arrange them day by day.' },
-  { n: '04', title: 'Get feedback', text: 'Share a planned trip in Help me plan. Members tell you if it’s too many days, which hotel to swap, or what not to miss, and you accept the best ideas with one tap.' },
+  { n: '04', title: 'Ask for advice', text: 'Planning a trip? Ask members who’ve been there. They tell you if it’s too many days, which hotel to swap, or what not to miss, and you accept the best ideas with one tap.' },
 ];
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+type AskCard = { id: string; title: string; ask: string | null; countries: string[]; cities: string[]; commentCount: number; matched: string[] };
+
+/** "Members are asking": the Advice section, right under the hero */
+function AdviceBand({ asking }: { asking: { signedIn: boolean; list: AskCard[]; openCount: number } }) {
+  const BTN = 'inline-flex items-center justify-center min-h-[48px] px-5 font-mono text-xs tracking-[0.1em]';
+  return (
+    <section className="border-b border-[#E2DDD5] bg-white">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 py-12 sm:py-14 flex flex-wrap gap-x-12 gap-y-8 items-start">
+        <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
+          <p style={{ ...MONO, color: ACCENT }} className="text-xs tracking-[0.14em]">ADVICE</p>
+          <h2 style={SERIF} className="font-normal text-[36px] sm:text-[44px] leading-[1.05] tracking-[-0.015em]">Ask someone who’s been there</h2>
+          <p className="text-base leading-relaxed text-[#3A4A54] max-w-md">
+            Planning a trip? Members who’ve been to the same places tell you if it’s too many days, which hotel they’d pick, and what not to miss.
+          </p>
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            {asking.signedIn ? (
+              <>
+                <Link href="/sandbox" style={MONO} className={`${BTN} bg-[#13212B] text-[#F8F6F1] hover:bg-[#24394A]`}>ASK ABOUT YOUR TRIP</Link>
+                <Link href="/feedback" style={MONO} className={`${BTN} border border-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]`}>GIVE ADVICE</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/register" style={MONO} className={`${BTN} bg-[#13212B] text-[#F8F6F1] hover:bg-[#24394A]`}>JOIN TO ASK</Link>
+                <Link href="/login?next=/feedback" style={MONO} className={`${BTN} border border-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]`}>SIGN IN</Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-[2_1_520px] min-w-0">
+          <div className="flex justify-between items-baseline gap-3 pb-3 border-b border-[#13212B]">
+            <span style={MONO} className="text-[11px] tracking-[0.14em] text-[#5B6A73]">MEMBERS ARE ASKING</span>
+            {asking.signedIn && asking.openCount > asking.list.length && (
+              <Link href="/feedback" style={{ ...MONO, color: ACCENT }} className="text-xs tracking-[0.1em] py-1">ALL {asking.openCount} →</Link>
+            )}
+          </div>
+          {asking.signedIn && asking.list.length > 0 ? (
+            asking.list.map((a) => (
+              <Link key={a.id} href={`/feedback/${a.id}`} className="group flex flex-wrap gap-x-6 gap-y-2 py-5 border-b border-[#E2DDD5] items-start">
+                <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-1.5">
+                  <span style={MONO} className="text-[11px] tracking-[0.1em] text-[#5B6A73] uppercase">
+                    {[a.countries.slice(0, 2).join(', '), a.commentCount ? plural(a.commentCount, 'reply', 'replies') : 'No replies yet'].filter(Boolean).join(' · ')}
+                  </span>
+                  <span style={SERIF} className="text-[24px] leading-tight group-hover:text-[#1F6F78]">{a.title}</span>
+                  {a.ask && <span style={SERIF} className="italic text-[17px] text-[#3A4A54] line-clamp-2">“{a.ask}”</span>}
+                </div>
+                {a.matched.length > 0 ? (
+                  <span style={MONO} className="text-[11px] tracking-[0.08em] uppercase px-2.5 py-1.5 bg-[#1F6F78] text-white">You’ve been to {a.matched.slice(0, 2).join(' & ')}</span>
+                ) : (
+                  <span style={{ ...MONO, color: ACCENT }} className="text-xs tracking-[0.08em] pt-1">HELP →</span>
+                )}
+              </Link>
+            ))
+          ) : (
+            <div className="py-6 flex flex-col gap-3">
+              <p style={SERIF} className="italic text-[22px] text-[#3A4A54]">
+                {asking.signedIn ? 'No one is asking right now. Be the first.' : '“Is 4 days in Bogotá too many?” “Where should we stay in Cartagena?”'}
+              </p>
+              <p className="text-[15px] text-[#5B6A73]">
+                {asking.signedIn
+                  ? 'Open a planned trip in your Sandbox and tap Ask for advice. Members who’ve been there are told about it.'
+                  : 'Members ask questions like these about the trips they’re planning, and members who’ve been there answer. Requests are visible to signed-in members.'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function tripMeta(t: CardTrip) {
   const country = parseList(t.countries)[0] || t.region || '';
@@ -104,6 +175,7 @@ function HomeContent() {
   const [trips, setTrips] = useState<CardTrip[] | null>(null);
   const [covers, setCovers] = useState<CardTrip[]>([]);
   const [slide, setSlide] = useState(0);
+  const [asking, setAsking] = useState<{ signedIn: boolean; list: AskCard[]; openCount: number } | null>(null);
 
   useEffect(() => {
     const message = searchParams.get('message');
@@ -121,6 +193,22 @@ function HomeContent() {
         setCovers(shared.filter((t: CardTrip) => t.coverImageUrl && !seen.has(t.coverImageUrl) && seen.add(t.coverImageUrl)));
       })
       .catch(() => setTrips([]));
+  }, []);
+
+  // Advice: live requests for members; an invitation for everyone else
+  useEffect(() => {
+    let signedIn = false;
+    try { signedIn = !!localStorage.getItem('user'); } catch {}
+    if (!signedIn) { setAsking({ signedIn: false, list: [], openCount: 0 }); return; }
+    fetch('/api/advice/summary', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.signedIn) return setAsking({ signedIn: false, list: [], openCount: 0 });
+        const seen = new Set<string>();
+        const list = [...(d.wanted || []), ...(d.latest || [])].filter((x: AskCard) => !seen.has(x.id) && seen.add(x.id)).slice(0, 3);
+        setAsking({ signedIn: true, list, openCount: d.openCount || 0 });
+      })
+      .catch(() => setAsking({ signedIn: false, list: [], openCount: 0 }));
   }, []);
 
   // Cycle the top picture every few seconds (held still for people who prefer less motion)
@@ -219,6 +307,8 @@ function HomeContent() {
           </figure>
         </div>
       </section>
+
+      {asking && <AdviceBand asking={asking} />}
 
       {/* How it works: a contents page */}
       <section className="border-b border-[#E2DDD5]">

@@ -39,7 +39,7 @@ export default function TermsPage() {
           <li>copy the site’s content in bulk, scrape it, or get around limits or security;</li>
           <li>upload anything harmful, or try to disrupt the site.</li>
         </ul>
-        <p>In Help me plan, keep advice friendly and constructive. A trip’s planner can set aside or delete comments on their trip.</p>
+        <p>In Advice, keep advice friendly and constructive. A trip’s planner can set aside or delete comments on their trip.</p>
       </section>
 
       <section>

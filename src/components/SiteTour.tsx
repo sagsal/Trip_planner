@@ -65,8 +65,8 @@ const STEPS: Step[] = [
     path: '/feedback',
     target: 'help-me-plan',
     needsLogin: true,
-    title: 'Get feedback',
-    text: 'Want a second opinion? In a planned trip, open the Feedback tab and share it. It appears here, in Help me plan, where members can say too many days, suggest a better hotel, or point out what not to miss. You accept the best ideas with one tap. And you can help others plan their trips too.',
+    title: 'Ask for advice',
+    text: 'Want a second opinion? In a planned trip, open the Advice tab and share it. It appears here, in Advice, and members who’ve been to the same country are told about it. Members can say too many days, suggest a better hotel, or point out what not to miss. You accept the best ideas with one tap. And you can help others plan their trips too.',
   },
   {
     path: '/trips/new',

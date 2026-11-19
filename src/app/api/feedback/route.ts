@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/session';
+import { countriesBeen, norm } from '@/lib/advice';
 
 /**
  * GET /api/feedback → planned trips open for advice ("Help me plan"). Members only.
@@ -9,6 +10,7 @@ export async function GET(request: NextRequest) {
   const auth = requireUser(request);
   if ('error' in auth) return auth.error;
 
+  const been = await countriesBeen(auth.userId);
   const trips = await prisma.sandboxTrip.findMany({
     where: { feedbackOpen: true, user: { blockedAt: null } },
     orderBy: { feedbackOpenedAt: 'desc' },
@@ -40,6 +42,7 @@ export async function GET(request: NextRequest) {
         placeCount: t._count.places,
         commentCount: t._count.comments,
         mine: t.userId === auth.userId,
+        beenThere: t.userId === auth.userId ? [] : countries.filter((c) => been.has(norm(c))),
       };
     }),
   });

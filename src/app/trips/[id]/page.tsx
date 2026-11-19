@@ -308,6 +308,38 @@ function CityView({ city, trip, showHeader }: { city: CityT; trip: Trip; showHea
   );
 }
 
+/** For signed-in members: planned trips to this country that are asking for advice */
+function AskingHere({ country }: { country: string }) {
+  const [d, setD] = useState<{ list: { id: string; title: string; ask: string | null; commentCount: number }[]; count: number } | null>(null);
+  useEffect(() => {
+    let signedIn = false;
+    try { signedIn = !!localStorage.getItem('user'); } catch {}
+    if (!signedIn || !country) return;
+    fetch(`/api/advice/summary?country=${encodeURIComponent(country)}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x) => x?.signedIn && x.inCountryCount > 0 && setD({ list: x.inCountry || [], count: x.inCountryCount }))
+      .catch(() => {});
+  }, [country]);
+  if (!d) return null;
+  return (
+    <div className="border border-[#1F6F78] bg-[#EEF5F4]">
+      <h2 className="px-5 py-4 border-b border-[#C3DEDF] font-mono font-normal text-[11px] tracking-[0.14em] text-[#16535A] uppercase">
+        {d.count === 1 ? `A member is planning ${country}` : `${d.count} members are planning ${country}`}
+      </h2>
+      <div className="px-5">
+        {d.list.map((a) => (
+          <Link key={a.id} href={`/feedback/${a.id}`} className="py-3.5 border-b border-[#C3DEDF] last:border-b-0 flex flex-col gap-1 hover:text-[#1F6F78]">
+            <span className="font-serif text-xl leading-snug">{a.title}</span>
+            {a.ask && <span className="font-serif italic text-base text-[#3A4A54] line-clamp-2">“{a.ask}”</span>}
+            <span className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">{a.commentCount ? `${a.commentCount} ${a.commentCount === 1 ? 'reply' : 'replies'}` : 'No replies yet'}</span>
+          </Link>
+        ))}
+      </div>
+      <Link href="/feedback" className="block px-5 py-3.5 border-t border-[#C3DEDF] font-mono text-xs tracking-[0.1em] text-[#1F6F78] hover:text-[#13212B]">GIVE ADVICE →</Link>
+    </div>
+  );
+}
+
 function TripDetailContent() {
   const params = useParams();
   const router = useRouter();
@@ -1010,6 +1042,7 @@ function TripDetailContent() {
                 ))}
               </dl>
             </div>
+            {country[0] && <AskingHere country={country[0]} />}
             {(travel.outbound.length > 0 || travel.return.length > 0) && (
               <div className="border border-[#E2DDD5] bg-white">
                 <h2 className="px-5 py-4 border-b border-[#E2DDD5] font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73]">FLIGHTS</h2>

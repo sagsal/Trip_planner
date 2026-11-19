@@ -108,6 +108,7 @@ function AccountContent() {
   const [fresh, setFresh] = useState<any[] | null>(null);
   const [filter, setFilter] = useState<'All' | 'Shared' | 'Private' | 'Draft'>('All');
   const [fbBusy, setFbBusy] = useState<string | null>(null);
+  const [wanted, setWanted] = useState<{ id: string; title: string; ask: string | null; cities: string[]; matched: string[]; commentCount: number }[]>([]);
 
   // The rest of the dashboard: planned trips, feedback, members asking for help, newly shared trips
   useEffect(() => {
@@ -117,6 +118,7 @@ function AccountContent() {
     const q = `userId=${encodeURIComponent(uid)}`;
     fetch(`/api/sandbox?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => setSandbox(d ? { trips: d.trips || [], places: d.places || [], feedback: d.feedback || {} } : { trips: [], places: [], feedback: {} })).catch(() => setSandbox({ trips: [], places: [], feedback: {} }));
     fetch(`/api/dashboard/feedback?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => setFb(d || { open: 0, items: [] })).catch(() => setFb({ open: 0, items: [] }));
+    fetch('/api/advice/summary', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => setWanted(d?.wanted || [])).catch(() => {});
     fetch('/api/feedback').then((r) => (r.ok ? r.json() : null)).then((d) => setAsks((d?.trips || []).filter((t: any) => !t.mine).slice(0, 3))).catch(() => setAsks([]));
     fetch('/api/trips?public=true&limit=8').then((r) => r.json()).then((d) => setFresh((d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && t.user?.id !== uid && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:')).slice(0, 3))).catch(() => setFresh([]));
   }, []);
@@ -400,6 +402,32 @@ function AccountContent() {
         </div>
       )}
 
+      {/* Members planning places you've been: your tips are wanted */}
+      {wanted.length > 0 && (
+        <section className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-10">
+          <div className="border border-[#1F6F78] bg-[#EEF5F4]">
+            <div className="px-5 py-4 border-b border-[#C3DEDF] flex flex-wrap justify-between items-baseline gap-3">
+              <h2 className="font-serif font-normal text-[26px] sm:text-[30px] leading-tight">
+                {wanted.length === 1 ? `Someone is planning ${wanted[0].matched[0]}. You’ve been there.` : 'Members are planning places you’ve been'}
+              </h2>
+              <Link href="/feedback" className={LINK}>ALL REQUESTS →</Link>
+            </div>
+            {wanted.slice(0, 3).map((w) => (
+              <Link key={w.id} href={`/feedback/${w.id}`} className="group flex flex-wrap gap-x-6 gap-y-2 px-5 py-4 border-b border-[#C3DEDF] last:border-b-0 items-center">
+                <div className="flex-[1_1_280px] min-w-0 flex flex-col gap-1">
+                  <span className="font-mono text-[11px] tracking-[0.1em] text-[#16535A] uppercase">
+                    {[`You’ve been to ${w.matched.slice(0, 2).join(' & ')}`, w.commentCount ? plural(w.commentCount, 'reply', 'replies') : 'No replies yet'].join(' · ')}
+                  </span>
+                  <span className="font-serif text-[22px] leading-snug group-hover:text-[#1F6F78]">{w.title}</span>
+                  {w.ask && <span className="font-serif italic text-[17px] text-[#3A4A54] line-clamp-2">“{w.ask}”</span>}
+                </div>
+                <span className="inline-flex items-center min-h-[44px] px-4 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em]">GIVE ADVICE →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-10 sm:pt-12 pb-20 flex flex-wrap gap-12 items-start">
         <main className="flex-[999_1_560px] min-w-0 flex flex-col gap-12 sm:gap-14">
           {/* Drafts */}
@@ -435,7 +463,7 @@ function AccountContent() {
                 const cities = Array.from(new Set(mine.map((p: any) => p.city).filter(Boolean))) as string[];
                 const ctry = Array.from(new Set(mine.map((p: any) => p.country).filter(Boolean))) as string[];
                 const open = sandbox?.feedback?.[pt.id]?.open || 0;
-                const tag = open > 0 ? plural(open, 'new idea', 'new ideas') : pt.feedbackOpen ? 'Open for feedback' : 'Ask for feedback';
+                const tag = open > 0 ? plural(open, 'new idea', 'new ideas') : pt.feedbackOpen ? 'Asking for advice' : 'Ask for advice';
                 const href = open > 0 || !pt.feedbackOpen ? `/sandbox?trip=${pt.id}&tab=feedback` : `/sandbox?trip=${pt.id}`;
                 return (
                   <div key={pt.id} className="flex flex-wrap gap-x-7 gap-y-3 py-5 border-b border-[#E2DDD5] items-start">
@@ -516,7 +544,7 @@ function AccountContent() {
         <aside className="flex-[1_1_300px] min-w-0 flex flex-col gap-7">
           <section className="border border-[#E2DDD5] bg-white">
             <BoxHead>
-              <span>NEW FEEDBACK ON YOUR PLANS</span>
+              <span>NEW ADVICE ON YOUR PLANS</span>
               {fb && fb.open > 0 && <span className="text-[#1F6F78]">{fb.open} NEW</span>}
             </BoxHead>
             <div className="px-5 pb-2">
@@ -524,7 +552,7 @@ function AccountContent() {
                 <div className="h-16 my-3 animate-pulse bg-[#F2EFE8]" />
               ) : fb.items.length === 0 ? (
                 <p className="py-4 font-serif italic text-lg text-[#5B6A73]">
-                  No new feedback. {planned.some((p: any) => p.feedbackOpen) ? 'Members will reply here.' : 'Ask for feedback on a planned trip to hear from other members.'}
+                  No new advice. {planned.some((p: any) => p.feedbackOpen) ? 'Members will reply here.' : 'Ask for advice on a planned trip to hear from members who’ve been there.'}
                 </p>
               ) : (
                 fb.items.map((f) => (
@@ -550,7 +578,7 @@ function AccountContent() {
           </section>
 
           <section className="border border-[#E2DDD5] bg-white">
-            <BoxHead><span>MEMBERS ASKING FOR HELP</span></BoxHead>
+            <BoxHead><span>MEMBERS ASKING FOR ADVICE</span></BoxHead>
             <div className="px-5">
               {asks === null ? (
                 <div className="h-16 my-3 animate-pulse bg-[#F2EFE8]" />

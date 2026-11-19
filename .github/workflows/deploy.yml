@@ -94,6 +94,10 @@ jobs:
           NODE_BIN="$(command -v node)"
           ( crontab -l 2>/dev/null | grep -v 'scripts/backup-db.js' || true ; echo "17 3 * * * cd /var/www/Trip_planner && $NODE_BIN scripts/backup-db.js >> \$HOME/tripshare-backup.log 2>&1" ) | crontab -
           echo "nightly backup scheduled: $(crontab -l 2>/dev/null | grep -c 'scripts/backup-db.js' || true) entry"
+
+          # Weekly Advice email ("members are planning places you've been"): Mondays 09:43 server time
+          ( crontab -l 2>/dev/null | grep -v 'scripts/advice-digest.js' || true ; echo "43 9 * * 1 cd /var/www/Trip_planner && $NODE_BIN scripts/advice-digest.js >> \$HOME/tripshare-advice.log 2>&1" ) | crontab -
+          echo "weekly advice email scheduled: $(crontab -l 2>/dev/null | grep -c 'scripts/advice-digest.js' || true) entry"
           echo "✅ Deployment complete!"
           REMOTE
 
@@ -111,8 +115,9 @@ jobs:
           node scripts/cleanup-test-users.js || true
           echo "--- sandbox API test (temporary test user, deleted afterwards)"
           node scripts/test-sandbox.js || true
-          echo "--- Help me plan test (temporary test users, deleted afterwards)"
+          echo "--- Advice test (temporary test users, deleted afterwards)"
           node scripts/test-feedback.js || true
+          node scripts/advice-digest.js --dry || true
           echo "--- recent server errors (types only, no user data)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
             [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|Google Places search failed|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6

@@ -176,5 +176,21 @@ const SITE = 'https://tripshare.org';
     console.log('signed-in screenshots skipped:', e.message);
   }
 
+  // Desktop shots (1280 wide, top of page only) for the bloggers' page and outreach email
+  const desk = await browser.newContext({ viewport: { width: 1280, height: 860 }, deviceScaleFactor: 2 });
+  const dp = await desk.newPage();
+  for (const [name, path] of [['desk-home', '/'], ...(multi ? [['desk-trip', `/trips/${multi.id}`]] : []), ['desk-destination', '/destinations/belize'], ['desk-destinations', '/destinations']]) {
+    await dp.goto(SITE + path, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await dp.waitForTimeout(2500);
+    await dp.screenshot({ path: `out/${name}.jpg`, type: 'jpeg', quality: 80 });
+    // a second, scrolled view of the trip page (the day-by-day part)
+    if (name === 'desk-trip') {
+      await dp.evaluate(() => window.scrollTo(0, 1100));
+      await dp.waitForTimeout(800);
+      await dp.screenshot({ path: `out/desk-trip-days.jpg`, type: 'jpeg', quality: 80 });
+    }
+  }
+  await desk.close();
+
   await browser.close();
 })();

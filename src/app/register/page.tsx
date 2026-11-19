@@ -92,8 +92,14 @@ function RegisterContent() {
       if (response.ok) {
         const data = await response.json();
         console.log('Registration successful:', data);
-                // Registration successful - redirect to home page
-                router.push('/?message=Registration successful! Please sign in to continue.');
+        // Signed in already (the server set the session): go where they were heading, or the dashboard
+        if (data?.user) {
+          try { localStorage.setItem('user', JSON.stringify(data.user)); window.dispatchEvent(new Event('storage')); } catch {}
+          const next = new URLSearchParams(window.location.search).get('next') || '';
+          router.push(next.startsWith('/') && !next.startsWith('//') ? next : '/account');
+        } else {
+          router.push('/login?message=Registration successful! Please sign in.');
+        }
       } else {
         const data = await response.json();
         console.log('Registration failed:', data);

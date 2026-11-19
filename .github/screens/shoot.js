@@ -26,7 +26,8 @@ const SITE = 'https://tripshare.org';
     ...(multi ? [['trip-multi', `/trips/${multi.id}`]] : []),
     ['destinations', '/destinations'],
     ['destination-belize', '/destinations/belize'],
-    ['share-5-min', '/trips/import'],
+    ['creators', '/creators'],
+    ['outreach-email', '/outreach/email'],
     ['about', '/about'],
     ['how-to', '/how-to'],
     ['login', '/login'],
@@ -179,7 +180,7 @@ const SITE = 'https://tripshare.org';
   // Desktop shots (1280 wide, top of page only) for the bloggers' page and outreach email
   const desk = await browser.newContext({ viewport: { width: 1280, height: 860 }, deviceScaleFactor: 2 });
   const dp = await desk.newPage();
-  for (const [name, path] of [['desk-home', '/'], ...(multi ? [['desk-trip', `/trips/${multi.id}`]] : []), ['desk-destination', '/destinations/belize'], ['desk-destinations', '/destinations']]) {
+  for (const [name, path] of [['desk-home', '/'], ...(multi ? [['desk-trip', `/trips/${multi.id}`]] : []), ['desk-destination', '/destinations/belize'], ['desk-destinations', '/destinations'], ['desk-creators', '/creators'], ['desk-email', '/outreach/email']]) {
     await dp.goto(SITE + path, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
     await dp.waitForTimeout(2500);
     await dp.screenshot({ path: `out/${name}.jpg`, type: 'jpeg', quality: 80 });

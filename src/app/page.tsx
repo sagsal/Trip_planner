@@ -360,6 +360,7 @@ function HomeContent() {
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-1">
             <Link href="/about" className="py-1.5 hover:text-[#13212B]">About</Link>
             <Link href="/how-to" className="py-1.5 hover:text-[#13212B]">How to use</Link>
+            <Link href="/creators" className="py-1.5 hover:text-[#13212B]">For bloggers</Link>
             <Link href="/privacy" className="py-1.5 hover:text-[#13212B]">Privacy</Link>
             <Link href="/terms" className="py-1.5 hover:text-[#13212B]">Terms</Link>
             <button type="button" onClick={startSiteTour} className="py-1.5 hover:text-[#13212B]">Take the tour</button>

@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Calendar, Star, User, ArrowLeft, Heart, ThumbsUp, ThumbsDown, Copy, Plus, X, ExternalLink } from 'lucide-react';
 import { placeFields, linkLabel, isRental } from '@/lib/placeDetails';
+import { slugify } from '@/lib/slug';
 import { cleanArrival, cleanTravel, parseJson, routeText, modeInfo, type FlightLeg } from '@/lib/travel';
 import { tripTypeIcon } from '@/lib/regions';
 import SaveToSandbox from '@/components/SaveToSandbox';
@@ -962,7 +963,14 @@ function TripDetailContent() {
         {/* Title block */}
         <div className="flex flex-wrap gap-x-12 gap-y-6 items-end justify-between pt-4 sm:pt-5 pb-7 sm:pb-8 border-b border-[#13212B]">
           <div className="flex-[1_1_520px] min-w-0 flex flex-col gap-4">
-            {kicker && <p className="font-mono text-xs tracking-[0.14em] uppercase text-[#1F6F78]">{kicker}</p>}
+            {kicker && (
+              <p className="font-mono text-xs tracking-[0.14em] uppercase text-[#1F6F78]">
+                {country.map((c, i) => (
+                  <span key={c}>{i > 0 && ' · '}<Link href={`/destinations/${slugify(c)}`} className="underline-offset-4 hover:underline">{c}</Link></span>
+                ))}
+                {kicker.slice(country.join(' · ').length)}
+              </p>
+            )}
             <h1 className="font-serif font-normal text-[42px] sm:text-[60px] lg:text-[76px] leading-[1.02] tracking-[-0.02em]">{t.title}</h1>
             {multi && (
               <p className="font-mono text-sm sm:text-[15px] tracking-[0.04em] uppercase flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -983,6 +991,19 @@ function TripDetailContent() {
           </div>
           {actions}
         </div>
+        {(t as any).credit && (
+          <p className="pt-3 font-mono text-xs tracking-[0.08em] uppercase text-[#5B6A73] flex flex-wrap gap-x-3 gap-y-1">
+            <span>
+              Shared by{' '}
+              {(t as any).credit.url ? (
+                <a href={(t as any).credit.url} target="_blank" rel="noopener nofollow ugc" className="text-[#1F6F78] underline underline-offset-4 hover:text-[#13212B]">{(t as any).credit.name} ↗</a>
+              ) : (
+                <span className="text-[#13212B]">{(t as any).credit.name}</span>
+              )}
+            </span>
+            {(t as any).credit.founding && <span className="text-[#1F6F78]">· Founding contributor</span>}
+          </p>
+        )}
 
         {/* Cover plate */}
         {t.coverImageUrl && coverOk && (

@@ -21,6 +21,12 @@ model User {
   termsAcceptedAt DateTime? // when they agreed to the Terms of Use and Privacy Policy
   blockedAt   DateTime? // set by the site owner: can't sign in, and their trips and comments are hidden
   emailOptOut Boolean   @default(false) // unsubscribed from the owner's messages
+  // Optional credit on shared trips (off by default: names stay hidden)
+  showName    Boolean   @default(false)
+  creditName  String?   // how to show them, e.g. "Rafi" or "@rafitravels"
+  creditUrl   String?   @db.Text // optional link to their blog or Instagram (https only)
+  lastSeenAt     DateTime? // last visit (updated at most hourly), for "members returning each month"
+  authorThanksAt DateTime? // last monthly "people used your trip" email
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -30,6 +36,7 @@ model User {
   savedPlaces  SavedPlace[]
   tripComments TripComment[]
   commentAgrees TripCommentAgree[]
+  pendingImports PendingImport[]
 
   @@map("users")
 }
@@ -158,6 +165,7 @@ model SandboxTrip {
   feedbackOpen     Boolean   @default(false)
   feedbackAsk      String?   @db.Text // what the planner wants advice on
   feedbackOpenedAt DateTime?
+  backAskedAt      DateTime? // when we asked "back from your trip? share it"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -273,4 +281,16 @@ model Announcement {
   createdAt DateTime @default(now())
 
   @@map("announcements")
+}
+
+// A trip read from an email sent to trips@tripshare.org, waiting for its member to check and save it
+model PendingImport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      String   @db.LongText // ImportedTrip JSON
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("pending_imports")
 }

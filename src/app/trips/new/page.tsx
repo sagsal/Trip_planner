@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Plus, Minus, MapPin, Calendar, Star, Save, X, ChevronDown, Eye } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
@@ -2070,6 +2071,12 @@ function NewTripContent() {
             </p>
             {importNotice && (
               <p className="mt-3 text-sm text-[#3F5B6A] bg-[#E3ECEF] border border-[#C9D9DF] rounded-lg px-3 py-2">{importNotice}</p>
+            )}
+            {!editingId && !importNotice && (
+              <Link href="/trips/import" className="mt-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border border-[#13212B] bg-white hover:bg-[#F8F6F1]">
+                <span className="font-serif text-lg">Have notes or an itinerary email? Paste it and AI fills this in.</span>
+                <span className="font-mono text-xs tracking-[0.1em] text-[#1F6F78]">SHARE IN 5 MINUTES →</span>
+              </Link>
             )}
           </div>
 

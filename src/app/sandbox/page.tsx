@@ -564,8 +564,24 @@ function TripView({
 
       {editing && <EditDetails trip={trip} onSave={(f) => { onPatchTrip(f); setEditing(false); }} onCancel={() => setEditing(false)} />}
 
+      {/* Back from the trip? Ask them to share it while it's fresh */}
+      {(() => {
+        const ended = trip.endDate && trip.endDate < new Date().toISOString().slice(0, 10);
+        return ended && places.length > 0 ? (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 sm:px-5 py-4 border border-[#1F6F78] bg-[#EEF5F4]">
+            <div className="min-w-0 flex-[1_1_260px]">
+              <p className="font-serif text-[22px] leading-tight">Welcome back! How did it go?</p>
+              <p className="text-sm text-[#3A4A54] mt-1">Turn this plan into a trip to share. Your places are filled in already: just add what you loved and what you’d skip.</p>
+            </div>
+            <button type="button" onClick={onFinalize} className="min-h-[48px] px-5 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em] hover:bg-[#24394A]">
+              SHARE HOW IT WENT
+            </button>
+          </div>
+        ) : null;
+      })()}
+
       {/* A second opinion, always one tap away */}
-      {tab !== 'feedback' && (
+      {tab !== 'feedback' && !(trip.endDate && trip.endDate < new Date().toISOString().slice(0, 10)) && (
         trip.feedbackOpen ? (
           <button type="button" onClick={() => setTab('feedback')}
             className="w-full mb-4 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border border-[#C3DEDF] bg-[#EEF5F4] text-left">

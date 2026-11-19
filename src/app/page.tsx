@@ -346,7 +346,7 @@ function HomeContent() {
                   <span style={SERIF} className="italic text-[26px]">Your trip could be here</span>
                   <span className="text-[15px] text-[#5B6A73]">Share a trip you loved so others can build on it.</span>
                 </div>
-                <Link href="/trips/new" style={MONO} className="px-5 py-3.5 border border-[#13212B] text-xs tracking-[0.1em] hover:bg-[#13212B] hover:text-[#F8F6F1]">ADD YOUR TRIP</Link>
+                <Link href="/trips/import" style={MONO} className="px-5 py-3.5 border border-[#13212B] text-xs tracking-[0.1em] hover:bg-[#13212B] hover:text-[#F8F6F1]">SHARE A TRIP IN 5 MINUTES</Link>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
-import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, emailConfigured } from '@/lib/email';
 import { openRequests, norm } from '@/lib/advice';
+import { cronAllowed } from '@/lib/cronKey';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,15 +13,8 @@ export const dynamic = 'force-dynamic';
 const SITE = 'https://tripshare.org';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function cronKey() {
-  const s = process.env.SESSION_SECRET || '';
-  return s ? crypto.createHmac('sha256', s).update('advice-digest').digest('hex') : '';
-}
-
 export async function POST(request: NextRequest) {
-  const key = cronKey();
-  const got = request.headers.get('x-cron-key') || '';
-  if (!key || got.length !== key.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(key))) {
+  if (!cronAllowed(request.headers.get('x-cron-key'), 'advice-digest')) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
   const dryRun = new URL(request.url).searchParams.get('dry') === '1';

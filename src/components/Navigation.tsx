@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle, MessageCircle, BarChart3,
+  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle, MessageCircle, BarChart3, MapPin,
 } from 'lucide-react';
 import { SANDBOX_EVENT } from '@/lib/sandbox';
 
@@ -19,14 +19,15 @@ const SIGNED_IN: { title: string; items: Item[] }[] = [
     items: [
       { href: '/sandbox', label: 'My Travel Sandbox', hint: 'Places you’ve saved for trips you’re planning', icon: Package },
       { href: '/account', label: 'My account & trips', hint: 'Drafts, private and shared trips', icon: User },
-      { href: '/trips/new', label: 'Add a trip', hint: 'Day by day, with hotels, food and activities', icon: PlusCircle },
-      { href: '/trips/import', label: 'Import your notes', hint: 'From a spreadsheet, Word doc or pasted text', icon: Sparkles },
+      { href: '/trips/import', label: 'Share a trip in 5 minutes', hint: 'Paste your notes and AI does the typing', icon: Sparkles },
+      { href: '/trips/new', label: 'Type a trip yourself', hint: 'Day by day, with hotels, food and activities', icon: PlusCircle },
     ],
   },
   {
     title: 'Explore',
     items: [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
+      { href: '/destinations', label: 'Destinations', hint: 'Every trip, stay and restaurant by country', icon: MapPin },
       { href: '/', label: 'Home', icon: Home },
       { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there, or share your tips', icon: MessageCircle },
       { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
@@ -41,6 +42,7 @@ const SIGNED_OUT: { title: string; items: Item[] }[] = [
     title: 'Explore',
     items: [
       { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
+      { href: '/destinations', label: 'Destinations', hint: 'Every trip, stay and restaurant by country', icon: MapPin },
       { href: '/', label: 'Home', icon: Home },
       { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there, or share your tips', icon: MessageCircle },
       { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },

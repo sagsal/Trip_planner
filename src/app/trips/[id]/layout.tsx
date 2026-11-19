@@ -70,7 +70,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
     const image = (t.coverImageUrl && absolute(t.coverImageUrl.includes('/api/places/photo') && !t.coverImageUrl.includes('w=') ? `${t.coverImageUrl}&w=1200` : t.coverImageUrl)) || `${SITE}/sea-warm.jpg`;
     const url = `${SITE}/trips/${id}`;
-    const title = `${t.title} · ${SITE_NAME}`;
+    // A title people search for: "Belompan & Hopkins, Belize: 7-day family with teens itinerary"
+    const kind = [days ? `${days}-day` : '', (t.tripType || '').toLowerCase(), 'itinerary'].filter(Boolean).join(' ');
+    const title = `${t.title}: ${kind} · ${SITE_NAME}`;
 
     return {
       title,

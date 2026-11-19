@@ -72,19 +72,33 @@ export async function GET(request: NextRequest) {
   const real = { NOT: [{ email: { endsWith: '@example.invalid' } }] };
 
   const [users, trips, cities, sandboxTrips, savedPlaces, comments, reviewsUsage] = await Promise.all([
-    prisma.user.findMany({ where: real, select: { createdAt: true, homeRegion: true, homeCountry: true, ageBracket: true } }),
+    prisma.user.findMany({ where: real, select: { id: true, email: true, createdAt: true, lastSeenAt: true, homeRegion: true, homeCountry: true, ageBracket: true } }),
     prisma.trip.findMany({
       where: { NOT: [{ title: { contains: 'TEMPLATE' } }, { title: { contains: 'DATABASE:' } }] },
-      select: { createdAt: true, isPublic: true, isDraft: true, countries: true, tripType: true, region: true },
+      select: { userId: true, createdAt: true, isPublic: true, isDraft: true, countries: true, tripType: true, region: true },
     }),
     prisma.city.findMany({ where: { trip: { isPublic: true, isDraft: false } }, select: { name: true, country: true } }),
-    prisma.sandboxTrip.findMany({ select: { createdAt: true, feedbackOpen: true } }),
+    prisma.sandboxTrip.findMany({ select: { id: true, userId: true, createdAt: true, feedbackOpen: true, feedbackOpenedAt: true } }),
     prisma.savedPlace.findMany({ select: { createdAt: true, kind: true } }),
-    prisma.tripComment.findMany({ select: { createdAt: true, status: true } }),
+    prisma.tripComment.findMany({ select: { createdAt: true, status: true, userId: true, sandboxTripId: true } }),
     prisma.apiUsage.findUnique({ where: { key: `google-reviews:${new Date().toISOString().slice(0, 7)}` } }).catch(() => null),
   ]);
 
   const published = trips.filter((t) => t.isPublic && !t.isDraft);
+
+  // Growth-plan measures
+  const DAY = 86400000, nowMs = Date.now();
+  const ownerEmails = (process.env.ADMIN_EMAILS || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+  const ownerIds = new Set(users.filter((u) => ownerEmails.includes(u.email.toLowerCase())).map((u) => u.id));
+  const byOthers = published.filter((t) => !ownerIds.has(t.userId));
+  const firstShare = new Map<string, Date>();
+  for (const t of published) { const f = firstShare.get(t.userId); if (!f || t.createdAt < f) firstShare.set(t.userId, t.createdAt); }
+  const cohort = users.filter((u) => !ownerIds.has(u.id) && nowMs - u.createdAt.getTime() >= 30 * DAY && nowMs - u.createdAt.getTime() < 120 * DAY);
+  const sharedIn30 = cohort.filter((u) => { const f = firstShare.get(u.id); return f && f.getTime() - u.createdAt.getTime() <= 30 * DAY; }).length;
+  const asked = sandboxTrips.filter((t) => t.feedbackOpenedAt && nowMs - t.feedbackOpenedAt.getTime() >= 3 * DAY && nowMs - t.feedbackOpenedAt.getTime() < 90 * DAY);
+  const answered = asked.filter((t) => comments.some((c) => c.sandboxTripId === t.id && c.userId !== t.userId && c.createdAt.getTime() - t.feedbackOpenedAt!.getTime() <= 3 * DAY)).length;
+  const older = users.filter((u) => nowMs - u.createdAt.getTime() >= 30 * DAY);
+  const returning = older.filter((u) => u.lastSeenAt && nowMs - u.lastSeenAt.getTime() < 30 * DAY).length;
   const countryTally = tally(published.flatMap((t) => parseList(t.countries)));
 
   return NextResponse.json(
@@ -109,6 +123,14 @@ export async function GET(request: NextRequest) {
         topCountries: countryTally.slice(0, 10),
         topCities: tally(cities.map((c) => c.name)).slice(0, 10),
         types: tally(published.map((t) => t.tripType), 'No type given'),
+      },
+      growth: {
+        byOthersWeekly: weekly(byOthers.map((t) => t.createdAt)),
+        byOthersTotal: byOthers.length,
+        byOthersThisWeek: byOthers.filter((t) => nowMs - t.createdAt.getTime() < 7 * DAY).length,
+        newMemberShare: { shared: sharedIn30, of: cohort.length },
+        adviceAnswered: { answered, of: asked.length },
+        returning: { returning, of: older.length },
       },
       planning: {
         sandboxTrips: sandboxTrips.length,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { creditFor } from '@/lib/credit';
 import { placeFields, safeImageUrl, safeWebUrl } from '@/lib/placeDetails';
 import { enrichCitiesData } from '@/lib/placeEnrich';
 import { cleanArrival, travelToStore } from '@/lib/travel';
@@ -470,7 +471,9 @@ export async function GET(
     }
 
     console.log('Trip found and access granted:', id);
-    return NextResponse.json({ trip });
+    // Author credit only when the author turned it on (names are hidden by default)
+    const credit = trip.isPublic && !trip.isDraft ? await creditFor(trip.userId).catch(() => null) : null;
+    return NextResponse.json({ trip: { ...trip, credit } });
 
   } catch (error) {
     console.error('Trip fetch error:', error);

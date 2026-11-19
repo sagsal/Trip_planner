@@ -7,6 +7,7 @@ import { monthYear, daysFromDates } from '@/lib/dates';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { slugify } from '@/lib/slug';
 
 interface Trip {
   id: string;
@@ -108,6 +109,8 @@ function AccountContent() {
   const [fresh, setFresh] = useState<any[] | null>(null);
   const [filter, setFilter] = useState<'All' | 'Shared' | 'Private' | 'Draft'>('All');
   const [fbBusy, setFbBusy] = useState<string | null>(null);
+  const [credit, setCredit] = useState<{ showName: boolean; creditName: string; creditUrl: string; defaultName: string; founding: number | null; foundingLimit: number; foundingTaken: number } | null>(null);
+  const [creditSaved, setCreditSaved] = useState('');
   const [wanted, setWanted] = useState<{ id: string; title: string; ask: string | null; cities: string[]; matched: string[]; commentCount: number }[]>([]);
 
   // The rest of the dashboard: planned trips, feedback, members asking for help, newly shared trips
@@ -118,10 +121,25 @@ function AccountContent() {
     const q = `userId=${encodeURIComponent(uid)}`;
     fetch(`/api/sandbox?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => setSandbox(d ? { trips: d.trips || [], places: d.places || [], feedback: d.feedback || {} } : { trips: [], places: [], feedback: {} })).catch(() => setSandbox({ trips: [], places: [], feedback: {} }));
     fetch(`/api/dashboard/feedback?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => setFb(d || { open: 0, items: [] })).catch(() => setFb({ open: 0, items: [] }));
+    fetch('/api/account/credit', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setCredit(d)).catch(() => {});
     fetch('/api/advice/summary', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => setWanted(d?.wanted || [])).catch(() => {});
     fetch('/api/feedback').then((r) => (r.ok ? r.json() : null)).then((d) => setAsks((d?.trips || []).filter((t: any) => !t.mine).slice(0, 3))).catch(() => setAsks([]));
     fetch('/api/trips?public=true&limit=8').then((r) => r.json()).then((d) => setFresh((d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && t.user?.id !== uid && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:')).slice(0, 3))).catch(() => setFresh([]));
   }, []);
+
+  const saveCredit = async (next: { showName: boolean; creditName: string; creditUrl: string }) => {
+    setCreditSaved('');
+    try {
+      const r = await fetch('/api/account/credit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Couldn’t save that.');
+      setCredit((c) => (c ? { ...c, showName: d.showName, creditName: d.creditName || '', creditUrl: d.creditUrl || '' } : c));
+      setCreditSaved('Saved');
+      setTimeout(() => setCreditSaved(''), 2500);
+    } catch (e) {
+      setCreditSaved(e instanceof Error ? e.message : 'Couldn’t save that.');
+    }
+  };
 
   const actOnFeedback = async (id: string, action: 'accept' | 'dismiss') => {
     setFbBusy(id);
@@ -347,6 +365,23 @@ function AccountContent() {
     ['Saved ideas', sandbox ? String(ideas) : '–'],
     ['Countries', String(countries.size)],
   ];
+  // Where you've been: every country and city from your shared and private trips
+  const visited = new Map<string, { cities: Set<string>; trips: number }>();
+  for (const { trip, status } of allMyTrips) {
+    if (status === 'Draft') continue;
+    const seen = new Set<string>();
+    for (const c of trip.cities_data || []) {
+      if (!c.country) continue;
+      const v = visited.get(c.country) || { cities: new Set<string>(), trips: 0 };
+      v.cities.add(c.name);
+      if (!seen.has(c.country)) { v.trips++; seen.add(c.country); }
+      visited.set(c.country, v);
+    }
+    for (const c of parseList(trip.countries)) if (!visited.has(c)) visited.set(c, { cities: new Set<string>(), trips: 1 });
+  }
+  const passport = Array.from(visited.entries()).sort((a, b) => b[1].trips - a[1].trips || a[0].localeCompare(b[0]));
+  const cityCount = passport.reduce((n, [, v]) => n + v.cities.size, 0);
+
   const shown = allMyTrips.filter((x) => filter === 'All' || x.status === filter);
   const firstName = (user?.name || '').trim().split(/\s+/)[0];
 
@@ -376,8 +411,7 @@ function AccountContent() {
             </h1>
           </div>
           <div data-tour="account-actions" className="flex flex-wrap gap-2.5">
-            <Link href="/trips/new" className={`${BTN} bg-[#13212B] text-[#F8F6F1] hover:bg-[#24394A]`}><Plus className="w-4 h-4" strokeWidth={1.6} />ADD A TRIP</Link>
-            <Link href="/trips/import" className={`${BTN} border border-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]`}>IMPORT NOTES</Link>
+            <Link href="/trips/import" className={`${BTN} bg-[#13212B] text-[#F8F6F1] hover:bg-[#24394A]`}><Plus className="w-4 h-4" strokeWidth={1.6} />SHARE A TRIP IN 5 MINUTES</Link>
             <Link href="/sandbox" className={`${BTN} border border-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]`}>PLAN A NEW TRIP</Link>
           </div>
         </div>
@@ -463,8 +497,9 @@ function AccountContent() {
                 const cities = Array.from(new Set(mine.map((p: any) => p.city).filter(Boolean))) as string[];
                 const ctry = Array.from(new Set(mine.map((p: any) => p.country).filter(Boolean))) as string[];
                 const open = sandbox?.feedback?.[pt.id]?.open || 0;
-                const tag = open > 0 ? plural(open, 'new idea', 'new ideas') : pt.feedbackOpen ? 'Asking for advice' : 'Ask for advice';
-                const href = open > 0 || !pt.feedbackOpen ? `/sandbox?trip=${pt.id}&tab=feedback` : `/sandbox?trip=${pt.id}`;
+                const back = pt.endDate && pt.endDate < new Date().toISOString().slice(0, 10) && mine.length > 0;
+                const tag = back ? 'Back? Share how it went' : open > 0 ? plural(open, 'new idea', 'new ideas') : pt.feedbackOpen ? 'Asking for advice' : 'Ask for advice';
+                const href = back ? `/sandbox?trip=${pt.id}` : open > 0 || !pt.feedbackOpen ? `/sandbox?trip=${pt.id}&tab=feedback` : `/sandbox?trip=${pt.id}`;
                 return (
                   <div key={pt.id} className="flex flex-wrap gap-x-7 gap-y-3 py-5 border-b border-[#E2DDD5] items-start">
                     <Link href={`/sandbox?trip=${pt.id}`} className="group flex-[1_1_300px] min-w-0 flex flex-col gap-1.5">
@@ -474,7 +509,7 @@ function AccountContent() {
                       <span className="font-serif text-[26px] sm:text-[28px] leading-tight group-hover:text-[#1F6F78]">{pt.title}</span>
                       {cities.length > 0 && <span className="font-mono text-[13px] uppercase">{cities.slice(0, 5).join(' → ')}</span>}
                     </Link>
-                    <Link href={href} className={`font-mono text-[11px] tracking-[0.1em] uppercase px-2.5 py-1.5 border ${open > 0 ? 'border-[#1F6F78] text-[#1F6F78]' : 'border-[#CFC8BC] text-[#5B6A73] hover:border-[#13212B] hover:text-[#13212B]'}`}>
+                    <Link href={href} className={`font-mono text-[11px] tracking-[0.1em] uppercase px-2.5 py-1.5 border ${back ? 'border-[#13212B] bg-[#13212B] text-[#F8F6F1]' : open > 0 ? 'border-[#1F6F78] text-[#1F6F78]' : 'border-[#CFC8BC] text-[#5B6A73] hover:border-[#13212B] hover:text-[#13212B]'}`}>
                       {tag}
                     </Link>
                   </div>
@@ -501,7 +536,7 @@ function AccountContent() {
             {shown.length === 0 ? (
               <div className="py-6 border-b border-dashed border-[#CFC8BC] flex flex-wrap gap-4 items-center justify-between">
                 <p className="font-serif italic text-[22px]">{allMyTrips.length === 0 ? 'Your trips will show up here' : 'Nothing here yet'}</p>
-                <Link href="/trips/new" className={LINK}>ADD A TRIP →</Link>
+                <Link href="/trips/import" className={LINK}>SHARE A TRIP IN 5 MINUTES →</Link>
               </div>
             ) : (
               shown.map(({ trip, status }) => {
@@ -538,10 +573,76 @@ function AccountContent() {
               })
             )}
           </section>
+
+          {/* Where you've been */}
+          {passport.length > 0 && (
+            <section>
+              <SectionHead
+                title="Where you’ve been"
+                right={<span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] uppercase">{plural(passport.length, 'country', 'countries')} · {plural(cityCount, 'city', 'cities')}</span>}
+              />
+              <div className="pt-4 flex flex-wrap gap-3">
+                {passport.map(([country, v], i) => (
+                  <Link
+                    key={country}
+                    href={`/destinations/${slugify(country)}`}
+                    className="group flex-[1_1_200px] max-w-[280px] min-w-0 border border-[#13212B] bg-white px-4 py-3"
+                    style={{ transform: `rotate(${[-1.2, 0.8, -0.4, 1.1, -0.9, 0.5].at(i % 6)}deg)` }}
+                  >
+                    <span className="block font-mono text-[10.5px] tracking-[0.14em] text-[#1F6F78]">{plural(v.trips, 'TRIP', 'TRIPS')}</span>
+                    <span className="block font-serif text-[24px] leading-tight group-hover:text-[#1F6F78]">{country}</span>
+                    {v.cities.size > 0 && <span className="block font-mono text-[11px] tracking-[0.04em] text-[#5B6A73] uppercase mt-1 line-clamp-2">{Array.from(v.cities).join(' · ')}</span>}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </main>
 
         {/* Right column */}
         <aside className="flex-[1_1_300px] min-w-0 flex flex-col gap-7">
+          {credit && (
+            <section className="border border-[#E2DDD5] bg-white">
+              <BoxHead>
+                <span>CREDIT ON YOUR TRIPS</span>
+                {creditSaved && <span className="text-[#1F6F78]">{creditSaved.toUpperCase()}</span>}
+              </BoxHead>
+              <div className="px-5 py-4 flex flex-col gap-3">
+                {credit.founding ? (
+                  <p className="font-mono text-[11px] tracking-[0.1em] text-[#1F6F78]">FOUNDING CONTRIBUTOR #{credit.founding} OF {credit.foundingLimit}</p>
+                ) : credit.foundingTaken < credit.foundingLimit ? (
+                  <p className="text-sm text-[#3A4A54]">Share a trip to become one of the first {credit.foundingLimit} <b>founding contributors</b>. {credit.foundingLimit - credit.foundingTaken} places left.</p>
+                ) : null}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={credit.showName}
+                    onChange={(e) => saveCredit({ showName: e.target.checked, creditName: credit.creditName, creditUrl: credit.creditUrl })}
+                    className="mt-1 h-5 w-5 shrink-0 accent-[#1F6F78]"
+                  />
+                  <span className="text-[15px]">Show my name on my shared trips <span className="block text-sm text-[#5B6A73]">Off by default. Your email is never shown.</span></span>
+                </label>
+                {credit.showName && (
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); saveCredit({ showName: true, creditName: credit.creditName, creditUrl: credit.creditUrl }); }}
+                    className="flex flex-col gap-2.5"
+                  >
+                    <label className="text-sm">
+                      Name to show
+                      <input value={credit.creditName} onChange={(e) => setCredit({ ...credit, creditName: e.target.value })} placeholder={credit.defaultName || 'First name or @handle'} maxLength={40}
+                        className="mt-1 w-full px-3 py-2.5 border border-[#E2DDD5] bg-white text-base focus:outline-none focus:border-[#13212B]" />
+                    </label>
+                    <label className="text-sm">
+                      Link to your blog or Instagram (optional)
+                      <input value={credit.creditUrl} onChange={(e) => setCredit({ ...credit, creditUrl: e.target.value })} placeholder="https://" inputMode="url"
+                        className="mt-1 w-full px-3 py-2.5 border border-[#E2DDD5] bg-white text-base focus:outline-none focus:border-[#13212B]" />
+                    </label>
+                    <button type="submit" className="self-start min-h-[44px] px-4 border border-[#13212B] font-mono text-xs tracking-[0.1em] hover:bg-[#13212B] hover:text-[#F8F6F1]">SAVE</button>
+                  </form>
+                )}
+              </div>
+            </section>
+          )}
           <section className="border border-[#E2DDD5] bg-white">
             <BoxHead>
               <span>NEW ADVICE ON YOUR PLANS</span>

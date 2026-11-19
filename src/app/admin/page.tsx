@@ -18,6 +18,7 @@ interface Stats {
     shared: number; drafts: number; private: number; new: number; newShared: number;
     weekly: { start: string; count: number }[]; topCountries: Row[]; topCities: Row[]; types: Row[];
   };
+  growth?: { byOthersWeekly: { start: string; count: number }[]; byOthersTotal: number; byOthersThisWeek: number; newMemberShare: { shared: number; of: number }; adviceAnswered: { answered: number; of: number }; returning: { returning: number; of: number } };
   planning: { sandboxTrips: number; newSandboxTrips: number; savedPlaces: number; newSavedPlaces: number };
   feedback: { openTrips: number; comments: number; newComments: number; accepted: number };
   costs: { googleReviewsThisMonth: number; googleReviewsCap: number };
@@ -422,6 +423,27 @@ export default function AdminDashboard() {
           <Tile label="Planned trips" value={p.sandboxTrips} sub={`${p.savedPlaces} places saved`} />
           <Tile label="Feedback comments" value={f.comments} sub={`${f.openTrips} trips open · ${f.accepted} accepted`} />
         </div>
+
+        {/* The growth plan's measures: the one number that matters first */}
+        {s.growth && (() => {
+          const g = s.growth!;
+          const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '–');
+          return (
+            <section className="border border-[#13212B] bg-white p-4 sm:p-5 mb-5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                <h2 className="font-normal text-[26px]">Growth plan</h2>
+                <span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">TRIPS BY MEMBERS OTHER THAN YOU</span>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                <Tile label="Shared by others this week" value={g.byOthersThisWeek} sub={`${g.byOthersTotal} in total · goal 8–10 a week`} />
+                <Tile label="New members who share within 30 days" value={pct(g.newMemberShare.shared, g.newMemberShare.of)} sub={`${g.newMemberShare.shared} of ${g.newMemberShare.of} · goal 1 in 4`} />
+                <Tile label="Advice answered within 3 days" value={pct(g.adviceAnswered.answered, g.adviceAnswered.of)} sub={`${g.adviceAnswered.answered} of ${g.adviceAnswered.of} requests · goal 8 in 10`} />
+                <Tile label="Members back this month" value={pct(g.returning.returning, g.returning.of)} sub={`${g.returning.returning} of ${g.returning.of} · goal 3 in 10`} />
+              </div>
+              <Weekly data={g.byOthersWeekly} label="trips shared by others" />
+            </section>
+          );
+        })()}
 
         {asTable ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

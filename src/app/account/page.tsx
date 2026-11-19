@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { monthYear, daysFromDates } from '@/lib/dates';
 import { useRouter } from 'next/navigation';
-import { Plus, MapPin, Calendar, Trash2, Eye, Loader2, RefreshCw, AlertCircle, Share2, Compass, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Trip {
@@ -20,6 +20,7 @@ interface Trip {
   isDraft?: boolean;
   createdAt: string;
   cities_data: CityData[];
+  coverImageUrl?: string | null;
 }
 
 interface CityData {
@@ -58,6 +59,38 @@ interface Activity {
   liked?: boolean;
 }
 
+type FeedbackItem = { id: string; from: string; label: string; about: string | null; text: string | null; suggested: string | null; tripId: string; tripTitle: string };
+
+const parseList = (v: unknown): string[] => {
+  try {
+    let x: any = v;
+    for (let i = 0; i < 2 && typeof x === 'string'; i++) x = JSON.parse(x);
+    return Array.isArray(x) ? x.map(String).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const greeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+};
+
+/* Small pieces of the journal layout */
+function SectionHead({ title, right }: { title: string; right?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap justify-between items-baseline gap-3 pb-3 border-b border-[#13212B]">
+      <h2 className="font-serif font-normal text-[30px] sm:text-[34px] leading-tight">{title}</h2>
+      {right}
+    </div>
+  );
+}
+function BoxHead({ children }: { children: ReactNode }) {
+  return <h2 className="px-5 py-4 border-b border-[#E2DDD5] font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73] flex justify-between gap-3">{children}</h2>;
+}
+const BTN = 'inline-flex items-center gap-2 min-h-[48px] px-5 font-mono text-xs tracking-[0.1em]';
+const LINK = 'font-mono text-xs tracking-[0.1em] text-[#1F6F78] hover:text-[#13212B]';
+
 function AccountContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [draftTrips, setDraftTrips] = useState<Trip[]>([]);
@@ -69,6 +102,37 @@ function AccountContent() {
   const [deletingTrip, setDeletingTrip] = useState<string | null>(null);
   const [deletingDraft, setDeletingDraft] = useState<string | null>(null);
   const router = useRouter();
+  const [sandbox, setSandbox] = useState<{ trips: any[]; places: any[]; feedback: Record<string, { open: number; total: number }> } | null>(null);
+  const [fb, setFb] = useState<{ open: number; items: FeedbackItem[] } | null>(null);
+  const [asks, setAsks] = useState<any[] | null>(null);
+  const [fresh, setFresh] = useState<any[] | null>(null);
+  const [filter, setFilter] = useState<'All' | 'Shared' | 'Private' | 'Draft'>('All');
+  const [fbBusy, setFbBusy] = useState<string | null>(null);
+
+  // The rest of the dashboard: planned trips, feedback, members asking for help, newly shared trips
+  useEffect(() => {
+    let uid = '';
+    try { uid = JSON.parse(localStorage.getItem('user') || '{}').id || ''; } catch {}
+    if (!uid) return;
+    const q = `userId=${encodeURIComponent(uid)}`;
+    fetch(`/api/sandbox?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => setSandbox(d ? { trips: d.trips || [], places: d.places || [], feedback: d.feedback || {} } : { trips: [], places: [], feedback: {} })).catch(() => setSandbox({ trips: [], places: [], feedback: {} }));
+    fetch(`/api/dashboard/feedback?${q}`).then((r) => (r.ok ? r.json() : null)).then((d) => setFb(d || { open: 0, items: [] })).catch(() => setFb({ open: 0, items: [] }));
+    fetch('/api/feedback').then((r) => (r.ok ? r.json() : null)).then((d) => setAsks((d?.trips || []).filter((t: any) => !t.mine).slice(0, 3))).catch(() => setAsks([]));
+    fetch('/api/trips?public=true&limit=8').then((r) => r.json()).then((d) => setFresh((d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && t.user?.id !== uid && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:')).slice(0, 3))).catch(() => setFresh([]));
+  }, []);
+
+  const actOnFeedback = async (id: string, action: 'accept' | 'dismiss') => {
+    setFbBusy(id);
+    try {
+      const r = await fetch(`/api/feedback/comments/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Couldn’t update that. Please try again.');
+      setFb((f) => (f ? { open: Math.max(0, f.open - 1), items: f.items.filter((x) => x.id !== id) } : f));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Couldn’t update that.');
+    } finally {
+      setFbBusy(null);
+    }
+  };
 
   const fetchUserTrips = async (showRetryState = false) => {
     try {
@@ -255,272 +319,270 @@ function AccountContent() {
     .filter((item, i, arr) => arr.findIndex((x) => x.trip.id === item.trip.id) === i)
     .sort((a, b) => new Date(b.trip.createdAt || 0).getTime() - new Date(a.trip.createdAt || 0).getTime());
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const tripMeta = (t: Trip) => {
+    const days = t.startDate && t.endDate ? daysFromDates(t.startDate, t.endDate) : 0;
+    return [parseList(t.countries).slice(0, 2).join(', '), days ? plural(days, 'day', 'days') : '', t.startDate ? monthYear(t.startDate) : ''].filter(Boolean).join(' · ');
+  };
+  // What a draft still needs, so it's obvious how to finish it
+  const missing = (t: Trip) => {
+    const cities = t.cities_data || [];
+    const out: string[] = [];
+    if (!cities.length) out.push('No cities yet');
+    const noHotel = cities.find((c) => !(c.hotels || []).length);
+    if (noHotel) out.push(`No hotel yet in ${noHotel.name}`);
+    if (cities.length && cities.every((c) => !(c.restaurants || []).length && !(c.activities || []).length)) out.push('No restaurants or things to do yet');
+    if (!t.coverImageUrl) out.push('No cover photo');
+    return out.slice(0, 2).join(' · ');
   };
 
-  const parseCountries = (countriesJson: string) => {
-    try {
-      // Handle double-encoded JSON
-      let parsed = JSON.parse(countriesJson);
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed);
-      }
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const parseCities = (citiesJson: string) => {
-    try {
-      // Handle double-encoded JSON
-      let parsed = JSON.parse(citiesJson);
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed);
-      }
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
+  const countries = new Set(allMyTrips.filter((x) => x.status !== 'Draft').flatMap((x) => parseList(x.trip.countries)));
+  const planned = sandbox?.trips || [];
+  const ideas = (sandbox?.places || []).filter((p: any) => !p.sandboxTripId).length;
+  const stats: [string, string][] = [
+    ['Trips shared', String(trips.length)],
+    ['Drafts', String(draftTrips.length)],
+    ['Planning', sandbox ? String(planned.length) : '–'],
+    ['Saved ideas', sandbox ? String(ideas) : '–'],
+    ['Countries', String(countries.size)],
+  ];
+  const shown = allMyTrips.filter((x) => filter === 'All' || x.status === filter);
+  const firstName = (user?.name || '').trim().split(/\s+/)[0];
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-lg shadow p-6">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="min-h-screen bg-[#F8F6F1] pt-16">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-12 animate-pulse">
+          <div className="h-3 w-48 bg-[#ECE8E0] mb-5" />
+          <div className="h-14 w-2/3 bg-[#ECE8E0] mb-10" />
+          <div className="h-24 border-y border-[#E2DDD5] bg-[#F2EFE8]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F2EC] pt-16">
-      {/* Welcome + main actions */}
-      <div>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-16 text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-3xl sm:text-4xl font-semibold text-[#2F4A5C] mb-3"
-          >
-            Welcome back{user?.name ? `, ${user.name}` : ''}
-          </motion.h1>
-          <p className="text-lg text-[#5B6B75] mb-6 sm:mb-10">
-            What would you like to do today?
-          </p>
-
-          <div data-tour="account-actions" className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <Link
-                href="/trips/new"
-                className="group flex flex-row sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 text-left sm:text-center h-full rounded-xl bg-[#4A6878] text-white px-5 py-4 sm:px-6 sm:py-10 shadow-sm hover:bg-[#3F5B6A] transition-colors duration-200"
-              >
-                <span className="flex items-center justify-center shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/15 sm:mb-4 group-hover:bg-white/25 transition-colors">
-                  <Plus className="w-7 h-7" />
-                </span>
-                <span className="flex flex-col"><span className="text-lg sm:text-xl font-medium">Add your trip</span>
-                <span className="mt-0.5 sm:mt-2 text-white/80 text-sm sm:text-base">
-                  Share where you went, where you stayed and what you loved
-                </span></span>
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-            >
-              <Link
-                href="/trips/import"
-                className="group flex flex-row sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 text-left sm:text-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-5 py-4 sm:px-6 sm:py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
-              >
-                <span className="flex items-center justify-center shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#E9E3DA] sm:mb-4 group-hover:bg-[#E2DBD0] transition-colors">
-                  <Sparkles className="w-7 h-7" />
-                </span>
-                <span className="flex flex-col"><span className="text-lg sm:text-xl font-medium">Import your notes</span>
-                <span className="mt-0.5 sm:mt-2 text-[#6B7A83] text-sm sm:text-base">
-                  Upload a spreadsheet or document and we’ll fill in the trip
-                </span></span>
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Link
-                href="/trips"
-                className="group flex flex-row sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 text-left sm:text-center h-full rounded-xl bg-white text-[#2F4A5C] border border-[#D9D2C7] px-5 py-4 sm:px-6 sm:py-10 shadow-sm hover:bg-[#FBF9F5] transition-colors duration-200"
-              >
-                <span className="flex items-center justify-center shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#E9E3DA] sm:mb-4 group-hover:bg-[#E2DBD0] transition-colors">
-                  <Compass className="w-7 h-7" />
-                </span>
-                <span className="flex flex-col"><span className="text-lg sm:text-xl font-medium">Browse trips</span>
-                <span className="mt-0.5 sm:mt-2 text-[#6B7A83] text-sm sm:text-base">
-                  Get ideas from fellow travelers
-                </span></span>
-              </Link>
-            </motion.div>
+    <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
+      {/* Greeting */}
+      <section className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-10 sm:pt-12">
+        <div className="flex flex-wrap gap-x-12 gap-y-6 items-end justify-between pb-7 border-b border-[#13212B]">
+          <div className="flex flex-col gap-3">
+            <p className="font-mono text-xs tracking-[0.14em] text-[#1F6F78] uppercase">
+              Your journal · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </p>
+            <h1 className="font-serif font-normal text-[40px] sm:text-[56px] lg:text-[64px] leading-[1.02] tracking-[-0.02em]">
+              {greeting()}{firstName ? `, ${firstName}` : ''}
+            </h1>
+          </div>
+          <div data-tour="account-actions" className="flex flex-wrap gap-2.5">
+            <Link href="/trips/new" className={`${BTN} bg-[#13212B] text-[#F8F6F1] hover:bg-[#24394A]`}><Plus className="w-4 h-4" strokeWidth={1.6} />ADD A TRIP</Link>
+            <Link href="/trips/import" className={`${BTN} border border-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]`}>IMPORT NOTES</Link>
+            <Link href="/sandbox" className={`${BTN} border border-[#13212B] hover:bg-[#13212B] hover:text-[#F8F6F1]`}>PLAN A NEW TRIP</Link>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-              <p className="text-red-800">{error}</p>
+        <dl className="flex flex-wrap border-b border-[#E2DDD5]">
+          {stats.map(([k, v]) => (
+            <div key={k} className="flex-[1_1_140px] py-5 pr-5 flex flex-col gap-1.5">
+              <dt className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] uppercase">{k}</dt>
+              <dd className="font-serif text-[40px] sm:text-[44px] leading-none">{v}</dd>
             </div>
-            <button
-              onClick={() => fetchUserTrips(true)}
-              disabled={isRetrying}
-              className="ml-4 inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
-              {isRetrying ? 'Retrying...' : 'Retry'}
+          ))}
+        </dl>
+      </section>
+
+      {error && (
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-6">
+          <div className="border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-4">
+            <p className="text-red-800">{error}</p>
+            <button onClick={() => fetchUserTrips(true)} disabled={isRetrying} className={`${LINK} inline-flex items-center gap-2`}>
+              <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />{isRetrying ? 'RETRYING…' : 'TRY AGAIN'}
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* My Trips: one list of every trip the user has made */}
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-normal text-[#2F4A5C] mb-4">My Trips</h2>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-10 sm:pt-12 pb-20 flex flex-wrap gap-12 items-start">
+        <main className="flex-[999_1_560px] min-w-0 flex flex-col gap-12 sm:gap-14">
+          {/* Drafts */}
+          {draftTrips.length > 0 && (
+            <section>
+              <SectionHead title="Pick up where you left off" right={<span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">DRAFTS</span>} />
+              {draftTrips.slice(0, 4).map((t) => (
+                <div key={t.id} className="flex flex-wrap gap-x-6 gap-y-3 py-5 border-b border-[#E2DDD5] items-center">
+                  <div className="flex-[1_1_280px] min-w-0 flex flex-col gap-1.5">
+                    <span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] uppercase">{['Draft', tripMeta(t)].filter(Boolean).join(' · ')}</span>
+                    <Link href={`/trips/new?id=${t.id}`} className="font-serif text-[24px] sm:text-[26px] leading-tight hover:text-[#1F6F78]">{t.title || 'Untitled trip'}</Link>
+                    {missing(t) && <span className="font-mono text-[11px] tracking-[0.06em] text-[#A4462B] uppercase">{missing(t)}</span>}
+                  </div>
+                  <Link href={`/trips/new?id=${t.id}`} className="inline-flex items-center min-h-[44px] px-4 border border-[#13212B] font-mono text-xs tracking-[0.1em] hover:bg-[#13212B] hover:text-[#F8F6F1]">FINISH →</Link>
+                </div>
+              ))}
+            </section>
+          )}
 
-          {error && allMyTrips.length === 0 ? (
-            <div className="bg-white rounded-xl border border-[#E4DED4] p-8 text-center">
-              <AlertCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
-              <p className="text-[#2F4A5C] font-medium mb-1">Unable to load your trips</p>
-              <p className="text-[#6B7A83] text-sm mb-5">{error}</p>
-              <button
-                onClick={() => fetchUserTrips(true)}
-                disabled={isRetrying}
-                className="inline-flex items-center px-5 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
-                {isRetrying ? 'Retrying...' : 'Try again'}
-              </button>
-            </div>
-          ) : allMyTrips.length === 0 ? (
-            <div className="bg-white rounded-xl border border-dashed border-[#D9D2C7] p-8 text-center">
-              <p className="text-[#2F4A5C] font-medium mb-1">No trips yet</p>
-              <p className="text-[#6B7A83] text-sm">
-                When you add a trip or save a draft, it will show up here so you can keep working on it.
-              </p>
-            </div>
-          ) : (
-            <ul className="bg-white rounded-xl border border-[#E4DED4] divide-y divide-[#E2DDD5] overflow-hidden">
-              {allMyTrips.map(({ trip, status }) => {
-                const places = [...parseCities(trip.cities), ...parseCountries(trip.countries)]
-                  .filter(Boolean)
-                  .slice(0, 4)
-                  .join(', ');
-                const hasDates = !!(trip.startDate && trip.endDate);
-                // Clicking a trip opens it to keep adding to it
-                const openHref = `/trips/new?id=${trip.id}`;
-                const isDeleting = status === 'Draft' ? deletingDraft === trip.id : deletingTrip === trip.id;
-                const badge =
-                  status === 'Draft'
-                    ? 'bg-[#F3EBDD] text-[#8A6D3B]'
-                    : status === 'Private'
-                    ? 'bg-[#ECEAE6] text-[#5B6B75]'
-                    : 'bg-[#E3ECEF] text-[#3F5B6A]';
+          {/* Planned trips */}
+          <section>
+            <SectionHead title="Trips you’re planning" right={<Link href="/sandbox" className={`${LINK} py-2.5`}>OPEN SANDBOX →</Link>} />
+            {sandbox === null ? (
+              <div className="h-24 border-b border-[#E2DDD5] animate-pulse bg-[#F2EFE8]" />
+            ) : planned.length === 0 ? (
+              <div className="py-6 border-b border-dashed border-[#CFC8BC] flex flex-wrap gap-4 items-center justify-between">
+                <p className="font-serif italic text-[22px]">Nothing planned yet</p>
+                <Link href="/trips" className={LINK}>FIND PLACES IN OTHERS’ TRIPS →</Link>
+              </div>
+            ) : (
+              planned.slice(0, 4).map((pt: any) => {
+                const mine = (sandbox?.places || []).filter((p: any) => p.sandboxTripId === pt.id);
+                const cities = Array.from(new Set(mine.map((p: any) => p.city).filter(Boolean))) as string[];
+                const ctry = Array.from(new Set(mine.map((p: any) => p.country).filter(Boolean))) as string[];
+                const open = sandbox?.feedback?.[pt.id]?.open || 0;
+                const tag = open > 0 ? plural(open, 'new idea', 'new ideas') : pt.feedbackOpen ? 'Open for feedback' : 'Ask for feedback';
+                const href = open > 0 || !pt.feedbackOpen ? `/sandbox?trip=${pt.id}&tab=feedback` : `/sandbox?trip=${pt.id}`;
                 return (
-                  <li key={trip.id} className="flex items-center gap-4 px-4 sm:px-5 py-4 hover:bg-[#FBF9F5] transition-colors">
-                    {(trip as any).coverImageUrl ? (
-                      <Link href={openHref} className="shrink-0">
-                        <img
-                          src={(trip as any).coverImageUrl}
-                          alt=""
-                          loading="lazy"
-                          className="w-16 h-12 rounded-md object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }}
-                        />
-                      </Link>
-                    ) : (
-                      <div className="shrink-0 w-16 h-12 rounded-md bg-[#E2DDD5]" />
-                    )}
-                    <Link href={openHref} className="flex-1 min-w-0" title="Continue working on this trip">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-[#2F4A5C] truncate">{trip.title || 'Untitled trip'}</span>
-                        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${badge}`}>{status}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-3 text-sm text-[#6B7A83]">
-                        {hasDates && (
-                          <span className="inline-flex items-center">
-                            <Calendar className="w-3.5 h-3.5 mr-1" />
-                            {monthYear(trip.startDate)}{daysFromDates(trip.startDate, trip.endDate) ? ` · ${daysFromDates(trip.startDate, trip.endDate)} days` : ''}
-                          </span>
-                        )}
-                        {places && (
-                          <span className="inline-flex items-center truncate">
-                            <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
-                            <span className="truncate">{places}</span>
-                          </span>
-                        )}
-                      </div>
+                  <div key={pt.id} className="flex flex-wrap gap-x-7 gap-y-3 py-5 border-b border-[#E2DDD5] items-start">
+                    <Link href={`/sandbox?trip=${pt.id}`} className="group flex-[1_1_300px] min-w-0 flex flex-col gap-1.5">
+                      <span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] uppercase">
+                        {[ctry.slice(0, 2).join(', ') || pt.region, plural(mine.length, 'place', 'places')].filter(Boolean).join(' · ')}
+                      </span>
+                      <span className="font-serif text-[26px] sm:text-[28px] leading-tight group-hover:text-[#1F6F78]">{pt.title}</span>
+                      {cities.length > 0 && <span className="font-mono text-[13px] uppercase">{cities.slice(0, 5).join(' → ')}</span>}
                     </Link>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <Link href={href} className={`font-mono text-[11px] tracking-[0.1em] uppercase px-2.5 py-1.5 border ${open > 0 ? 'border-[#1F6F78] text-[#1F6F78]' : 'border-[#CFC8BC] text-[#5B6A73] hover:border-[#13212B] hover:text-[#13212B]'}`}>
+                      {tag}
+                    </Link>
+                  </div>
+                );
+              })
+            )}
+          </section>
+
+          {/* My trips */}
+          <section>
+            <SectionHead
+              title="My trips"
+              right={
+                <div role="group" aria-label="Show" className="flex flex-wrap gap-1 font-mono text-[11px] tracking-[0.1em]">
+                  {(['All', 'Shared', 'Private', 'Draft'] as const).map((f) => (
+                    <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}
+                      className={`min-h-[36px] px-3 border uppercase ${filter === f ? 'bg-[#13212B] border-[#13212B] text-[#F8F6F1]' : 'border-[#E2DDD5] text-[#3A4A54] hover:border-[#13212B]'}`}>
+                      {f === 'Draft' ? 'Drafts' : f}
+                    </button>
+                  ))}
+                </div>
+              }
+            />
+            {shown.length === 0 ? (
+              <div className="py-6 border-b border-dashed border-[#CFC8BC] flex flex-wrap gap-4 items-center justify-between">
+                <p className="font-serif italic text-[22px]">{allMyTrips.length === 0 ? 'Your trips will show up here' : 'Nothing here yet'}</p>
+                <Link href="/trips/new" className={LINK}>ADD A TRIP →</Link>
+              </div>
+            ) : (
+              shown.map(({ trip, status }) => {
+                const isDeleting = status === 'Draft' ? deletingDraft === trip.id : deletingTrip === trip.id;
+                return (
+                  <div key={trip.id} className="flex flex-wrap gap-x-6 gap-y-3 py-4 border-b border-[#E2DDD5] items-center">
+                    <div className="relative w-24 h-[68px] shrink-0 border border-[#E2DDD5] overflow-hidden" style={{ background: 'repeating-linear-gradient(135deg, #EFEBE3 0 1px, #F6F3EC 1px 10px)' }}>
+                      {trip.coverImageUrl && <img src={trip.coverImageUrl} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                    </div>
+                    <div className="flex-[1_1_220px] min-w-0 flex flex-col gap-1">
+                      <span className="font-serif text-[21px] sm:text-[22px] leading-snug">{trip.title || 'Untitled trip'}</span>
+                      <span className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">{tripMeta(trip)}</span>
+                    </div>
+                    <span className="font-mono text-[11px] tracking-[0.1em] text-[#5B6A73] uppercase w-16">{status}</span>
+                    <div className="flex items-center gap-4">
                       {status === 'Draft' ? (
-                        <Link
-                          href={`/trips/${trip.id}/share`}
-                          className="p-2 rounded-lg text-[#6B7A83] hover:text-[#2F4A5C] hover:bg-[#F1ECE4]"
-                          title="Share trip"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </Link>
+                        <Link href={`/trips/${trip.id}/share`} className={`${LINK} py-2.5`}>SHARE</Link>
                       ) : (
-                        <Link
-                          href={`/trips/${trip.id}`}
-                          className="p-2 rounded-lg text-[#6B7A83] hover:text-[#2F4A5C] hover:bg-[#F1ECE4]"
-                          title="View trip"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Link>
+                        <Link href={`/trips/${trip.id}`} className={`${LINK} py-2.5`}>VIEW</Link>
                       )}
+                      <Link href={`/trips/new?id=${trip.id}`} className={`${LINK} py-2.5`}>EDIT</Link>
                       <button
-                        onClick={() =>
-                          status === 'Draft'
-                            ? handleDeleteDraft(trip.id, trip.title)
-                            : handleDeleteTrip(trip.id, trip.title)
-                        }
+                        type="button"
+                        onClick={() => (status === 'Draft' ? handleDeleteDraft(trip.id, trip.title) : handleDeleteTrip(trip.id, trip.title))}
                         disabled={deletingTrip !== null || deletingDraft !== null}
-                        className="p-2 rounded-lg text-[#6B7A83] hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete trip"
+                        aria-label={`Delete ${trip.title || 'trip'}`}
+                        className="p-2.5 -mr-2.5 text-[#5B6A73] hover:text-red-700 disabled:opacity-50"
                       >
-                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" strokeWidth={1.6} />}
                       </button>
                     </div>
-                  </li>
+                  </div>
                 );
-              })}
-            </ul>
-          )}
-        </div>
+              })
+            )}
+          </section>
+        </main>
+
+        {/* Right column */}
+        <aside className="flex-[1_1_300px] min-w-0 flex flex-col gap-7">
+          <section className="border border-[#E2DDD5] bg-white">
+            <BoxHead>
+              <span>NEW FEEDBACK ON YOUR PLANS</span>
+              {fb && fb.open > 0 && <span className="text-[#1F6F78]">{fb.open} NEW</span>}
+            </BoxHead>
+            <div className="px-5 pb-2">
+              {fb === null ? (
+                <div className="h-16 my-3 animate-pulse bg-[#F2EFE8]" />
+              ) : fb.items.length === 0 ? (
+                <p className="py-4 font-serif italic text-lg text-[#5B6A73]">
+                  No new feedback. {planned.some((p: any) => p.feedbackOpen) ? 'Members will reply here.' : 'Ask for feedback on a planned trip to hear from other members.'}
+                </p>
+              ) : (
+                fb.items.map((f) => (
+                  <div key={f.id} className="py-3.5 border-b border-[#EFEBE3] last:border-b-0 flex flex-col gap-1.5">
+                    <span className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">
+                      {[f.from, `on ${f.tripTitle}`, f.label].join(' · ')}
+                    </span>
+                    {(f.text || f.suggested || f.about) && (
+                      <span className="font-serif italic text-[18px] leading-snug">
+                        {f.suggested ? `Suggests ${f.suggested}${f.about ? ` (about ${f.about})` : ''}. ` : f.about ? `About ${f.about}. ` : ''}
+                        {f.text ? `“${f.text}”` : ''}
+                      </span>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 font-mono text-[11px] tracking-[0.1em]">
+                      <button type="button" disabled={fbBusy === f.id} onClick={() => actOnFeedback(f.id, 'accept')} className="py-2 text-[#1F6F78] hover:text-[#13212B] disabled:opacity-50">ACCEPT</button>
+                      <button type="button" disabled={fbBusy === f.id} onClick={() => actOnFeedback(f.id, 'dismiss')} className="py-2 text-[#5B6A73] hover:text-[#13212B] disabled:opacity-50">SET ASIDE</button>
+                      <Link href={`/sandbox?trip=${f.tripId}&tab=feedback`} className="py-2 text-[#5B6A73] hover:text-[#13212B]">OPEN</Link>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className="border border-[#E2DDD5] bg-white">
+            <BoxHead><span>MEMBERS ASKING FOR HELP</span></BoxHead>
+            <div className="px-5">
+              {asks === null ? (
+                <div className="h-16 my-3 animate-pulse bg-[#F2EFE8]" />
+              ) : asks.length === 0 ? (
+                <p className="py-4 font-serif italic text-lg text-[#5B6A73]">No one is asking right now.</p>
+              ) : (
+                asks.map((a) => (
+                  <Link key={a.id} href={`/feedback/${a.id}`} className="py-3.5 border-b border-[#EFEBE3] last:border-b-0 flex flex-col gap-1 hover:text-[#1F6F78]">
+                    <span className="font-serif text-xl leading-snug">{a.title}</span>
+                    <span className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">
+                      {[(a.countries || []).slice(0, 2).join(', ') || a.region, a.commentCount ? plural(a.commentCount, 'comment', 'comments') : 'No comments yet'].filter(Boolean).join(' · ')}
+                    </span>
+                  </Link>
+                ))
+              )}
+            </div>
+            <Link href="/feedback" className={`block px-5 py-3.5 border-t border-[#E2DDD5] ${LINK}`}>GIVE ADVICE →</Link>
+          </section>
+
+          <section className="border-t border-[#13212B] pt-4">
+            <h2 className="font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73] mb-1">NEW ON SHARE AND PLAN</h2>
+            {(fresh || []).map((t: any) => (
+              <Link key={t.id} href={`/trips/${t.id}`} className="py-3 border-b border-[#E2DDD5] flex flex-col gap-1 hover:text-[#1F6F78]">
+                <span className="font-serif text-xl leading-snug">{t.title}</span>
+                <span className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase">
+                  {[parseList(t.countries).slice(0, 2).join(', '), t.startDate ? monthYear(t.startDate) : ''].filter(Boolean).join(' · ')}
+                </span>
+              </Link>
+            ))}
+            <Link href="/trips" className={`inline-block pt-3 ${LINK}`}>BROWSE ALL TRIPS →</Link>
+          </section>
+        </aside>
       </div>
     </div>
   );

@@ -124,6 +124,13 @@ jobs:
           node scripts/advice-digest.js --dry || true
           node scripts/daily-jobs.js --dry || true
           echo "sitemap pages: $(curl -s -m 30 http://localhost:3000/sitemap.xml | grep -o "<loc>" | wc -l), destination pages: $(curl -s -m 30 http://localhost:3000/sitemap.xml | grep -o "/destinations/" | wc -l), robots: $(curl -s -m 10 http://localhost:3000/robots.txt | grep -c Sitemap)"
+          echo "--- trip images as Pinterest fetches them (status, seconds)"
+          TID=$(curl -s -m 20 http://localhost:3000/sitemap.xml | grep -o "/trips/[A-Za-z0-9_-]*<" | head -1 | sed 's#/trips/##;s#<##')
+          if [ -n "$TID" ]; then
+            for n in cold warm; do echo "pin $n: $(curl -s -o /dev/null -m 30 -A 'Pinterestbot/1.0 (+http://www.pinterest.com/bot.html)' -w '%{http_code} %{content_type} %{time_total}s' https://tripshare.org/og/pin/$TID.png)"; done
+            echo "card: $(curl -s -o /dev/null -m 30 -A 'facebookexternalhit/1.1' -w '%{http_code} %{time_total}s' https://tripshare.org/og/trip/$TID)"
+            echo "trip page (Pinterestbot): $(curl -s -o /tmp/tp.html -m 30 -A 'Pinterestbot/1.0 (+http://www.pinterest.com/bot.html)' -w '%{http_code} %{time_total}s' "https://tripshare.org/trips/$TID?utm_source=pinterest&utm_medium=share"), og:image tags: $(grep -o 'property="og:image"' /tmp/tp.html | wc -l)"
+          else echo "no trip in sitemap"; fi
           echo "--- recent server errors (types only, no user data)"
           for f in $HOME/.pm2/logs/tripplanner-error*.log; do
             [ -f "$f" ] && grep -hoE "(Trip (update|creation) error|AI import (failed|error|no cities)|Google Places search failed|code: '[A-Z0-9]+')[^{]{0,80}" "$f" | tail -6

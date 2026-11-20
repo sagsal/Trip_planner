@@ -19,9 +19,10 @@ export default function PublishedShare({ tripId, title }: { tripId: string; titl
         q.delete('published');
         const rest = q.toString();
         window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
+        fetch(`/og/pin/${tripId}.png`).catch(() => {}); // get the Pinterest image ready
       }
     } catch {}
-  }, []);
+  }, [tripId]);
   if (!show) return null;
 
   const origin = window.location.origin;
@@ -31,7 +32,7 @@ export default function PublishedShare({ tripId, title }: { tripId: string; titl
   const links = [
     { label: 'WhatsApp', href: `https://wa.me/?text=${enc(`${line} ${tag('whatsapp')}`)}` },
     { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${enc(tag('facebook'))}` },
-    { label: 'Pinterest', href: `https://www.pinterest.com/pin/create/button/?url=${enc(tag('pinterest'))}&media=${enc(`${origin}/og/trip/${tripId}?f=pin`)}&description=${enc(title)}` },
+    { label: 'Pinterest', href: `https://www.pinterest.com/pin/create/button/?url=${enc(tag('pinterest'))}&media=${enc(`${origin}/og/pin/${tripId}.png`)}&description=${enc(title)}` },
     { label: 'Email', href: `mailto:?subject=${enc(`My trip: ${title}`)}&body=${enc(`${line}\n\n${tag('email')}`)}` },
   ];
   const copy = async (what: 'link' | 'message') => {

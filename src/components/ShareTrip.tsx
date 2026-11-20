@@ -19,8 +19,13 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
   const tag = (src: string) => (base ? `${base}?utm_source=${src}&utm_medium=share` : '');
   const url = tag('link');
   const tripId = (typeof window !== 'undefined' && window.location.pathname.match(/^\/trips\/([A-Za-z0-9_-]{5,64})\/?$/)?.[1]) || '';
-  const pinImage = tripId && typeof window !== 'undefined' ? `${window.location.origin}/og/trip/${tripId}?f=pin` : '';
+  const pinImage = tripId && typeof window !== 'undefined' ? `${window.location.origin}/og/pin/${tripId}.png` : '';
   const message = text || `Have a look at this trip: ${title}`;
+
+  // Draw the Pinterest image ahead of time, so it's ready when Pinterest asks for it
+  useEffect(() => {
+    if (open && pinImage) fetch(pinImage).catch(() => {});
+  }, [open, pinImage]);
 
   useEffect(() => {
     if (!open) return;

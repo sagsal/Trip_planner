@@ -75,7 +75,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const days = daysFromDates(t.startDate, t.endDate) || cities.reduce((n, c) => n + (c.numberOfDays || 0), 0);
   const country = list(t.countries).join(' · ');
   const kind = [days ? `${days}-day` : '', (t.tripType || '').toLowerCase(), 'itinerary'].filter(Boolean).join(' ').toUpperCase();
-  const route = cities.map((c) => c.name).slice(0, 5).join(' → ').toUpperCase();
+  const route = cities.length < 2 ? '' : cities.map((c) => c.name).slice(0, 5).join(' → ').toUpperCase();
   const when = (monthYear(t.startDate) || '').toUpperCase();
   const title = t.title.length > 90 ? `${t.title.slice(0, 88)}…` : t.title;
   const img = await photo(t.coverImageUrl, pin ? 1000 : 700);
@@ -108,7 +108,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             {route && <div style={{ display: 'flex', fontFamily: 'Mono', fontSize: 24, letterSpacing: 2, color: QUIET, marginTop: 24 }}>{route}</div>}
             <div style={{ display: 'flex', flexGrow: 1 }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${RULE}`, paddingTop: 24, fontFamily: 'Mono', fontSize: 24, letterSpacing: 3 }}>
-              <span style={{ color: QUIET }}>WHERE THEY STAYED, ATE & WHAT THEY’D SKIP</span>
+              <span style={{ color: QUIET }}>STAYS, FOOD & WHAT TO SKIP</span>
               <span style={{ color: INK }}>TRIPSHARE.ORG</span>
             </div>
           </div>

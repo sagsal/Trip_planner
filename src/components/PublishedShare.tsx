@@ -60,6 +60,10 @@ export default function PublishedShare({ tripId, title }: { tripId: string; titl
             {l.label.toUpperCase()}
           </a>
         ))}
+        <a href={`/og/pin/${tripId}.png`} download={`${title.replace(/[^\w -]+/g, '').trim() || 'trip'} - tripshare pin.png`}
+          className="inline-flex items-center min-h-[44px] px-4 border border-[#E2DDD5] font-mono text-xs tracking-[0.08em] hover:bg-[#F6F3EE]">
+          SAVE PIN IMAGE
+        </a>
         <button type="button" onClick={() => copy('message')} className="inline-flex items-center gap-1.5 min-h-[44px] px-4 border border-[#E2DDD5] font-mono text-xs tracking-[0.08em] hover:bg-[#F6F3EE]">
           {copied === 'message' && <Check className="w-4 h-4 text-[#1F6F78]" />}COPY MESSAGE
         </button>

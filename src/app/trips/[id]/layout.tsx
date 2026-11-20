@@ -89,7 +89,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         images: [{ url: image, width: 1200, height: 630, alt: t.title }, { url: `${SITE}/og/pin/${id}.png`, width: 1000, height: 1500, alt: t.title }],
       },
       twitter: { card: 'summary_large_image', title: t.title, description, images: [image] },
-      other: { 'pinterest-rich-pin': 'true' },
     };
   } catch {
     return generic;

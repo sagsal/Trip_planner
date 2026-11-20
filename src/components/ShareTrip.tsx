@@ -141,6 +141,13 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
               {l.label}
             </a>
           ))}
+          {pinImage && (
+            <a role="menuitem" href={pinImage} download={`${title.replace(/[^\w -]+/g, '').trim() || 'trip'} - tripshare pin.png`} onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm">
+              <span className="w-4 h-4 rounded-full border-2 border-[#E60023]" aria-hidden />
+              Save Pinterest image
+            </a>
+          )}
           <button type="button" role="menuitem" aria-expanded={emailOpen} onClick={() => setEmailOpen((v) => !v)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#F6F3EE] text-sm text-left">
             <Mail className="w-4 h-4" /> Email

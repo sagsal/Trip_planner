@@ -102,7 +102,7 @@ export default function OutreachEmail() {
                 <a href={`${SITE}/creators`} style={{ display: 'inline-block', background: ink, color: '#F8F6F1', textDecoration: 'none', padding: '13px 22px', fontFamily: mono, fontSize: 13, letterSpacing: '0.08em' }}>SEE HOW IT WORKS</a>
               </p>
               <p style={{ margin: '0 0 16px' }}>
-                It’s free with no ads, you keep ownership of what you post, and you can remove it any time. Would you be up for sharing one trip, maybe your [destination] itinerary?
+                Would you be up for sharing one trip?
               </p>
               <p style={{ margin: '0 0 4px' }}>Thanks,</p>
               <p style={{ margin: '0 0 2px' }}>Scott Greene</p>

@@ -1,0 +1,28 @@
+name: Check Pinterest access
+# Run by hand: fetches the public site from outside (like Pinterest does) and prints statuses and headers only
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch as Pinterest from outside
+        run: |
+          UA='Pinterestbot/1.0 (+http://www.pinterest.com/bot.html)'
+          TID=$(curl -s -m 20 https://tripshare.org/sitemap.xml | grep -o "/trips/[A-Za-z0-9_-]*<" | head -1 | sed 's#/trips/##;s#<##')
+          echo "trip id found: ${TID:+yes}"
+          for u in "https://tripshare.org/robots.txt" "https://tripshare.org/trips/$TID?utm_source=pinterest&utm_medium=share" "https://tripshare.org/og/pin/$TID.png" "https://tripshare.org/og/trip/$TID"; do
+            echo "=== $u"
+            curl -s -o /tmp/body -D - -m 30 -A "$UA" "$u" | grep -iE "^HTTP|^server|^content-type|^content-length|^location|^x-robots|^cf-|^cache-control" 
+            echo "bytes: $(wc -c < /tmp/body)"
+          done
+          echo "=== page head tags"
+          curl -s -m 30 -A "$UA" "https://tripshare.org/trips/$TID" | grep -oE '<meta (property|name)="(og:[a-z:]+|twitter:image|robots|pinterest[a-z-]*)" content="[^"]{0,120}' | sed 's/content="https:\/\/tripshare.org/content="SITE/'
+          echo "=== plain browser UA, http→https, www"
+          curl -s -o /dev/null -m 20 -w '%{http_code} -> %{redirect_url}\n' http://tripshare.org/
+          curl -s -o /dev/null -m 20 -w '%{http_code} -> %{redirect_url}\n' https://www.tripshare.org/
+          echo "=== TLS"
+          echo | openssl s_client -connect tripshare.org:443 -servername tripshare.org 2>/dev/null | grep -E "Verify return code|subject=|issuer=" | head -3
+          echo "=== IPv6 (AAAA) record, Pinterest may use it"
+          dig +short AAAA tripshare.org; dig +short A tripshare.org | sed 's/[0-9]*$/x/'
+          curl -6 -s -o /dev/null -m 15 -w 'ipv6: %{http_code}\n' https://tripshare.org/ || echo "ipv6: failed"

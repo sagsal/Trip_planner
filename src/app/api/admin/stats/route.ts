@@ -72,10 +72,10 @@ export async function GET(request: NextRequest) {
   const real = { NOT: [{ email: { endsWith: '@example.invalid' } }] };
 
   const [users, trips, cities, sandboxTrips, savedPlaces, comments, reviewsUsage] = await Promise.all([
-    prisma.user.findMany({ where: real, select: { id: true, email: true, createdAt: true, lastSeenAt: true, homeRegion: true, homeCountry: true, ageBracket: true } }),
+    prisma.user.findMany({ where: real, select: { id: true, email: true, createdAt: true, lastSeenAt: true, signupSource: true, homeRegion: true, homeCountry: true, ageBracket: true } }),
     prisma.trip.findMany({
       where: { NOT: [{ title: { contains: 'TEMPLATE' } }, { title: { contains: 'DATABASE:' } }] },
-      select: { userId: true, createdAt: true, isPublic: true, isDraft: true, countries: true, tripType: true, region: true },
+      select: { userId: true, createdAt: true, isPublic: true, isDraft: true, countries: true, tripType: true, region: true, source: true },
     }),
     prisma.city.findMany({ where: { trip: { isPublic: true, isDraft: false } }, select: { name: true, country: true } }),
     prisma.sandboxTrip.findMany({ select: { id: true, userId: true, createdAt: true, feedbackOpen: true, feedbackOpenedAt: true } }),
@@ -85,6 +85,15 @@ export async function GET(request: NextRequest) {
   ]);
 
   const published = trips.filter((t) => t.isPublic && !t.isDraft);
+
+  // Where visitors come from: visits per channel (one per browser session), new members and newly shared trips by first channel
+  const visitRows = await prisma.channelVisit.findMany({ where: { day: { gte: since.toISOString().slice(0, 10) } } }).catch(() => []);
+  const chan = new Map<string, { visits: number; members: number; trips: number }>();
+  const bump = (k: string, f: 'visits' | 'members' | 'trips', n = 1) => { const r = chan.get(k) || { visits: 0, members: 0, trips: 0 }; r[f] += n; chan.set(k, r); };
+  for (const v of visitRows) bump(v.source, 'visits', v.count);
+  for (const u of users) if (u.createdAt >= since) bump(u.signupSource || 'direct', 'members');
+  for (const t of published) if (t.createdAt >= since) bump(t.source || 'direct', 'trips');
+  const channels = Array.from(chan.entries()).map(([source, r]) => ({ source, ...r })).sort((a, b) => b.trips - a.trips || b.members - a.members || b.visits - a.visits);
 
   // Growth-plan measures
   const DAY = 86400000, nowMs = Date.now();
@@ -132,6 +141,7 @@ export async function GET(request: NextRequest) {
         adviceAnswered: { answered, of: asked.length },
         returning: { returning, of: older.length },
       },
+      channels,
       planning: {
         sandboxTrips: sandboxTrips.length,
         newSandboxTrips: sandboxTrips.filter((t) => t.createdAt >= since).length,

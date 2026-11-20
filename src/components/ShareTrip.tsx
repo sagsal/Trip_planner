@@ -14,7 +14,12 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const url = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+  const base = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+  // Each share link says where it was shared, so the owner's dashboard can count visits by channel
+  const tag = (src: string) => (base ? `${base}?utm_source=${src}&utm_medium=share` : '');
+  const url = tag('link');
+  const tripId = (typeof window !== 'undefined' && window.location.pathname.match(/^\/trips\/([A-Za-z0-9_-]{5,64})\/?$/)?.[1]) || '';
+  const pinImage = tripId && typeof window !== 'undefined' ? `${window.location.origin}/og/trip/${tripId}?f=pin` : '';
   const message = text || `Have a look at this trip: ${title}`;
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
     const nav: any = typeof navigator !== 'undefined' ? navigator : null;
     // Phones: the built-in share sheet (Messages, WhatsApp, Instagram, …)
     if (nav?.share && /Android|iPhone|iPad|iPod/i.test(nav.userAgent || '')) {
-      try { await nav.share({ title, text: message, url }); return; } catch (e: any) { if (e?.name === 'AbortError') return; }
+      try { await nav.share({ title, text: message, url: tag('phone-share') }); return; } catch (e: any) { if (e?.name === 'AbortError') return; }
     }
     setEmailOpen(false);
     setOpen((o) => !o);
@@ -77,7 +82,7 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
   const enc = encodeURIComponent;
   // Email: open a new message in the webmail people actually use (a plain "mailto" does nothing without a mail app)
   const subject = `Trip: ${title}`;
-  const body = `${message}\n\n${url}`;
+  const body = `${message}\n\n${tag('email')}`;
   const emailLinks = [
     { label: 'Gmail', href: `https://mail.google.com/mail/?view=cm&fs=1&su=${enc(subject)}&body=${enc(body)}` },
     { label: 'Outlook.com / Hotmail', href: `https://outlook.live.com/mail/0/deeplink/compose?subject=${enc(subject)}&body=${enc(body)}` },
@@ -92,9 +97,10 @@ export default function ShareTrip({ title, text, className = '' }: { title: stri
     setTimeout(() => setEmailCopied(false), 2500);
   };
   const links = [
-    { label: 'WhatsApp', href: `https://wa.me/?text=${enc(`${message} ${url}`)}`, color: '#25D366' },
-    { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`, color: '#1877F2' },
-    { label: 'X', href: `https://x.com/intent/post?text=${enc(message)}&url=${enc(url)}`, color: '#13212B' },
+    { label: 'WhatsApp', href: `https://wa.me/?text=${enc(`${message} ${tag('whatsapp')}`)}`, color: '#25D366' },
+    { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${enc(tag('facebook'))}`, color: '#1877F2' },
+    ...(pinImage ? [{ label: 'Pinterest', href: `https://www.pinterest.com/pin/create/button/?url=${enc(tag('pinterest'))}&media=${enc(pinImage)}&description=${enc(title)}`, color: '#E60023' }] : []),
+    { label: 'X', href: `https://x.com/intent/post?text=${enc(message)}&url=${enc(tag('x'))}`, color: '#13212B' },
   ];
 
   return (

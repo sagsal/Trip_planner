@@ -13,7 +13,6 @@ const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://tripshare.org').repla
 const SITE_NAME = 'Share and Plan';
 const DEFAULT_DESC = 'Real trips from real travelers: where they stayed, ate and explored, day by day. Build your next trip from theirs.';
 
-const absolute = (u: string) => (/^https:\/\//.test(u) ? u : u.startsWith('/') ? `${SITE}${u}` : '');
 
 function list(json: unknown): string[] {
   try {
@@ -48,6 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         tripType: true,
         startDate: true,
         endDate: true,
+        updatedAt: true,
         cities_data: { select: { name: true, numberOfDays: true, _count: { select: { hotels: true, restaurants: true, activities: true } } } },
       },
     });
@@ -68,7 +68,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const comment = (t.description || '').replace(/\s+/g, ' ').trim();
     const description = `${facts}${route ? ` — ${route}` : ''}. ${by}${comment ? comment.slice(0, 160) : 'Where they stayed, ate and explored, day by day.'}`.slice(0, 300);
 
-    const image = (t.coverImageUrl && absolute(t.coverImageUrl.includes('/api/places/photo') && !t.coverImageUrl.includes('w=') ? `${t.coverImageUrl}&w=1200` : t.coverImageUrl)) || `${SITE}/sea-warm.jpg`;
+    // The journal-style card made for this trip (cover photo, title, days, route); ?v= refreshes it after edits
+    const image = `${SITE}/og/trip/${id}?v=${t.updatedAt.getTime().toString(36)}`;
     const url = `${SITE}/trips/${id}`;
     // A title people search for: "Belompan & Hopkins, Belize: 7-day family with teens itinerary"
     const kind = [days ? `${days}-day` : '', (t.tripType || '').toLowerCase(), 'itinerary'].filter(Boolean).join(' ');
@@ -87,6 +88,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         images: [{ url: image, width: 1200, height: 630, alt: t.title }],
       },
       twitter: { card: 'summary_large_image', title: t.title, description, images: [image] },
+      other: { 'pinterest-rich-pin': 'true' },
     };
   } catch {
     return generic;

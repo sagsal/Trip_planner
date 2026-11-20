@@ -1220,7 +1220,10 @@ function NewTripContent() {
       }
 
       if (response.ok) {
-        router.push('/account');
+        const wentLive = editingId ? editingStatus === 'draft' && !saveAsDraft : !saveAsDraft;
+        let newId = editingId || '';
+        if (wentLive && !newId) { try { newId = (await response.clone().json())?.trip?.id || ''; } catch {} }
+        router.push(wentLive && newId ? `/trips/${newId}?published=1` : '/account');
       } else {
         let errorMessage = 'Failed to create trip';
         try {

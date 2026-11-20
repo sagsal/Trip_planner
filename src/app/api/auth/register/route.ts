@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { setSessionCookie } from '@/lib/session';
 import { cleanProfile } from '@/lib/profile';
+import { sourceFromRequest } from '@/lib/channel';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         ...profile,
         termsAcceptedAt: new Date(),
+        signupSource: sourceFromRequest(request),
       }
     });
 

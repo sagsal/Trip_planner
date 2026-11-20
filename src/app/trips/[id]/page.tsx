@@ -12,6 +12,7 @@ import { tripTypeIcon } from '@/lib/regions';
 import SaveToSandbox from '@/components/SaveToSandbox';
 import GoogleReviews from '@/components/GoogleReviews';
 import ShareTrip from '@/components/ShareTrip';
+import PublishedShare from '@/components/PublishedShare';
 import { monthYear, daysFromDates } from '@/lib/dates';
 import type { PlaceToSave } from '@/lib/sandbox';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -946,6 +947,7 @@ function TripDetailContent() {
         <Link href="/trips" className="inline-block font-mono text-xs tracking-[0.1em] text-[#5B6A73] hover:text-[#13212B] py-2.5">
           ← ALL TRIPS
         </Link>
+        {t.isPublic && !t.isDraft && <div className="mt-3"><PublishedShare tripId={t.id} title={t.title} /></div>}
 
         {success && (
           <div className="border border-[#C3DEDF] bg-[#EEF5F4] text-[#16535A] px-5 py-3 mt-3 flex items-center justify-between">

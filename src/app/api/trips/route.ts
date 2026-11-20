@@ -6,6 +6,7 @@ import { cleanArrival, travelToStore } from '@/lib/travel';
 import { cleanTripType } from '@/lib/regions';
 import { prisma } from '@/lib/prisma';
 import { requireUser, sessionUserId } from '@/lib/session';
+import { sourceFromRequest } from '@/lib/channel';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -520,6 +521,7 @@ export async function POST(request: NextRequest) {
         region: typeof region === 'string' && region.trim() ? region.trim().slice(0, 60) : null,
         travelInfo: travelToStore(travelInfo),
         tripType: cleanTripType(tripType),
+        source: isDraft ? null : sourceFromRequest(request),
         userId: userRecord.id,
         cities_data: {
           create: (citiesData || []).map((cityData: any) => {

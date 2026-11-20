@@ -559,8 +559,8 @@ function EditTripContent() {
 
       setSuccess(publishing ? 'Trip published!' : trip?.isDraft ? 'Draft saved!' : 'Trip updated successfully!');
       setTimeout(() => {
-        router.push('/account');
-      }, 2000);
+        router.push(publishing ? `/trips/${tripId}?published=1` : '/account');
+      }, publishing ? 800 : 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update trip');
     } finally {

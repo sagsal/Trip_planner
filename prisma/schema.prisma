@@ -25,6 +25,7 @@ model User {
   showName    Boolean   @default(false)
   creditName  String?   // how to show them, e.g. "Rafi" or "@rafitravels"
   creditUrl   String?   @db.Text // optional link to their blog or Instagram (https only)
+  signupSource   String?   // channel that first brought them (utm_source / referrer), e.g. pinterest
   lastSeenAt     DateTime? // last visit (updated at most hourly), for "members returning each month"
   authorThanksAt DateTime? // last monthly "people used your trip" email
   password  String
@@ -54,6 +55,7 @@ model Trip {
   coverImageUrl String? @db.Text // cover photo chosen when adding the trip (Google photo link)
   region      String?   // e.g. "Central America" (chosen when adding the trip)
   tripType    String?   // e.g. "Couple", "Multi-generational" (see TRIP_TYPES)
+  source      String?   // channel the author first came from when it was shared, e.g. pinterest
   travelInfo  String?   @db.Text // JSON: flights to the destination [{from,to,airline,flightNumber}]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -293,4 +295,27 @@ model PendingImport {
 
   @@index([userId])
   @@map("pending_imports")
+}
+
+/// Visits per day per channel (one per browser session), for "where visitors come from"
+model ChannelVisit {
+  day    String // YYYY-MM-DD (UTC)
+  source String // e.g. pinterest, facebook, whatsapp, direct
+  count  Int    @default(0)
+
+  @@id([day, source])
+  @@map("channel_visits")
+}
+
+/// A trip the owner imported for someone else; the link lets that person claim it and publish it as theirs
+model ClaimDraft {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  data        String    @db.LongText // ImportedTrip JSON
+  note        String?   // owner's private note, e.g. who it's for
+  createdAt   DateTime  @default(now())
+  claimedAt   DateTime?
+  claimedById String?
+
+  @@map("claim_drafts")
 }

@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         // /api/tripadvisor/ must not be crawled (TripAdvisor Review Implementation Policy)
-        disallow: ['/api/', '/account', '/sandbox', '/admin', '/feedback', '/trips/new', '/trips/import', '/login', '/register', '/outreach'],
+        disallow: ['/api/', '/account', '/sandbox', '/admin', '/feedback', '/trips/new', '/trips/import', '/login', '/register', '/outreach', '/claim'],
       },
     ],
     sitemap: 'https://tripshare.org/sitemap.xml',

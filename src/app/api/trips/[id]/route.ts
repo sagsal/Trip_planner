@@ -6,6 +6,7 @@ import { cleanArrival, travelToStore } from '@/lib/travel';
 import { cleanTripType } from '@/lib/regions';
 import { prisma } from '@/lib/prisma';
 import { requireUser, sessionUserId } from '@/lib/session';
+import { sourceFromRequest } from '@/lib/channel';
 
 // Set route runtime config to ensure proper timeout handling
 export const maxDuration = 30; // 30 seconds max
@@ -608,6 +609,7 @@ export async function PUT(
           cities: cities || existingTrip.cities,
           isPublic: finalIsPublic,
           isDraft: isDraft !== undefined ? isDraft : existingTrip.isDraft,
+          ...(isDraft === false && existingTrip.isDraft && !(existingTrip as any).source ? { source: sourceFromRequest(request) } : {}),
           ...coverUpdate,
           ...(typeof region === 'string' ? { region: region.trim() ? region.trim().slice(0, 60) : null } : {}),
           ...(travelInfo !== undefined ? { travelInfo: travelToStore(travelInfo) } : {}),

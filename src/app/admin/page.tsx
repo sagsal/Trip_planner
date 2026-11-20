@@ -18,6 +18,7 @@ interface Stats {
     shared: number; drafts: number; private: number; new: number; newShared: number;
     weekly: { start: string; count: number }[]; topCountries: Row[]; topCities: Row[]; types: Row[];
   };
+  channels?: { source: string; visits: number; members: number; trips: number }[];
   growth?: { byOthersWeekly: { start: string; count: number }[]; byOthersTotal: number; byOthersThisWeek: number; newMemberShare: { shared: number; of: number }; adviceAnswered: { answered: number; of: number }; returning: { returning: number; of: number } };
   planning: { sandboxTrips: number; newSandboxTrips: number; savedPlaces: number; newSavedPlaces: number };
   feedback: { openTrips: number; comments: number; newComments: number; accepted: number };
@@ -445,6 +446,36 @@ export default function AdminDashboard() {
           );
         })()}
 
+        {/* Social plan: which channel brings visits, members and trips (counts only) */}
+        <section className="border border-[#E2DDD5] bg-white p-4 sm:p-5 mb-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h2 className="font-normal text-[26px]">Where people come from</h2>
+            <span className="font-mono text-[11px] tracking-[0.12em] text-[#5B6A73] uppercase">{period} · first channel</span>
+          </div>
+          {s.channels && s.channels.length ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left font-mono text-[11px] tracking-[0.1em] text-[#5B6A73]">
+                  <th className="font-normal py-1.5">CHANNEL</th><th className="font-normal py-1.5 text-right">VISITS</th><th className="font-normal py-1.5 text-right">NEW MEMBERS</th><th className="font-normal py-1.5 text-right">TRIPS SHARED</th>
+                </tr>
+              </thead>
+              <tbody>
+                {s.channels.map((c) => (
+                  <tr key={c.source} className="border-t border-[#F1EEE8]">
+                    <td className="py-2">{c.source}</td>
+                    <td className="py-2 text-right tabular-nums">{c.visits}</td>
+                    <td className="py-2 text-right tabular-nums">{c.members}</td>
+                    <td className="py-2 text-right tabular-nums font-semibold">{c.trips}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <p className="text-sm text-[#5B6A73]">No visits counted yet. Counting started with this update.</p>}
+          <p className="text-xs text-[#5B6A73] mt-3">Visits are one per browser session. Share links from the site add the channel name automatically; for your own posts, add <span className="font-mono">?utm_source=facebook-groups</span> (or any name) to the link.</p>
+        </section>
+
+        <ImportForSomeone />
+
         {asTable ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {tables.map(([title, rows]) => (
@@ -529,5 +560,74 @@ export default function AdminDashboard() {
         <p className="text-xs text-[#8A969D] mt-5">Charts show totals only. Groups of fewer than 5 members are combined so no one can be singled out. Test accounts aren’t counted.</p>
       </div>
     </div>
+  );
+}
+
+/** Paste someone's trip report or notes; get a private link they open to check and publish it as their own */
+function ImportForSomeone() {
+  const [text, setText] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [made, setMade] = useState<{ link: string; title: string; cities: string[]; warnings: string[] } | null>(null);
+  const [copied, setCopied] = useState('');
+  const [links, setLinks] = useState<{ id: string; link: string; note: string | null; title: string; createdAt: string; claimedAt: string | null }[]>([]);
+  const load = () => fetch('/api/admin/claim', { cache: 'no-store' }).then((r) => r.json()).then((d) => setLinks(d.links || [])).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const go = async () => {
+    setBusy(true); setErr(''); setMade(null);
+    try {
+      const r = await fetch('/api/admin/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, note }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Something went wrong.');
+      setMade(j); setText(''); setNote(''); load();
+    } catch (e: any) {
+      setErr(e?.message || 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = async (v: string) => { try { await navigator.clipboard.writeText(v); } catch {} setCopied(v); setTimeout(() => setCopied(''), 2000); };
+
+  return (
+    <section className="border border-[#E2DDD5] bg-white p-4 sm:p-5 mb-5">
+      <h2 className="font-normal text-[26px] mb-1">Import a trip for someone</h2>
+      <p className="text-sm text-[#3A4A54] mb-3">Paste a friend’s notes or trip report. You get a private link to send them: they check the trip, sign in, and publish it as their own. Nothing goes public until they do.</p>
+      <label className="block font-mono text-[11px] tracking-[0.1em] text-[#5B6A73] mb-1" htmlFor="ifs-text">THEIR NOTES OR TRIP REPORT</label>
+      <textarea id="ifs-text" value={text} onChange={(e) => setText(e.target.value)} rows={7} className="w-full border border-[#E2DDD5] p-3 text-[15px] mb-3" placeholder="Day 1: arrived in San Ignacio, stayed at…" />
+      <label className="block font-mono text-[11px] tracking-[0.1em] text-[#5B6A73] mb-1" htmlFor="ifs-note">PRIVATE NOTE (WHO IT’S FOR)</label>
+      <input id="ifs-note" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border border-[#E2DDD5] p-3 text-[15px] mb-3 min-h-[44px]" placeholder="e.g. Priya, Belize trip" />
+      <button type="button" onClick={go} disabled={busy || text.trim().length < 40} className="min-h-[48px] px-5 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em] hover:bg-[#24394A] disabled:opacity-50">
+        {busy ? 'READING… (UP TO A MINUTE)' : 'MAKE THE LINK'}
+      </button>
+      {err && <p className="mt-3 text-sm text-red-700" role="alert">{err}</p>}
+      {made && (
+        <div className="mt-4 border border-[#C3DEDF] bg-[#EEF5F4] p-3">
+          <p className="text-sm mb-1"><b>{made.title}</b>{made.cities.length ? ` · ${made.cities.join(' → ')}` : ''}</p>
+          {made.warnings?.map((w) => <p key={w} className="text-xs text-[#5B6A73]">{w}</p>)}
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="font-mono text-xs break-all">{made.link}</span>
+            <button type="button" onClick={() => copy(made.link)} className="min-h-[36px] px-3 border border-[#13212B] font-mono text-[11px] tracking-[0.08em]">{copied === made.link ? 'COPIED' : 'COPY LINK'}</button>
+          </div>
+          <p className="text-xs text-[#3A4A54] mt-2">Suggested message: “I typed up your trip so it only takes a minute to check. Have a look and publish it if you’re happy: {made.link}”</p>
+        </div>
+      )}
+      {links.length > 0 && (
+        <table className="w-full text-sm mt-4">
+          <thead><tr className="text-left font-mono text-[11px] tracking-[0.1em] text-[#5B6A73]"><th className="font-normal py-1.5">TRIP</th><th className="font-normal py-1.5">FOR</th><th className="font-normal py-1.5">STATUS</th><th className="font-normal py-1.5 text-right">LINK</th></tr></thead>
+          <tbody>
+            {links.map((l) => (
+              <tr key={l.id} className="border-t border-[#F1EEE8]">
+                <td className="py-2">{l.title}</td>
+                <td className="py-2 text-[#5B6A73]">{l.note || '—'}</td>
+                <td className="py-2">{l.claimedAt ? 'Claimed' : 'Waiting'}</td>
+                <td className="py-2 text-right"><button type="button" onClick={() => copy(l.link)} className="font-mono text-[11px] tracking-[0.08em] text-[#1F6F78]">{copied === l.link ? 'COPIED' : 'COPY'}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }

@@ -193,5 +193,17 @@ const SITE = 'https://tripshare.org';
   }
   await desk.close();
 
+  // The trip's share card and Pinterest pin images
+  if (multi) {
+    for (const [name, q] of [['og-card', ''], ['og-pin', '?f=pin'], ['og-card-single', '']]) {
+      const id = name === 'og-card-single' && single ? single.id : multi.id;
+      try {
+        const r = await fetch(`${SITE}/og/trip/${id}${q}`);
+        console.log(name, r.status, r.headers.get('content-type'));
+        if (r.ok) require('fs').writeFileSync(`out/${name}.png`, Buffer.from(await r.arrayBuffer()));
+      } catch (e) { console.log(name, 'failed', e.message); }
+    }
+  }
+
   await browser.close();
 })();

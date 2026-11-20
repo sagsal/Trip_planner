@@ -8,6 +8,7 @@ jobs:
     steps:
       - name: Fetch as Pinterest from outside
         run: |
+          set +e
           UA='Pinterestbot/1.0 (+http://www.pinterest.com/bot.html)'
           TID=$(curl -s -m 20 https://tripshare.org/sitemap.xml | grep -o "/trips/[A-Za-z0-9_-]*<" | head -1 | sed 's#/trips/##;s#<##')
           echo "trip id found: ${TID:+yes}"
@@ -24,5 +25,7 @@ jobs:
           echo "=== TLS"
           echo | openssl s_client -connect tripshare.org:443 -servername tripshare.org 2>/dev/null | grep -E "Verify return code|subject=|issuer=" | head -3
           echo "=== IPv6 (AAAA) record, Pinterest may use it"
-          dig +short AAAA tripshare.org; dig +short A tripshare.org | sed 's/[0-9]*$/x/'
+          echo "AAAA records: $(dig +short AAAA tripshare.org | wc -l), A records: $(dig +short A tripshare.org | wc -l), www: $(dig +short www.tripshare.org | wc -l)"
+          echo "nameservers: $(dig +short NS tripshare.org | tr '\n' ' ')"
+          echo "CAA/HTTPS records: $(dig +short HTTPS tripshare.org | head -2)"
           curl -6 -s -o /dev/null -m 15 -w 'ipv6: %{http_code}\n' https://tripshare.org/ || echo "ipv6: failed"

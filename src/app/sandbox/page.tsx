@@ -270,14 +270,13 @@ function SandboxContent() {
                 return (
                   <button key={t.id} type="button" onClick={() => openTrip(t.id)}
                     className="text-left bg-white border border-[#E2DDD5] rounded-[4px] overflow-hidden transition-shadow flex flex-col">
-                    <div className="relative h-32" style={{ background: '#DCE8E6' }}>
+                    <div className="relative h-32 w-full flex flex-col items-center justify-center gap-1.5 text-[#1F6F78]"
+                      style={{ background: 'repeating-linear-gradient(135deg, #EFEBE3 0 6px, #F6F3EE 6px 12px)' }}>
                       {/* A map pin and the trip's place names show until (or unless) a photo loads */}
-                      <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-[#1F6F78]/70">
-                        <MapPin className="w-7 h-7" />
-                        {cities.length > 0 && <span className="font-mono text-[11px] tracking-[0.1em] uppercase px-3 text-center line-clamp-1">{cities.slice(0, 3).join(' · ')}</span>}
-                      </span>
+                      <MapPin className="w-7 h-7" />
+                      {cities.length > 0 && <span className="font-mono text-[11px] tracking-[0.1em] uppercase px-3 text-center">{cities.slice(0, 3).join(' · ')}</span>}
                       {photo && (
-                        <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover"
+                        <img src={photo} alt="" loading="lazy" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       )}
                       <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">

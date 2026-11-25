@@ -1,4 +1,4 @@
-// One-off data check and fix, run once after a deploy. Trips here are public; prints titles and day counts only.
+// One-off data check and fix (already run Nov 2026). Run by hand with REPORT=1 to list trips whose days do not add up.
 //  1. Fixes the "Belompan" misspelling (Belmopan, Belize) in trip titles and city names.
 //  2. Reports every shared trip whose cities' days don't add up to the trip's dates.
 //  3. For the Belize trip (approved by the site owner), trims the extra day from the city with room to spare.

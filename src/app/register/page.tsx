@@ -38,7 +38,7 @@ function RegisterContent() {
     }
 
     if (!formData.acceptTerms) {
-      setError('Please agree to the Terms of Use and Privacy Policy');
+      setError('Please tick the box to confirm you’re 18 or older and agree to the Terms and Privacy Policy. The questions about you are optional.');
       setIsLoading(false);
       return;
     }
@@ -68,8 +68,8 @@ function RegisterContent() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
+            name: formData.name.trim(),
+            email: formData.email.trim(),
             password: formData.password,
             homeRegion: formData.homeRegion,
             homeCountry: formData.homeCountry,

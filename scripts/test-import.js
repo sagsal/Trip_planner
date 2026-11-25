@@ -1,4 +1,4 @@
-// One-off check of the AI notes importer with notes that name only the country (uses the AI key; a cent or so).
+// Manual check of the AI notes importer with notes that name only the country (uses the AI key; a cent or so). Not run on deploy.
 // Prints city counts only.
 const BASE = 'http://localhost:3000';
 const { PrismaClient } = require('@prisma/client');

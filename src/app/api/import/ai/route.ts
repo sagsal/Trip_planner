@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ANTHROPIC_API_KEY, runImport } from '@/lib/importAi';
+import { requireUser } from '@/lib/session';
 
 /** AI trip import: starts a background job (see src/lib/importAi.ts) and reports on it. */
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Members only: each import uses the site's AI credit
+  const auth = requireUser(request);
+  if ('error' in auth) return auth.error;
   if (!ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'AI import is not set up yet.' }, { status: 503 });
   }

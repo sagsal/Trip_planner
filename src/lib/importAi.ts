@@ -10,6 +10,8 @@
  */
 
 
+import { ALL_COUNTRIES } from '@/lib/profile';
+
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
 const MODEL = process.env.ANTHROPIC_IMPORT_MODEL || 'claude-haiku-5-5';
@@ -41,7 +43,7 @@ const TRIP_TOOL = {
         items: {
           type: 'object',
           properties: {
-            name: { type: 'string' },
+            name: { type: 'string', description: 'A city or town (never left empty). If the notes name only a country or region, work out the town from the places; see the rules.' },
             country: { type: 'string', description: 'Country name in English (infer from the city if not written)' },
             numberOfDays: { type: 'integer', description: 'Days spent in this city (at least 1)' },
             hotels: { type: 'array', items: place, description: 'Places stayed (hotels, Airbnbs, hostels...)' },
@@ -76,6 +78,12 @@ const SYSTEM = `You turn a traveller's trip notes into structured data for a tri
 The notes may be a spreadsheet (tab-separated rows, possibly several sheets), a Word document, or pasted text, in any layout.
 Rules:
 - Use only what the notes say. Never invent places, addresses, ratings or reviews. Infer only the obvious: a city's country, whether a place is a hotel/restaurant/activity, which day it belongs to from context.
+- Every trip needs at least one city. Notes often name only the country ("Mexico, 10 days") or a region, not the cities. Then work out the cities:
+  1. Look for town or city names anywhere: headings, addresses, hotel names, "in Tulum", "drove to Oaxaca".
+  2. For a well-known place, use the town it is in (Chichen Itza → Pisté/Valladolid area: use Valladolid; Palenque ruins → Palenque; Pujol → Mexico City). This counts as an obvious inference, not an invention.
+  3. Places in different towns go under different cities, in the order visited.
+  4. Only if nothing at all points to a town: put everything under one city named after the country's area the notes describe, or the country itself (name "Mexico", country "Mexico"), and add a warning: "No city was named, so places are under Mexico. Change it to the right city."
+  Never return an empty list of cities when the notes describe a trip.
 - Put each place in exactly one city. Hotels belong to the city stay, not to a day, so never warn about a hotel's day.
 - If a restaurant's or activity's day isn't clear, use Day 1 for that city and add a warning.
 - Only add warnings that help the traveller check something; don't report routine conversions like rating scales.
@@ -157,7 +165,20 @@ function sanitize(rawInput: any) {
   };
 }
 
-export async function runImport(text: string, fileName: string): Promise<{ status: 'done' | 'error'; trip?: any; error?: string }> {
+/** Country names written in the notes (e.g. "Mexico"), so the AI can be told where to look for cities */
+export function countriesIn(text: string): string[] {
+  const found: string[] = [];
+  const lower = text.toLowerCase();
+  for (const c of ALL_COUNTRIES) {
+    const k = c.toLowerCase();
+    const i = lower.indexOf(k);
+    if (i >= 0 && !/[a-z]/.test(lower[i - 1] || '') && !/[a-z]/.test(lower[i + k.length] || '')) found.push(c);
+    if (found.length >= 6) break;
+  }
+  return found;
+}
+
+export async function runImport(text: string, fileName: string, hint = ''): Promise<{ status: 'done' | 'error'; trip?: any; error?: string }> {
   const truncated = text.length > MAX_CHARS;
   if (truncated) text = text.slice(0, MAX_CHARS);
 
@@ -179,7 +200,7 @@ export async function runImport(text: string, fileName: string): Promise<{ statu
         messages: [
           {
             role: 'user',
-            content: `File: ${fileName || 'pasted text'}\n\n<trip_notes>\n${text}\n</trip_notes>`,
+            content: `File: ${fileName || 'pasted text'}\n\n<trip_notes>\n${text}\n</trip_notes>${hint ? `\n\n${hint}` : ''}`,
           },
         ],
       }),
@@ -222,7 +243,19 @@ export async function runImport(text: string, fileName: string): Promise<{ statu
       if (data.stop_reason === 'max_tokens') {
         return { status: 'error', error: 'The file has more places than the AI can read in one go. Try splitting it into one file per city.' };
       }
-      return { status: 'error', error: 'The AI couldn’t find any cities in this file.' };
+      const countries = countriesIn(text);
+      if (!hint) {
+        // Second try, pointing the AI at the country the notes name
+        const where = countries.length ? `The notes are about a trip in ${countries.join(', ')}.` : 'The notes may name only a country or region.';
+        const retry = await runImport(text, fileName, `${where} The cities list came back empty last time. Work out the town or city for each place (rules 1–4 above) and return at least one city.`);
+        if (retry.status === 'done') return retry;
+      }
+      return {
+        status: 'error',
+        error: countries.length
+          ? `We could see this trip was in ${countries.join(', ')}, but couldn’t tell which cities. Add the town names (for example “${countries[0] === 'Mexico' ? 'Mexico City' : 'Town name'}: …”) and try again.`
+          : 'The AI couldn’t find any cities in this file. Add the town names and try again.',
+      };
     }
 
     console.log('AI import ok:', fileName, 'cities:', trip.cities.length, 'places:', trip.rowCount, 'usage:', JSON.stringify(data.usage || {}));

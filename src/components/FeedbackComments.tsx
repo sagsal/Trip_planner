@@ -5,7 +5,7 @@ import { ThumbsUp, Check, X, Trash2, Loader2, ExternalLink } from 'lucide-react'
 import TripAdvisorSearch from '@/components/TripAdvisorSearch';
 import { REACTIONS, Target, reactionLabel, needsPlace, SuggestedPlace, LIMITS } from '@/lib/feedback';
 
-// Shared by "Help me plan" and the Sandbox's Feedback tab
+// Shared by "Help me plan" and My plans's Feedback tab
 
 export type Kind = 'hotel' | 'restaurant' | 'activity';
 export interface FeedbackComment {
@@ -159,7 +159,7 @@ export function CommentCard({ c, isOwner, onChanged }: { c: Comment; isOwner: bo
       const r = await fetch(`/api/feedback/comments/${c.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { alert(d.error || 'Something went wrong.'); return; }
-      const msg = d.changed === 'swapped' ? 'Swapped in your Sandbox trip.' : d.changed === 'added' ? 'Added to your Sandbox trip.' : d.changed === 'removed' ? 'Removed from your Sandbox trip.' : undefined;
+      const msg = d.changed === 'swapped' ? 'Swapped in your planned trip.' : d.changed === 'added' ? 'Added to your planned trip.' : d.changed === 'removed' ? 'Removed from your planned trip.' : undefined;
       onChanged(msg);
     } finally {
       setBusy('');

@@ -4,7 +4,7 @@ import { requireUser } from '@/lib/session';
 import { cleanTripFields } from '@/lib/sandbox';
 
 /**
- * My Travel Sandbox
+ * My plans
  * GET  /api/sandbox?userId=…           → { trips, places } for that user (or { count } with &countOnly=1)
  * POST /api/sandbox { userId, title, region?, tripType?, startDate?, endDate?, notes? } → new planned trip
  */

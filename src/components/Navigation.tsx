@@ -6,32 +6,31 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plane, Menu, X, User, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle, MessageCircle, BarChart3, MapPin,
+  Plane, Menu, X, User, Bookmark, LogOut, LogIn, UserPlus, Home, Compass, PlusCircle, Sparkles, Info, ChevronDown, Package, HelpCircle, PlayCircle, MessageCircle, BarChart3, MapPin,
 } from 'lucide-react';
 import { SANDBOX_EVENT } from '@/lib/sandbox';
 
 type Item = { href: string; label: string; hint?: string; icon: ComponentType<{ className?: string }> };
 
 // Everything on the site, in one menu
+const HELP: Item = { href: '/how-to', label: 'Help', hint: 'How the site works, plus a 2-minute guided tour', icon: HelpCircle };
+
 const SIGNED_IN: { title: string; items: Item[] }[] = [
   {
-    title: 'My trips',
+    title: 'Yours',
     items: [
-      { href: '/sandbox', label: 'My Travel Sandbox', hint: 'Places you’ve saved for trips you’re planning', icon: Package },
-      { href: '/account', label: 'My account & trips', hint: 'Drafts, private and shared trips', icon: User },
-      { href: '/trips/import', label: 'Share a trip in 5 minutes', hint: 'Paste your notes and AI does the typing', icon: Sparkles },
-      { href: '/trips/new', label: 'Type a trip yourself', hint: 'Day by day, with hotels, food and activities', icon: PlusCircle },
+      { href: '/trips/import', label: 'Share a trip', hint: 'Paste your notes or upload a file; AI does the typing', icon: Sparkles },
+      { href: '/sandbox', label: 'My plans', hint: 'Trips you’re planning and places you’ve saved', icon: Bookmark },
+      { href: '/account', label: 'My page', hint: 'Your shared trips, drafts and advice', icon: User },
     ],
   },
   {
     title: 'Explore',
     items: [
-      { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
+      { href: '/trips', label: 'Find a trip', hint: 'Real trips from fellow travelers', icon: Compass },
       { href: '/destinations', label: 'Destinations', hint: 'Every trip, stay and restaurant by country', icon: MapPin },
-      { href: '/', label: 'Home', icon: Home },
       { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there, or share your tips', icon: MessageCircle },
-      { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
-      { href: '/?tour=1', label: 'Take the tour', hint: 'A guided walk-through with voiceover', icon: PlayCircle },
+      HELP,
       { href: '/about', label: 'About', icon: Info },
     ],
   },
@@ -41,12 +40,11 @@ const SIGNED_OUT: { title: string; items: Item[] }[] = [
   {
     title: 'Explore',
     items: [
-      { href: '/trips', label: 'Browse trips', hint: 'Ideas from fellow travelers', icon: Compass },
+      { href: '/trips', label: 'Find a trip', hint: 'Real trips from fellow travelers', icon: Compass },
       { href: '/destinations', label: 'Destinations', hint: 'Every trip, stay and restaurant by country', icon: MapPin },
-      { href: '/', label: 'Home', icon: Home },
-      { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there, or share your tips', icon: MessageCircle },
-      { href: '/how-to', label: 'How to use', hint: 'A quick guide to everything on the site', icon: HelpCircle },
-      { href: '/?tour=1', label: 'Take the tour', hint: 'A guided walk-through with voiceover', icon: PlayCircle },
+      { href: '/trips/import', label: 'Share a trip', hint: 'Paste your notes and AI does the typing (free account)', icon: Sparkles },
+      { href: '/feedback', label: 'Advice', hint: 'Ask members who’ve been there', icon: MessageCircle },
+      HELP,
       { href: '/about', label: 'About', icon: Info },
     ],
   },
@@ -54,7 +52,7 @@ const SIGNED_OUT: { title: string; items: Item[] }[] = [
     title: 'Your account',
     items: [
       { href: '/login', label: 'Sign in', icon: LogIn },
-      { href: '/register', label: 'Create an account', hint: 'Free — share and plan your trips', icon: UserPlus },
+      { href: '/register', label: 'Create an account', hint: 'Free: share and plan your trips', icon: UserPlus },
     ],
   },
 ];
@@ -191,8 +189,7 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-baseline gap-3">
-            <span className="font-serif font-semibold text-[20px] sm:text-[27px] tracking-[-0.01em] text-[#13212B] whitespace-nowrap">Share and Plan</span>
-            <span className="hidden md:inline font-mono text-[11px] tracking-[0.12em] text-[#5B6A73]">TRIPSHARE.ORG</span>
+            <span className="font-serif font-semibold text-[24px] sm:text-[28px] tracking-[-0.01em] text-[#13212B] whitespace-nowrap">tripshare</span>
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -224,12 +221,12 @@ export default function Navigation() {
             <Link
               href={advice?.newAdvice ? '/account' : '/feedback'}
               aria-label={`Advice${advice?.newAdvice ? `, ${advice.newAdvice} new on your plans` : advice?.wantedCount ? `, ${advice.wantedCount} asking about places you’ve been` : ''}`}
-              className={`relative flex items-center justify-center gap-2 h-11 w-11 sm:w-auto sm:px-3.5 border font-mono text-xs tracking-[0.1em] uppercase transition-colors ${
+              className={`relative flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 h-11 min-w-[52px] px-1.5 sm:px-3.5 border font-mono text-xs tracking-[0.1em] uppercase transition-colors ${
                 pathname?.startsWith('/feedback') ? 'border-[#1F6F78] bg-[#EEF5F4] text-[#16535A]' : 'border-[#E2DDD5] text-[#13212B] hover:border-[#13212B]'
               }`}
             >
-              <MessageCircle className="w-5 h-5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Advice</span>
+              <MessageCircle className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
+              <span className="text-[9px] leading-none tracking-[0.06em] sm:text-xs sm:tracking-[0.1em]">Advice</span>
               {!!advice?.newAdvice ? (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#A4462B] text-white text-[11px] font-mono flex items-center justify-center">
                   {advice.newAdvice > 99 ? '99+' : advice.newAdvice}
@@ -239,16 +236,17 @@ export default function Navigation() {
               )}
             </Link>
 
-            {/* My Travel Sandbox (saved places), with a counter */}
+            {/* My plans (saved places), with a counter */}
             {isAuthenticated && (
               <Link
                 href="/sandbox"
                 id="sandbox-nav-icon"
-                title="My Travel Sandbox"
-                aria-label={`My Travel Sandbox${sandboxCount ? `, ${sandboxCount} saved` : ''}`}
-                className="relative flex items-center justify-center w-11 h-11 border border-[#E2DDD5] text-[#13212B] hover:border-[#13212B]"
+                title="My plans"
+                aria-label={`My plans${sandboxCount ? `, ${sandboxCount} saved places` : ''}`}
+                className="relative flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 h-11 min-w-[52px] px-1.5 sm:px-3.5 border border-[#E2DDD5] text-[#13212B] hover:border-[#13212B] font-mono uppercase"
               >
-                <Package className="w-5 h-5" />
+                <Bookmark className="w-[18px] h-[18px] sm:w-4 sm:h-4" />
+                <span className="text-[9px] leading-none tracking-[0.06em] sm:text-xs sm:tracking-[0.1em]">Plans</span>
                 {!!sandboxCount && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-[#1F6F78] text-white text-[11px] font-mono flex items-center justify-center">
                     {sandboxCount > 99 ? '99+' : sandboxCount}

@@ -23,7 +23,7 @@ const NEXT_STEP_TOOL = {
       action: {
         type: 'string',
         enum: ['ask', 'search', 'collect'],
-        description: '"collect" when they ask to create a sandbox / planned trip and add places from trips (e.g. "create a Mexico sandbox and add places from family trips to Mexico"). Otherwise "search" (or "ask").',
+        description: '"collect" when they ask to create a sandbox, plan ("My plans") or planned trip and add places from trips (e.g. "create a Mexico sandbox and add places from family trips to Mexico"). Otherwise "search" (or "ask").',
       },
       sandboxTitle: { type: 'string', description: 'For collect: a short name for the planned trip, e.g. "Mexico – family ideas".' },
       kinds: {

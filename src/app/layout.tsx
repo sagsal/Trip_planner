@@ -41,12 +41,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://tripshare.org"),
-  title: "Share and Plan - Build your next trip with help from fellow travelers",
+  title: "tripshare: real trips from real travelers, day by day",
   description: "Share the details of your trips, day by day, and build your next one from other travelers' real itineraries.",
   openGraph: {
-    siteName: "Share and Plan",
+    siteName: "tripshare",
     type: "website",
-    title: "Share and Plan",
+    title: "tripshare",
     description: "Build your next trip with help from fellow travelers. Real trips, day by day: where they stayed, ate and explored.",
     images: [{ url: "/sea-warm.jpg" }],
   },

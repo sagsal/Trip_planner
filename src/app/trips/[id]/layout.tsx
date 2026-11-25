@@ -10,7 +10,7 @@ import { monthYear, daysFromDates } from '@/lib/dates';
  */
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://tripshare.org').replace(/\/$/, '');
-const SITE_NAME = 'Share and Plan';
+const SITE_NAME = 'tripshare';
 const DEFAULT_DESC = 'Real trips from real travelers: where they stayed, ate and explored, day by day. Build your next trip from theirs.';
 
 

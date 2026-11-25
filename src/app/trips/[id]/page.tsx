@@ -862,11 +862,11 @@ function TripDetailContent() {
                 Browse All Trips
               </Link>
               <Link
-                href="/trips/new"
+                href="/trips/import"
                 className="inline-flex items-center px-6 py-3 bg-white border border-[#E2DDD5] text-[#13212B] rounded-xl hover:bg-[#F6F3EE] transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Your Own Trip
+                Share your own trip
               </Link>
             </div>
           </div>

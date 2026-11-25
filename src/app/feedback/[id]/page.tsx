@@ -91,7 +91,7 @@ export default function FeedbackTripPage() {
     <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Link href={isOwner ? `/sandbox?trip=${trip.id}` : '/feedback'} className="inline-flex items-center font-semibold text-[#1F6F78] hover:text-[#16535A] mb-4">
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> {isOwner ? 'Back to my Sandbox' : 'Advice'}
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> {isOwner ? 'Back to My plans' : 'Advice'}
         </Link>
 
         {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-[#13212B] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">{toast}</div>}

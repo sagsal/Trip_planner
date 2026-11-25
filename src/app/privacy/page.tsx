@@ -1,6 +1,6 @@
 import { LegalPage, CONTACT_EMAIL } from '@/components/LegalPage';
 
-export const metadata = { title: 'Privacy Policy · Share and Plan' };
+export const metadata = { title: 'Privacy Policy · tripshare' };
 
 export default function PrivacyPage() {
   return (
@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       title="Privacy Policy"
       intro={
         <p>
-          Share and Plan (tripshare.org) is a place to share the details of your trips and plan new ones from other travelers’ itineraries.
+          tripshare (tripshare.org) is a place to share the details of your trips and plan new ones from other travelers’ itineraries.
           This policy explains what information we collect, how we use it, who we share it with, and the choices you have.
           Questions? Email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <ul>
           <li><b>Your account:</b> your name, email address and password. Passwords are stored scrambled (hashed), so we can’t read them.</li>
           <li><b>About you (optional):</b> the region and country you’re from and your age bracket, if you choose to give them.</li>
-          <li><b>What you add:</b> your trips (countries, cities, month and year, number of days, flights, hotels, restaurants, activities, ratings, reviews, notes and links), your Sandbox (planned trips and saved places), and comments you post in Advice.</li>
+          <li><b>What you add:</b> your trips (countries, cities, month and year, number of days, flights, hotels, restaurants, activities, ratings, reviews, notes and links), My plans (planned trips and saved places), and comments you post in Advice.</li>
           <li><b>What you type into AI features:</b> for example a description in “Describe it”, a question to the trip finder, a request to Fill with AI, or notes you import.</li>
           <li><b>Technical information:</b> a sign-in cookie that keeps you signed in, small settings saved in your browser (such as tour progress or a closed announcement), and standard server logs (such as IP address, browser type and time of a request) used for security and fixing problems.</li>
         </ul>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         <ul>
           <li><b>Shared trips</b> can be seen by anyone, including people without an account, and can be shared as links. Your name is not shown on them.</li>
           <li><b>Drafts and private trips</b> are visible only to you.</li>
-          <li><b>Your Sandbox</b> is private, unless you choose “Ask for advice” on a planned trip. Then members who are signed in can see that planned trip and comment on it.</li>
+          <li><b>My plans</b> is private, unless you choose “Ask for advice” on a planned trip. Then members who are signed in can see that planned trip and comment on it.</li>
           <li><b>Comments</b> in Advice show your first name only.</li>
           <li>Your <b>email address</b> is never shown to other members.</li>
         </ul>
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
       <section>
         <h2>6. Your choices and rights</h2>
         <ul>
-          <li>You can edit or delete your trips and Sandbox at any time.</li>
+          <li>You can edit or delete your trips and plans at any time.</li>
           <li>You can unsubscribe from our emails using the link in any of them.</li>
           <li>You can ask us for a copy of your information, to correct it, or to delete your account and everything in it, by emailing <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</li>
           <li>Depending on where you live (for example the EU, the UK or California), you may have further rights, such as objecting to certain uses of your information or complaining to your local data protection authority. We will respect them.</li>
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
 
       <section>
         <h2>8. Age</h2>
-        <p>Share and Plan is for people aged 18 and over. We don’t knowingly collect information from anyone younger.</p>
+        <p>tripshare is for people aged 18 and over. We don’t knowingly collect information from anyone younger.</p>
       </section>
 
       <section>

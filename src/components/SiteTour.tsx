@@ -21,14 +21,14 @@ type Step = {
 const STEPS: Step[] = [
   {
     path: '/',
-    title: 'Welcome to Share and Plan',
+    title: 'Welcome to tripshare',
     text: 'Welcome! This short tour shows you around. Share the details of your trips, and build your next one from other travellers’ real itineraries.',
   },
   {
     path: '/',
     target: 'menu',
     title: 'The Menu',
-    text: 'Everything on the site is in this Menu: browse trips, add your own, your sandbox, and the how to use guide.',
+    text: 'Everything on the site is in this Menu: browse trips, add your own, My plans, and the how to use guide.',
   },
   {
     path: '/trips',
@@ -40,7 +40,7 @@ const STEPS: Step[] = [
     path: '/trips',
     target: 'finder',
     title: 'Ask it to build for you',
-    text: 'You can also ask it to set things up for you. For example: create a Colombia trip in my sandbox with just Cartagena and Medellín, or add hotels in Polanco. It makes a planned trip with exactly those places.',
+    text: 'You can also ask it to set things up for you. For example: create a Colombia trip in My plans with just Cartagena and Medellín, or add hotels in Polanco. It makes a planned trip with exactly those places.',
   },
   {
     path: '/trips',
@@ -52,14 +52,14 @@ const STEPS: Step[] = [
     path: '/trips',
     target: '#sandbox-nav-icon',
     title: 'Save what you like',
-    text: 'Open any trip to see it day by day, with photos, reviews and links. Tap the plus button on a hotel, restaurant or activity to save it. Everything you save goes to your Travel Sandbox, here.',
+    text: 'Open any trip to see it day by day, with photos, reviews and links. Tap the plus button on a hotel, restaurant or activity to save it. Everything you save goes to My plans, here.',
   },
   {
     path: '/sandbox',
     target: 'sandbox-head',
     needsLogin: true,
-    title: 'My Travel Sandbox',
-    text: 'Your Sandbox holds every trip you’re planning, as many as you like. Open one to see its Plan, day by day, and the Ideas you haven’t placed yet. Fill with AI can build the days for you from real trips.',
+    title: 'My plans',
+    text: 'My plans holds every trip you’re planning, as many as you like. Open one to see its Plan, day by day, and the Ideas you haven’t placed yet. Fill with AI can build the days for you from real trips.',
   },
   {
     path: '/feedback',

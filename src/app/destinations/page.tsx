@@ -4,7 +4,7 @@ import { destinationIndex } from '@/lib/destinations';
 
 export const revalidate = 600;
 export const metadata: Metadata = {
-  title: 'Destinations: real trips by country · Share and Plan',
+  title: 'Destinations: real trips by country · tripshare',
   description: 'Real itineraries from travellers, by country: where they stayed, ate and explored, and what they would skip.',
   alternates: { canonical: 'https://tripshare.org/destinations' },
 };

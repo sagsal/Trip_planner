@@ -140,7 +140,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
         setNote(data.collect && (data.results || []).length ? '' : data.note || '');
         setFilters(data.filters || null);
         setSummary(data.filters?.summary || msgs[0]?.content || '');
-        // They asked to create a sandbox trip from these trips: open the confirmation
+        // They asked to create a planned trip from these trips: open the confirmation
         if (data.collect && (data.results || []).length) openCollect(data.collect.title, data.collect.kinds, data.results, data.collect.cities, data.collect.areas);
         else setCollectOpen(false);
       }
@@ -184,7 +184,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
     setCollected(null);
   };
 
-  /** Create a planned trip in the sandbox and open "Fill with AI" with this conversation. */
+  /** Create a planned trip in My plans and open "Fill with AI" with this conversation. */
   // Arriving with a question (e.g. from the homepage search): ask it straight away
   const askedInitial = useRef(false);
   useEffect(() => {
@@ -228,10 +228,10 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
   const conversation = messages.length > 0;
 
   return (
-    <div data-tour="finder" className="bg-white rounded-[4px] border border-[#E2DDD5] p-5 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+    <div data-tour="finder" className="bg-white border border-[#E2DDD5] p-5 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-xl font-normal text-[#2F4A5C] flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-[#4A6878]" /> Find a trip for you
+        <h2 className="font-mono text-xs tracking-[0.14em] uppercase text-[#5B6A73] flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-[#1F6F78]" /> Search or ask
         </h2>
         {conversation && (
           <button type="button" onClick={reset} className="text-sm text-[#5B6B75] hover:text-[#2F4A5C] inline-flex items-center">
@@ -246,8 +246,8 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <p
-                className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
-                  m.role === 'user' ? 'bg-[#4A6878] text-white rounded-br-sm' : 'bg-[#F3F7F8] text-[#2F4A5C] border border-[#C9D9DF] rounded-bl-sm'
+                className={`max-w-[85%] px-3 py-2 text-sm ${
+                  m.role === 'user' ? 'bg-[#13212B] text-white rounded-br-sm' : 'bg-[#F3F7F8] text-[#2F4A5C] border border-[#C9D9DF] rounded-bl-sm'
                 }`}
               >
                 {m.content}
@@ -273,8 +273,8 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                   key={o}
                   type="button"
                   onClick={() => (question.multi ? setPicked((p) => (on ? p.filter((x) => x !== o) : [...p, o])) : answer(o))}
-                  className={`px-3 py-1.5 rounded-full border text-sm ${
-                    on ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C] hover:bg-[#E3ECEF]'
+                  className={`px-3 py-1.5 border text-sm ${
+                    on ? 'bg-[#13212B] border-[#13212B] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C] hover:bg-[#E3ECEF]'
                   }`}
                 >
                   {o}
@@ -282,11 +282,11 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
               );
             })}
             {question.multi && picked.length > 0 && (
-              <button type="button" onClick={() => answer(picked.join(', '))} className="px-3 py-1.5 rounded-full bg-[#2F4A5C] text-white text-sm">
+              <button type="button" onClick={() => answer(picked.join(', '))} className="px-3 py-1.5 bg-[#2F4A5C] text-white text-sm">
                 Continue →
               </button>
             )}
-            <button type="button" onClick={() => answer('No preference — show me trips')} className="px-3 py-1.5 rounded-full text-sm text-[#5B6B75] underline">
+            <button type="button" onClick={() => answer('No preference — show me trips')} className="px-3 py-1.5 text-sm text-[#5B6B75] underline">
               Skip
             </button>
           </div>
@@ -308,35 +308,46 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
               setInput(e.target.value);
               if (!conversation) onTyping?.(e.target.value); // filter the trips below as you type
             }}
-            placeholder={conversation ? 'Or type your own answer…' : 'Search trips, or ask: “Japan with my family, two weeks”'}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#4A6878] focus:border-transparent"
+            placeholder={conversation ? 'Or type your own answer…' : 'Search a country or city, or ask: “a week in Belize with teens”'}
+            className="flex-1 min-w-0 px-4 py-3 min-h-[48px] border border-[#13212B] font-serif text-[18px] text-[#13212B] focus:outline-none focus:ring-2 focus:ring-[#1F6F78]"
           />
-          <button type="submit" disabled={!input.trim()} className="px-4 py-3 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] disabled:opacity-50" aria-label="Send">
+          <button type="submit" disabled={!input.trim()} className="px-4 min-h-[48px] bg-[#13212B] text-white hover:bg-[#24394A] disabled:opacity-50" aria-label="Search or ask">
             <Send className="w-5 h-5" />
           </button>
         </form>
       )}
       {!conversation && (
         <p className="mt-2 text-xs text-[#6B7A83]">
-          Typing filters the trips below. Press <b>Enter</b> to ask the AI<span className="hidden sm:inline"> — it can ask a few questions, explain its picks, or build a sandbox trip</span>.
+          Typing filters the trips below. Press <b>Enter</b> to ask the AI<span className="hidden sm:inline"> — it can ask a few questions, explain its picks, or build a planned trip</span>.
         </p>
       )}
       {!conversation && children && <div className="mt-3">{children}</div>}
-      {error && <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">{error}</p>}
 
       {/* Results */}
       {results !== null && !busy && (
         <div className="mt-2">
           {note && <p className="text-sm text-[#5B6B75] mb-3">{note}</p>}
+          {results.length === 0 && (
+            <div className="border border-[#E2DDD5] bg-[#F8F6F1] p-4 mb-3">
+              <p className="text-[15px] text-[#13212B] mb-1">No one has shared a trip like that yet.</p>
+              <p className="text-sm text-[#5B6A73] mb-3">The site is new, so some places have no trips so far. You can still get help:</p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/feedback" className="inline-flex items-center min-h-[44px] px-4 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.08em]">ASK MEMBERS WHO’VE BEEN</Link>
+                <Link href="/destinations" className="inline-flex items-center min-h-[44px] px-4 border border-[#13212B] font-mono text-xs tracking-[0.08em]">SEE WHERE WE HAVE TRIPS</Link>
+                <Link href="/trips/import" className="inline-flex items-center min-h-[44px] px-4 border border-[#E2DDD5] font-mono text-xs tracking-[0.08em]">BEEN SOMEWHERE? SHARE IT</Link>
+              </div>
+            </div>
+          )}
           {results.length > 0 && !collectOpen && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {results.map((r) => (
-                <div key={r.id} className="bg-white rounded-xl border border-[#E4DED4] overflow-hidden flex flex-col">
+                <div key={r.id} className="bg-white border border-[#E4DED4] overflow-hidden flex flex-col">
                   {r.coverImageUrl && <img src={r.coverImageUrl} alt="" loading="lazy" className="w-full h-32 object-cover" />}
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-semibold text-[#2F4A5C]">{r.title}</p>
-                      {!r.exact && <span className="shrink-0 text-xs bg-[#F3EBDD] text-[#8A6D3B] px-2 py-0.5 rounded-full">Similar</span>}
+                      {!r.exact && <span className="shrink-0 text-xs bg-[#F3EBDD] text-[#8A6D3B] px-2 py-0.5">Similar</span>}
                     </div>
                     <p className="text-xs text-[#6B7A83] mt-0.5 flex flex-wrap gap-x-3">
                       {r.tripType && <span>{tripTypeIcon(r.tripType)} {r.tripType}</span>}
@@ -345,7 +356,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                     </p>
                     <p className="text-sm text-[#4A5A63] mt-2 flex-1">{r.reason}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      <Link href={`/trips/${r.id}`} className="inline-flex items-center px-3 py-1.5 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] text-sm">
+                      <Link href={`/trips/${r.id}`} className="inline-flex items-center px-3 py-1.5 bg-[#13212B] text-white hover:bg-[#24394A] text-sm">
                         Open trip <ArrowRight className="w-4 h-4 ml-1" />
                       </Link>
                       {r.places.length > 0 && <SaveToSandbox places={r.places} label="Save its ideas" variant="pill" />}
@@ -357,15 +368,15 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
           )}
           {/* Create a planned trip from these trips */}
           {collectOpen && results.length > 0 && (
-            <div className="rounded-xl bg-white border-2 border-[#4A6878] p-4 mb-4">
+            <div className="rounded-xl bg-white border-2 border-[#13212B] p-4 mb-4">
               {collected ? (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <p className="text-[#2F4A5C]">
                     <Check className="inline w-5 h-5 text-green-600 mr-1" />
-                    Added <b>{collected.saved}</b> {collected.saved === 1 ? 'place' : 'places'} to <b>{collected.title}</b> in your sandbox.
+                    Added <b>{collected.saved}</b> {collected.saved === 1 ? 'place' : 'places'} to <b>{collected.title}</b> in My plans.
                   </p>
-                  <Link href="/sandbox" className="inline-flex items-center px-4 py-2 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] text-sm font-medium">
-                    <Package className="w-4 h-4 mr-1" /> Open my sandbox
+                  <Link href="/sandbox" className="inline-flex items-center px-4 py-2 bg-[#13212B] text-white hover:bg-[#24394A] text-sm font-medium">
+                    <Package className="w-4 h-4 mr-1" /> Open My plans
                   </Link>
                 </div>
               ) : (
@@ -375,7 +386,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                   <input
                     value={collectTitle}
                     onChange={(e) => setCollectTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 mb-3"
+                    className="w-full px-3 py-2 border border-gray-300 text-gray-900 mb-3"
                   />
                   <p className="text-xs font-medium text-gray-700 mb-1">Include</p>
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -383,7 +394,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                       const on = collectKinds.includes(k);
                       return (
                         <button key={k} type="button" onClick={() => setCollectKinds((p) => (on ? p.filter((x) => x !== k) : [...p, k]))}
-                          className={`px-3 py-1.5 rounded-full border text-sm ${on ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
+                          className={`px-3 py-1.5 border text-sm ${on ? 'bg-[#13212B] border-[#13212B] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
                           {label}
                         </button>
                       );
@@ -394,7 +405,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                       <span className="text-xs font-medium text-gray-700">Only in</span>
                       {collectAreas.map((a) => (
                         <button key={a} type="button" onClick={() => setCollectAreas((p) => p.filter((x) => x !== a))}
-                          className="px-3 py-1.5 rounded-full border text-sm bg-[#4A6878] border-[#4A6878] text-white" title="Remove">
+                          className="px-3 py-1.5 border text-sm bg-[#13212B] border-[#13212B] text-white" title="Remove">
                           📍 {a} ✕
                         </button>
                       ))}
@@ -405,14 +416,14 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                       <p className="text-xs font-medium text-gray-700 mb-1">Cities</p>
                       <div className="flex flex-wrap gap-2 mb-3">
                         <button type="button" onClick={() => setCollectCities([])}
-                          className={`px-3 py-1.5 rounded-full border text-sm ${collectCities.length === 0 ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
+                          className={`px-3 py-1.5 border text-sm ${collectCities.length === 0 ? 'bg-[#13212B] border-[#13212B] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
                           All cities
                         </button>
                         {cityOptions(results).map((c) => {
                           const on = collectCities.includes(c);
                           return (
                             <button key={c} type="button" onClick={() => setCollectCities((p) => (on ? p.filter((x) => x !== c) : [...p, c]))}
-                              className={`px-3 py-1.5 rounded-full border text-sm ${on ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
+                              className={`px-3 py-1.5 border text-sm ${on ? 'bg-[#13212B] border-[#13212B] text-white' : 'bg-white border-[#C9D9DF] text-[#2F4A5C]'}`}>
                               {c}
                             </button>
                           );
@@ -439,7 +450,7 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
                   )}
                   <div className="flex flex-wrap items-center gap-2">
                     <button type="button" onClick={createAndAdd} disabled={collecting}
-                      className="inline-flex items-center px-4 py-2 bg-[#2F4A5C] text-white rounded-lg hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">
+                      className="inline-flex items-center px-4 py-2 bg-[#2F4A5C] text-white hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">
                       {collecting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
                       Create &amp; add {collectPlaces(results).length} places
                     </button>
@@ -452,16 +463,16 @@ export default function TripFinder({ onTyping, children, initialAsk }: { onTypin
 
           {/* What next? */}
           {!collectOpen && <div className="rounded-xl bg-[#F3F7F8] border border-[#C9D9DF] p-4">
-            <p className="text-sm font-medium text-[#2F4A5C] mb-3">Planning a trip like this? Put it in your sandbox:</p>
+            <p className="text-sm font-medium text-[#2F4A5C] mb-3">Planning a trip like this? Put it in My plans:</p>
             <div className="flex flex-col sm:flex-row gap-2">
               {results.length > 0 && !collectOpen && (
                 <button type="button" onClick={() => openCollect(summary || 'My next trip', undefined, results)}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white border border-[#C9D9DF] text-[#2F4A5C] rounded-lg hover:bg-[#E3ECEF] text-sm font-medium">
+                  className="inline-flex items-center justify-center px-4 py-2 bg-white border border-[#C9D9DF] text-[#2F4A5C] hover:bg-[#E3ECEF] text-sm font-medium">
                   <Package className="w-4 h-4 mr-1" /> Save these trips’ places into a new planned trip
                 </button>
               )}
               <button type="button" onClick={startPlanning} disabled={starting}
-                className="inline-flex items-center justify-center px-4 py-2 bg-[#2F4A5C] text-white rounded-lg hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">
+                className="inline-flex items-center justify-center px-4 py-2 bg-[#2F4A5C] text-white hover:bg-[#24394A] text-sm font-medium disabled:opacity-60">
                 {starting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Let AI plan it day by day
               </button>
             </div>

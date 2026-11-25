@@ -15,10 +15,10 @@ async function handle(request: NextRequest) {
   if (ok) await prisma.user.updateMany({ where: { id: u }, data: { emailOptOut: true } }).catch(() => {});
   const msg = ok ? 'You’re unsubscribed. You won’t get any more of these emails.' : 'This unsubscribe link isn’t valid.';
   return new NextResponse(
-    `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe · Share and Plan</title></head>
+    `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe · tripshare</title></head>
 <body style="margin:0;background:#FBFAF7;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#13212B">
 <div style="max-width:480px;margin:80px auto;padding:24px;background:#fff;border:1px solid #ECE7DF;border-radius:16px;text-align:center">
-<p style="font-weight:800;font-size:18px;margin:0 0 12px">✈ Share and Plan</p><p style="margin:0 0 20px">${msg}</p>
+<p style="font-weight:800;font-size:18px;margin:0 0 12px">tripshare</p><p style="margin:0 0 20px">${msg}</p>
 <a href="/" style="color:#1F6F78;font-weight:600">Go to tripshare.org</a></div></body></html>`,
     { status: ok ? 200 : 400, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
   );

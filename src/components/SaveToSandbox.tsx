@@ -7,9 +7,9 @@ import { Plus, Check, Loader2, X, Inbox, Map as MapIcon } from 'lucide-react';
 import { SANDBOX_EVENT, LAST_SANDBOX_TRIP_KEY, type PlaceToSave, type SandboxTripData } from '@/lib/sandbox';
 
 /**
- * "＋" button that saves one or more places into My Travel Sandbox.
+ * "＋" button that saves one or more places into My plans.
  * Asks which planned trip (or Unsorted) the first time, remembers the last choice,
- * then flies the place's photo up to the sandbox icon in the top bar.
+ * then flies the place's photo up to My plans icon in the top bar.
  */
 
 function currentUser(): { id: string; name?: string } | null {
@@ -31,7 +31,7 @@ async function loadTrips(userId: string): Promise<SandboxTripData[]> {
   return tripsCache!;
 }
 
-/** The photo flies from the button to the sandbox icon in the top bar. */
+/** The photo flies from the button to My plans icon in the top bar. */
 function flyToSandbox(from: DOMRect, imageUrl?: string | null) {
   const target = document.getElementById('sandbox-nav-icon');
   if (!target) return;
@@ -160,15 +160,15 @@ export default function SaveToSandbox({
           e.stopPropagation();
           start();
         }}
-        title={label || 'Save to My Travel Sandbox'}
-        aria-label={label || `Save ${places[0]?.name || 'place'} to My Travel Sandbox`}
+        title={label || 'Save to My plans'}
+        aria-label={label || `Save ${places[0]?.name || 'place'} to My plans`}
         className={
           variant === 'icon'
             ? `inline-flex items-center justify-center w-9 h-9 rounded-full border transition-colors ${
                 done ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-[#C9D9DF] text-[#3F5B6A] hover:bg-[#E3ECEF]'
               }`
-            : `inline-flex items-center gap-1 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors ${
-                done ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-[#C9D9DF] text-[#3F5B6A] hover:bg-[#E3ECEF]'
+            : `inline-flex items-center gap-1.5 min-h-[40px] px-3 border font-mono text-[11px] tracking-[0.08em] uppercase transition-colors ${
+                done ? 'bg-[#1F6F78] border-[#1F6F78] text-white' : 'bg-white border-[#E2DDD5] text-[#13212B] hover:border-[#13212B]'
               }`
         }
       >
@@ -187,11 +187,11 @@ export default function SaveToSandbox({
               className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl p-5"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
-              aria-label="Save to My Travel Sandbox"
+              aria-label="Save to My plans"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="text-lg font-semibold text-[#2F4A5C]">Save to My Travel Sandbox</p>
+                  <p className="text-lg font-semibold text-[#2F4A5C]">Save to My plans</p>
                   <p className="text-sm text-[#6B7A83]">
                     {places.length === 1 ? places[0].name : `${places.length} places${label ? ` · ${label.replace(/^Save /, '')}` : ''}`}
                   </p>
@@ -203,7 +203,7 @@ export default function SaveToSandbox({
 
               {needsSignIn ? (
                 <div>
-                  <p className="text-[#4A5A63] mb-4">Sign in to collect {what} in your sandbox and plan your next trips.</p>
+                  <p className="text-[#4A5A63] mb-4">Sign in to collect {what} in My plans and plan your next trips.</p>
                   <div className="flex gap-2">
                     <Link href={`/login?next=${nextUrl}`} className="flex-1 text-center px-4 py-2.5 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] font-medium">
                       Sign in

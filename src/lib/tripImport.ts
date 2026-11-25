@@ -14,7 +14,7 @@ export interface ImportedPlace {
   location: string;
   rating: number;
   review: string;
-  imageUrl?: string | null; // e.g. from My Travel Sandbox
+  imageUrl?: string | null; // e.g. from My plans
   webUrl?: string | null;
   stayType?: 'rental' | null;
 }

@@ -483,7 +483,7 @@ function AccountContent() {
 
           {/* Planned trips */}
           <section>
-            <SectionHead title="Trips you’re planning" right={<Link href="/sandbox" className={`${LINK} py-2.5`}>OPEN SANDBOX →</Link>} />
+            <SectionHead title="Trips you’re planning" right={<Link href="/sandbox" className={`${LINK} py-2.5`}>OPEN MY PLANS →</Link>} />
             {sandbox === null ? (
               <div className="h-24 border-b border-[#E2DDD5] animate-pulse bg-[#F2EFE8]" />
             ) : planned.length === 0 ? (
@@ -700,7 +700,7 @@ function AccountContent() {
           </section>
 
           <section className="border-t border-[#13212B] pt-4">
-            <h2 className="font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73] mb-1">NEW ON SHARE AND PLAN</h2>
+            <h2 className="font-mono font-normal text-[11px] tracking-[0.14em] text-[#5B6A73] mb-1">NEW ON TRIPSHARE</h2>
             {(fresh || []).map((t: any) => (
               <Link key={t.id} href={`/trips/${t.id}`} className="py-3 border-b border-[#E2DDD5] flex flex-col gap-1 hover:text-[#1F6F78]">
                 <span className="font-serif text-xl leading-snug">{t.title}</span>

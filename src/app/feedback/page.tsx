@@ -50,7 +50,7 @@ export default function HelpMePlanPage() {
         <div className="mb-10 border border-[#13212B] bg-white px-4 sm:px-5 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="min-w-0 flex-[1_1_260px]">
             <p className="font-serif text-[22px] leading-tight">Planning a trip yourself?</p>
-            <p className="text-sm text-[#5B6A73] mt-1">Open it in your Sandbox and ask members who’ve been there for a second opinion.</p>
+            <p className="text-sm text-[#5B6A73] mt-1">Open it in My plans and ask members who’ve been there for a second opinion.</p>
           </div>
           <Link href="/sandbox" className="inline-flex items-center gap-2 min-h-[48px] px-5 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em] hover:bg-[#24394A]">
             ASK FOR ADVICE <ArrowRight className="w-4 h-4" />
@@ -71,7 +71,7 @@ export default function HelpMePlanPage() {
           <div className="text-center py-14 bg-white border border-[#E2DDD5] rounded-[4px]">
             <MessageCircle className="w-12 h-12 text-[#C9D2D6] mx-auto mb-4" />
             <h2 className="text-lg font-normal mb-2">No trips are asking for advice yet</h2>
-            <p className="text-[#5B6A73]">Be the first: open a planned trip in your Sandbox and press “Ask for advice”.</p>
+            <p className="text-[#5B6A73]">Be the first: open a planned trip in My plans and press “Ask for advice”.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -7,7 +7,7 @@ import { placeFields } from '@/lib/placeDetails';
 import { AI_SUGGESTION, type PlaceToSave } from '@/lib/sandbox';
 
 /**
- * "✨ Fill with AI" for a planned trip in My Travel Sandbox.
+ * "✨ Fill with AI" for a planned trip in My plans.
  * POST { userId, sandboxTripId, request }  → { jobId }   (runs in the background; can take ~30-60s)
  * GET  ?job=ID                             → { status: 'running' | 'done' | 'error', plan?, error? }
  *

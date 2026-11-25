@@ -384,7 +384,7 @@ function NewTripContent() {
     }
     setImportNotice(
       imported.source === 'sandbox'
-        ? 'Filled in from your sandbox plan. Check the days and details, then save it as a draft — after your trip, add your own ratings and reviews.'
+        ? 'Filled in from My plans plan. Check the days and details, then save it as a draft — after your trip, add your own ratings and reviews.'
         : 'Filled in from your spreadsheet. Please check everything, then save it as a draft or save the trip.'
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1258,20 +1258,20 @@ function NewTripContent() {
       {legs.length > 0 && routeText(legs) && <p className="mb-2 text-sm font-medium text-[#2F4A5C]">{routeText(legs)}</p>}
       <div className="space-y-2">
         {legs.map((leg, i) => (
-          <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center bg-gray-50 border border-gray-200 rounded-lg p-2">
+          <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center bg-gray-50 border border-gray-200 p-2">
             <input
               value={leg.from}
               onChange={(e) => updateLeg(set, i, 'from', e.target.value.toUpperCase())}
               placeholder="From (YYZ)"
               aria-label="From"
-              className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+              className="sm:col-span-2 px-2 py-2 border border-[#E2DDD5] text-sm text-gray-900 uppercase"
             />
             <input
               value={leg.to}
               onChange={(e) => updateLeg(set, i, 'to', e.target.value.toUpperCase())}
               placeholder="To (JFK)"
               aria-label="To"
-              className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+              className="sm:col-span-2 px-2 py-2 border border-[#E2DDD5] text-sm text-gray-900 uppercase"
             />
             <input
               value={leg.airline}
@@ -1279,19 +1279,19 @@ function NewTripContent() {
               list="airline-list"
               placeholder="Airline"
               aria-label="Airline"
-              className="col-span-2 sm:col-span-5 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900"
+              className="col-span-2 sm:col-span-5 px-2 py-2 border border-[#E2DDD5] text-sm text-gray-900"
             />
             <input
               value={leg.flightNumber || ''}
               onChange={(e) => updateLeg(set, i, 'flightNumber', e.target.value.toUpperCase())}
               placeholder="Flight # (opt.)"
               aria-label="Flight number"
-              className="sm:col-span-2 px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-900 uppercase"
+              className="sm:col-span-2 px-2 py-2 border border-[#E2DDD5] text-sm text-gray-900 uppercase"
             />
             <button
               type="button"
               onClick={() => removeLeg(set, i)}
-              className="sm:col-span-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md p-2 justify-self-end"
+              className="sm:col-span-1 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 justify-self-end"
               title="Remove this flight"
               aria-label="Remove this flight"
             >
@@ -1303,7 +1303,7 @@ function NewTripContent() {
       <button
         type="button"
         onClick={() => addLeg(set, startFrom)}
-        className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+        className="mt-2 inline-flex items-center px-3 py-1.5 border border-[#E2DDD5] text-gray-700 hover:bg-gray-50 text-sm"
       >
         <Plus className="w-4 h-4 mr-1" /> {legs.length === 0 ? 'Add a flight' : 'Add another flight'}
       </button>
@@ -1312,7 +1312,7 @@ function NewTripContent() {
 
   // One city's box (hotel, days, restaurants, activities); shown inside its country's section
   const renderCityCard = (city: CityData, cityIndex: number) => (
-                <div key={city.id} className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
+                <div key={city.id} className="bg-white shadow-lg p-6 mb-8 border border-gray-100">
                   {/* City Header */}
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
@@ -1327,14 +1327,14 @@ function NewTripContent() {
                     <button
                       type="button"
                       onClick={() => removeCity(city.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
                   
                   {/* How did you get here? */}
-                  <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="mb-6 border border-gray-200 p-4 bg-gray-50">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">How did you get to {city.name}?</h4>
                     <div className="flex flex-wrap gap-2 mb-3">
                       {TRAVEL_MODES.map((m) => {
@@ -1345,7 +1345,7 @@ function NewTripContent() {
                             type="button"
                             onClick={() => updateArrival(city.id, 'mode', active ? '' : m.value)}
                             className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors ${
-                              active ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
+                              active ? 'bg-[#4A6878] border-[#4A6878] text-white' : 'bg-white border-[#E2DDD5] text-gray-700 hover:bg-gray-100'
                             }`}
                           >
                             {m.icon} {m.label}
@@ -1361,7 +1361,7 @@ function NewTripContent() {
                             value={city.arrival.from}
                             onChange={(e) => updateArrival(city.id, 'from', e.target.value)}
                             placeholder={city.arrival.mode === 'flight' ? 'e.g. JFK or New York' : 'e.g. Athens'}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                            className="w-full px-3 py-2 border border-[#E2DDD5] text-sm text-gray-900"
                           />
                         </div>
                         <div>
@@ -1371,7 +1371,7 @@ function NewTripContent() {
                             onChange={(e) => updateArrival(city.id, 'operator', e.target.value)}
                             list={city.arrival.mode === 'flight' ? 'airline-list' : undefined}
                             placeholder={modeInfo(city.arrival.mode)?.operatorHint}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                            className="w-full px-3 py-2 border border-[#E2DDD5] text-sm text-gray-900"
                           />
                         </div>
                         <div className="md:col-span-2">
@@ -1387,7 +1387,7 @@ function NewTripContent() {
                               : city.arrival.mode === 'train' ? 'e.g. 4 hours, first class was worth it'
                               : 'e.g. 5 hours, comfortable, buy tickets at the station'
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                            className="w-full px-3 py-2 border border-[#E2DDD5] text-sm text-gray-900"
                           />
                         </div>
                       </div>
@@ -1396,13 +1396,13 @@ function NewTripContent() {
 
                   {/* Hotels / rentals for this city (one or more) */}
                   <div className="mb-6">
-                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="border border-gray-200 p-4 bg-gray-50">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <span className="text-2xl mr-2">🏨</span>
                         {stayList(city).length > 1 ? 'Where we stayed' : 'Hotel'}
                       </h4>
                       {stayList(city).map((hotel, hi) => (
-                        <div key={hotel.id || hi} className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
+                        <div key={hotel.id || hi} className="bg-white p-4 border border-gray-200 mb-3">
                           {stayList(city).length > 1 && (
                             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Stay {hi + 1}</p>
                           )}
@@ -1424,7 +1424,7 @@ function NewTripContent() {
                                     <img
                                       src={imageUrl}
                                       alt={hotel.name}
-                                      className="w-full h-48 object-cover rounded-lg"
+                                      className="w-full h-48 object-cover"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}
@@ -1434,7 +1434,7 @@ function NewTripContent() {
                                 
                                 {/* TripAdvisor Information */}
                                 {(hotel.rating || numReviews || tripadvisorWebUrl) && (
-                                  <div className="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                  <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200">
                                     <div className="flex items-center justify-between flex-wrap gap-2">
                                       {hotel.rating && hotel.rating > 0 && (
                                         <div className="flex items-center gap-2">
@@ -1487,7 +1487,7 @@ function NewTripContent() {
                                       type="text"
                                       value={hotel.name}
                                       onChange={(e) => updateHotelAt(city.id, hi, 'name', e.target.value)}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                      className="w-full px-3 py-2 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black"
                                       placeholder="Hotel name"
                                     />
                                   </div>
@@ -1497,7 +1497,7 @@ function NewTripContent() {
                                       type="text"
                                       value={hotel.location}
                                       onChange={(e) => updateHotelAt(city.id, hi, 'location', e.target.value)}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                      className="w-full px-3 py-2 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black"
                                       placeholder="Address"
                                     />
                                   </div>
@@ -1528,7 +1528,7 @@ function NewTripContent() {
                                     value={hotel.review}
                                     onChange={(e) => updateHotelAt(city.id, hi, 'review', e.target.value)}
                                     rows={3}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                                    className="w-full px-3 py-2 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black"
                                     placeholder="What was it like? Would you stay again?"
                                   />
                                 </div>
@@ -1547,9 +1547,9 @@ function NewTripContent() {
                       {(
                         <div className="space-y-3">
                           {addingHotel === city.id ? (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div className="bg-yellow-50 border border-yellow-200 p-3">
                               {/* Hotel or rental? */}
-                              <div className="inline-flex rounded-lg border border-yellow-300 bg-white p-0.5 mb-3" role="tablist">
+                              <div className="inline-flex border border-yellow-300 bg-white p-0.5 mb-3" role="tablist">
                                 {(['hotel', 'rental'] as const).map((m) => (
                                   <button
                                     key={m}
@@ -1557,7 +1557,7 @@ function NewTripContent() {
                                     role="tab"
                                     aria-selected={stayMode === m}
                                     onClick={() => setStayMode(m)}
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                                       stayMode === m ? 'bg-yellow-600 text-white' : 'text-gray-700 hover:bg-yellow-50'
                                     }`}
                                   >
@@ -1576,7 +1576,7 @@ function NewTripContent() {
                                         value={rentalName}
                                         onChange={(e) => setRentalName(e.target.value)}
                                         placeholder="e.g. Sunny loft in Condesa"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                        className="w-full px-3 py-2 border border-[#E2DDD5] focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
                                       />
                                     </div>
                                     <div>
@@ -1586,7 +1586,7 @@ function NewTripContent() {
                                         value={rentalArea}
                                         onChange={(e) => setRentalArea(e.target.value)}
                                         placeholder="e.g. Roma Norte"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                        className="w-full px-3 py-2 border border-[#E2DDD5] focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
                                       />
                                     </div>
                                   </div>
@@ -1603,7 +1603,7 @@ function NewTripContent() {
                                       onBlur={() => { if (rentalUrl && !rentalSite) lookUpRental(rentalUrl); }}
                                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookUpRental(rentalUrl); } }}
                                       placeholder="https://www.airbnb.com/rooms/…  or  https://www.vrbo.com/…"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
+                                      className="w-full px-3 py-2 border border-[#E2DDD5] focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm text-gray-900"
                                     />
                                     <p className="mt-1 text-xs text-gray-500">
                                       {rentalLoading ? 'Getting the rental’s details…' : 'If you have the Airbnb / VRBO link, paste it to add a link (and, for Airbnb, a photo).'}
@@ -1614,7 +1614,7 @@ function NewTripContent() {
                                     <img
                                       src={rentalImage}
                                       alt=""
-                                      className="w-full h-40 object-cover rounded-lg border border-yellow-200"
+                                      className="w-full h-40 object-cover border border-yellow-200"
                                       onError={() => setRentalImage(null)}
                                     />
                                   )}
@@ -1638,14 +1638,14 @@ function NewTripContent() {
                                         setStayMode('hotel');
                                         handleCancelHotel();
                                       }}
-                                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                      className="px-3 py-1.5 bg-yellow-600 text-white hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                                     >
                                       Save
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => { resetRental(); setStayMode('hotel'); handleCancelHotel(); }}
-                                      className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                      className="px-3 py-1.5 bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors text-sm font-medium"
                                     >
                                       Cancel
                                     </button>
@@ -1664,12 +1664,12 @@ function NewTripContent() {
                                 countryName={[city.area && city.area !== city.name ? city.area : '', city.state && city.state !== city.name ? city.state : '', city.country].filter(Boolean).join(', ')}
                               />
                               {selectedHotelData && (
-                                <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-yellow-300">
+                                <div className="mb-2 flex gap-3 p-2 bg-white border border-yellow-300">
                                   {selectedHotelData.photo_url ? (
                                     <img
                                       src={selectedHotelData.photo_url}
                                       alt=""
-                                      className="w-24 h-20 object-cover rounded-md shrink-0"
+                                      className="w-24 h-20 object-cover shrink-0"
                                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />
                                   ) : null}
@@ -1687,14 +1687,14 @@ function NewTripContent() {
                                   type="button"
                                   onClick={() => handleSaveHotel(city.id)}
                                   disabled={!newHotelName.trim()}
-                                  className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                  className="px-3 py-1.5 bg-yellow-600 text-white hover:bg-yellow-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                                 >
                                   Save
                                 </button>
                                 <button
                                   type="button"
                                   onClick={handleCancelHotel}
-                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors text-sm font-medium"
                                 >
                                   Cancel
                                 </button>
@@ -1709,7 +1709,7 @@ function NewTripContent() {
                                   <button
                                     type="button"
                                     onClick={() => setAddingHotel(city.id)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
                                   >
                                     <Plus className="w-4 h-4 inline mr-2" />
                                     Add hotel or rental
@@ -1719,7 +1719,7 @@ function NewTripContent() {
                                 <button
                                   type="button"
                                   onClick={() => setAddingHotel(city.id)}
-                                  className="w-full flex items-center justify-center px-3 py-2.5 border-2 border-dashed border-blue-300 text-blue-700 rounded-xl hover:bg-blue-50 transition-colors text-sm font-medium"
+                                  className="w-full flex items-center justify-center px-3 py-2.5 border-2 border-dashed border-blue-300 text-blue-700 hover:bg-blue-50 transition-colors text-sm font-medium"
                                 >
                                   <Plus className="w-4 h-4 mr-1" />
                                   Add another hotel or rental
@@ -1738,7 +1738,7 @@ function NewTripContent() {
                       📅 Days ({city.numberOfDays} {city.numberOfDays === 1 ? 'day' : 'days'})
                     </h4>
                     {city.days.map((day) => (
-                      <div key={day.id} className="border border-gray-200 rounded-lg">
+                      <div key={day.id} className="border border-gray-200">
                         <button
                           type="button"
                           onClick={() => toggleSection(`${city.id}-${day.id}`, 'day')}
@@ -1770,7 +1770,7 @@ function NewTripContent() {
                                   <button
                                     type="button"
                                     onClick={() => addRestaurant(city.id, day.id)}
-                                    className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                    className="flex items-center px-3 py-1.5 bg-green-600 text-white hover:bg-green-700 transition-colors text-sm font-medium"
                                   >
                                     <Plus className="w-3 h-3 mr-1" />
                                     Add Restaurant
@@ -1778,7 +1778,7 @@ function NewTripContent() {
                                 )}
                               </div>
                               {addingRestaurant?.cityId === city.id && addingRestaurant?.dayId === day.id ? (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                                <div className="bg-green-50 border border-green-200 p-3 mb-4">
                                   <TripAdvisorSearch
                                     value={newRestaurantName}
                                     onChange={setNewRestaurantName}
@@ -1791,12 +1791,12 @@ function NewTripContent() {
                                     countryName={[city.area && city.area !== city.name ? city.area : '', city.state && city.state !== city.name ? city.state : '', city.country].filter(Boolean).join(', ')}
                                   />
                                   {selectedRestaurantData && (
-                                    <div className="mb-2 flex gap-3 p-2 bg-white rounded-lg border border-green-300">
+                                    <div className="mb-2 flex gap-3 p-2 bg-white border border-green-300">
                                       {selectedRestaurantData.photo_url ? (
                                         <img
                                           src={selectedRestaurantData.photo_url}
                                           alt=""
-                                          className="w-24 h-20 object-cover rounded-md shrink-0"
+                                          className="w-24 h-20 object-cover shrink-0"
                                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                         />
                                       ) : null}
@@ -1814,14 +1814,14 @@ function NewTripContent() {
                                       type="button"
                                       onClick={() => handleSaveRestaurant(city.id, day.id)}
                                       disabled={!newRestaurantName.trim()}
-                                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                      className="px-3 py-1.5 bg-green-600 text-white hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                                     >
                                       Save
                                     </button>
                                     <button
                                       type="button"
                                       onClick={handleCancelRestaurant}
-                                      className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                                      className="px-3 py-1.5 bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors text-sm font-medium"
                                     >
                                       Cancel
                                     </button>
@@ -1839,7 +1839,7 @@ function NewTripContent() {
                                   void tripadvisorData;
                                   
                                   return (
-                                    <div key={restaurant.id} className="bg-green-50 rounded-xl p-4 mb-3 border border-green-200">
+                                    <div key={restaurant.id} className="bg-green-50 p-4 mb-3 border border-green-200">
                                       <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center space-x-2">
                                           <span className="text-lg">🍽️</span>
@@ -1848,7 +1848,7 @@ function NewTripContent() {
                                         <button
                                           type="button"
                                           onClick={() => removeRestaurant(city.id, day.id, restaurant.id)}
-                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors text-xs font-medium"
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 transition-colors text-xs font-medium"
                                         title="Remove restaurant"
                                       >
                                         <X className="w-4 h-4" />
@@ -1860,7 +1860,7 @@ function NewTripContent() {
                                           <img
                                             src={imageUrl}
                                             alt={restaurant.name}
-                                            className="w-full h-32 object-cover rounded-lg"
+                                            className="w-full h-32 object-cover"
                                             onError={(e) => {
                                               (e.target as HTMLImageElement).style.display = 'none';
                                             }}
@@ -1874,7 +1874,7 @@ function NewTripContent() {
                                           type="text"
                                           value={restaurant.name}
                                           onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'name', e.target.value)}
-                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
+                                          className="w-full px-2 py-1.5 border border-[#E2DDD5] focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
                                           placeholder="Restaurant name"
                                         />
                                       </div>
@@ -1884,7 +1884,7 @@ function NewTripContent() {
                                           type="text"
                                           value={restaurant.location}
                                           onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'location', e.target.value)}
-                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
+                                          className="w-full px-2 py-1.5 border border-[#E2DDD5] focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
                                           placeholder="Address"
                                         />
                                       </div>
@@ -1912,7 +1912,7 @@ function NewTripContent() {
                                         value={restaurant.review}
                                         onChange={(e) => updateRestaurant(city.id, day.id, restaurant.id, 'review', e.target.value)}
                                         rows={2}
-                                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
+                                        className="w-full px-2 py-1.5 border border-[#E2DDD5] focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm text-black"
                                         placeholder="Review"
                                       />
                                     </div>
@@ -1932,7 +1932,7 @@ function NewTripContent() {
                                 <button
                                   type="button"
                                   onClick={() => addActivity(city.id, day.id)}
-                                  className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                                  className="flex items-center px-3 py-1.5 bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium"
                                 >
                                   <Plus className="w-3 h-3 mr-1" />
                                   Add Activity
@@ -1942,7 +1942,7 @@ function NewTripContent() {
                                 <p className="text-gray-500 text-sm text-center py-4">No activities added for this day</p>
                               ) : (
                                 day.activities.map((activity, index) => (
-                                  <div key={activity.id} data-activity-id={activity.id} className="bg-purple-50 rounded-xl p-4 mb-3 border border-purple-200 scroll-mt-24">
+                                  <div key={activity.id} data-activity-id={activity.id} className="bg-purple-50 p-4 mb-3 border border-purple-200 scroll-mt-24">
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center space-x-2">
                                         <span className="text-lg">🎯</span>
@@ -1951,7 +1951,7 @@ function NewTripContent() {
                                       <button
                                         type="button"
                                         onClick={() => removeActivity(city.id, day.id, activity.id)}
-                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors text-xs font-medium"
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 transition-colors text-xs font-medium"
                                         title="Remove activity"
                                       >
                                         <X className="w-4 h-4" />
@@ -1963,7 +1963,7 @@ function NewTripContent() {
                                         <img
                                           src={activity.imageUrl}
                                           alt={activity.name}
-                                          className="w-full h-32 object-cover rounded-lg"
+                                          className="w-full h-32 object-cover"
                                           onError={(e) => {
                                             (e.target as HTMLImageElement).style.display = 'none';
                                           }}
@@ -1999,7 +1999,7 @@ function NewTripContent() {
                                           type="text"
                                           value={activity.location}
                                           onChange={(e) => updateActivity(city.id, day.id, activity.id, 'location', e.target.value)}
-                                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
+                                          className="w-full px-2 py-1.5 border border-[#E2DDD5] focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
                                           placeholder="Address"
                                         />
                                       </div>
@@ -2027,7 +2027,7 @@ function NewTripContent() {
                                         value={activity.review}
                                         onChange={(e) => updateActivity(city.id, day.id, activity.id, 'review', e.target.value)}
                                         rows={2}
-                                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
+                                        className="w-full px-2 py-1.5 border border-[#E2DDD5] focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-black"
                                         placeholder="Review"
                                       />
                                     </div>
@@ -2038,7 +2038,7 @@ function NewTripContent() {
                                 <button
                                   type="button"
                                   onClick={() => addActivity(city.id, day.id)}
-                                  className="w-full flex items-center justify-center px-3 py-2.5 border-2 border-dashed border-purple-300 text-purple-700 rounded-xl hover:bg-purple-50 transition-colors text-sm font-medium"
+                                  className="w-full flex items-center justify-center px-3 py-2.5 border-2 border-dashed border-purple-300 text-purple-700 hover:bg-purple-50 transition-colors text-sm font-medium"
                                 >
                                   <Plus className="w-4 h-4 mr-1" />
                                   Add another activity
@@ -2066,27 +2066,31 @@ function NewTripContent() {
         >
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-normal text-gray-900 mb-2">{editingId ? 'Continue your trip' : 'Add New Trip'}</h1>
-            <p className="text-gray-600">
+            <p className="font-mono text-xs tracking-[0.14em] text-[#1F6F78] mb-2">{editingId ? 'YOUR TRIP' : 'SHARE A TRIP'}</p>
+            <h1 className="font-serif text-[34px] sm:text-[44px] leading-[1.05] font-normal text-[#13212B] mb-2">{editingId ? 'Continue your trip' : 'Type your trip in'}</h1>
+            <p className="font-serif text-[18px] text-[#3A4A54]">
               {editingId
-                ? 'Keep adding places, reviews and details, then save your changes'
-                : 'Document your travel experience with detailed reviews'}
+                ? 'Keep adding places and notes, then save your changes.'
+                : 'City by city: where you stayed, where you ate and what you did. A few honest notes are worth more than a long list.'}
             </p>
             {importNotice && (
-              <p className="mt-3 text-sm text-[#3F5B6A] bg-[#E3ECEF] border border-[#C9D9DF] rounded-lg px-3 py-2">{importNotice}</p>
+              <p className="mt-3 text-sm text-[#3F5B6A] bg-[#E3ECEF] border border-[#C9D9DF] px-3 py-2">{importNotice}</p>
             )}
             {!editingId && !importNotice && (
-              <Link href="/trips/import" className="mt-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border border-[#13212B] bg-white hover:bg-[#F8F6F1]">
-                <span className="font-serif text-lg">Have notes or an itinerary email? Paste it and AI fills this in.</span>
-                <span className="font-mono text-xs tracking-[0.1em] text-[#1F6F78]">SHARE IN 5 MINUTES →</span>
+              <Link href="/trips/import" className="mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-2 border-[#13212B] bg-white hover:bg-[#F8F6F1]">
+                <span className="min-w-0 flex-[1_1_240px]">
+                  <span className="block font-serif text-[20px] leading-snug">Rather not type it all? Paste your notes instead.</span>
+                  <span className="block text-sm text-[#5B6A73] mt-0.5">An itinerary email, phone notes, a spreadsheet: AI fills in this form for you to check.</span>
+                </span>
+                <span className="font-mono text-xs tracking-[0.1em] text-[#F8F6F1] bg-[#13212B] px-4 py-3">PASTE MY NOTES →</span>
               </Link>
             )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Trip Information */}
-            <div data-tour="trip-info" className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-normal text-gray-900 mb-6">Trip Information</h2>
+            <div data-tour="trip-info" className="bg-white border border-[#E2DDD5] p-5 sm:p-6">
+              <h2 className="font-serif text-[26px] font-normal text-[#13212B] mb-6">Trip Information</h2>
               
               <div className="grid grid-cols-1 gap-6">
                 <div>
@@ -2096,7 +2100,7 @@ function NewTripContent() {
                   <select
                     value={region}
                     onChange={(e) => setRegion(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                    className="w-full px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black bg-white"
                   >
                     <option value="">Choose a region…</option>
                     {REGIONS.map((r) => (
@@ -2129,7 +2133,7 @@ function NewTripContent() {
                     setSelectedCity('');
                     setCustomCityName('');
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                  className="w-full px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black bg-white"
                 >
                   <option value="">
                     {countryList.length ? 'Add another country…' : region ? `Choose a country in ${region}…` : 'Choose a country…'}
@@ -2180,7 +2184,7 @@ function NewTripContent() {
                             if (v === 'custom') setAreaTypingOpen(country);
                             else if (v) addTripArea(country, v);
                           }}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                          className="w-full px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black bg-white"
                         >
                           <option value="">{chosen.length ? 'Add another area…' : 'Choose an area…'}</option>
                           {options.map((a) => (
@@ -2204,7 +2208,7 @@ function NewTripContent() {
                                 }
                               }}
                               placeholder="Area name, e.g. Algarve"
-                              className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                              className="flex-1 min-w-0 px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black"
                             />
                             <button
                               type="button"
@@ -2213,7 +2217,7 @@ function NewTripContent() {
                                 setAreaTyping((p) => ({ ...p, [country]: '' }));
                                 setAreaTypingOpen(null);
                               }}
-                              className="px-4 rounded-lg bg-[#2F4A5C] text-white text-sm font-semibold"
+                              className="px-4 bg-[#2F4A5C] text-white text-sm font-semibold"
                             >
                               Add
                             </button>
@@ -2231,7 +2235,7 @@ function NewTripContent() {
                   <select
                     value={tripType}
                     onChange={(e) => setTripType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                    className="w-full px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black bg-white"
                   >
                     <option value="">Choose a type…</option>
                     {TRIP_TYPES.map((t) => (
@@ -2249,7 +2253,7 @@ function NewTripContent() {
                 const years: string[] = [];
                 for (let y = thisYear; y >= FIRST_YEAR; y--) years.push(String(y));
                 if (year && year !== '0000' && !years.includes(year)) years.push(year);
-                const sel = 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white';
+                const sel = 'w-full px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black bg-white';
                 return (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mt-6">
                     <div>
@@ -2291,7 +2295,7 @@ function NewTripContent() {
 
               {/* Overall comments about the trip */}
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">💬 Overall comments</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Overall comments</label>
                 <p className="text-xs text-gray-500 mb-2">Your overall impressions: highlights, what you’d do differently, tips for anyone planning the same trip.</p>
                 <textarea
                   name="description"
@@ -2299,7 +2303,7 @@ function NewTripContent() {
                   onChange={handleInputChange}
                   rows={4}
                   placeholder="e.g. Loved the food and the people. Five days was perfect; I’d skip the hop-on bus and spend an extra morning in Coyoacán."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                  className="w-full px-4 py-3 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-black"
                 />
               </div>
 
@@ -2307,13 +2311,13 @@ function NewTripContent() {
               {renderFlights(
                 flightLegs,
                 setFlightLegs,
-                '✈️ Getting there',
+                'Getting there',
                 'Your flights to the destination, one line per flight (e.g. YYZ → JFK, then JFK → ATH).'
               )}
               {renderFlights(
                 returnLegs,
                 setReturnLegs,
-                '🛬 Getting home',
+                'Getting home',
                 'Your flights back, one line per flight (e.g. ATH → JFK, then JFK → YYZ).',
                 // start the first return flight from where the outbound trip ended
                 flightLegs.length ? flightLegs[flightLegs.length - 1].to : ''
@@ -2329,28 +2333,28 @@ function NewTripContent() {
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Cover photo</label>
                 {coverImageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                  <div className="relative overflow-hidden border border-gray-200">
                     <img src={coverImageUrl} alt="Trip cover" className="w-full h-48 object-cover" />
                     <div className="absolute bottom-2 right-2 flex gap-2">
                       <button
                         type="button"
                         onClick={() => { setCoverImageUrl(null); if (coverChoices.length === 0) loadCoverChoices(); }}
-                        className="px-3 py-1.5 bg-white/90 text-gray-800 rounded-lg text-sm font-medium hover:bg-white"
+                        className="px-3 py-1.5 bg-white/90 text-gray-800 text-sm font-medium hover:bg-white"
                       >
                         Change
                       </button>
                       <button
                         type="button"
                         onClick={() => setCoverImageUrl(null)}
-                        className="px-3 py-1.5 bg-white/90 text-red-600 rounded-lg text-sm font-medium hover:bg-white"
+                        className="px-3 py-1.5 bg-white/90 text-red-600 text-sm font-medium hover:bg-white"
                       >
                         Remove
                       </button>
                     </div>
                   </div>
                 ) : !coverPlace ? (
-                  <div className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400 text-sm">
-                    Choose a country below, then pick a photo of it for your trip's cover
+                  <div className="w-full px-4 py-3 border border-gray-200 bg-gray-50 text-gray-400 text-sm">
+                    Choose the trip's country above, then pick a photo of it for your trip's cover
                   </div>
                 ) : coverChoices.length === 0 ? (
                   <div>
@@ -2358,7 +2362,7 @@ function NewTripContent() {
                       type="button"
                       onClick={loadCoverChoices}
                       disabled={loadingCovers}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                      className="px-4 py-2 border border-[#E2DDD5] text-gray-700 hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
                     >
                       {loadingCovers ? 'Loading photos...' : `Choose a cover photo of ${coverPlace}`}
                     </button>
@@ -2386,14 +2390,13 @@ function NewTripContent() {
                   </div>
 
             {/* Cities and their data */}
-            <div data-tour="countries" className="bg-white rounded-lg shadow p-6">
+            <div data-tour="countries" className="bg-white border border-[#E2DDD5] p-5 sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-normal text-gray-900">Countries & Cities</h2>
               </div>
 
               {countryList.length === 0 && (
-                <div className="text-center py-10 rounded-xl border border-dashed border-gray-300 bg-gray-50">
-                  <div className="text-5xl mb-3">🌍</div>
+                <div className="text-center py-10 border border-dashed border-[#E2DDD5] bg-gray-50">
                   <p className="text-gray-700 font-medium">Choose a country in Trip Information above</p>
                   <p className="text-gray-500 text-sm mt-1">Then add its cities, and for each city your hotel, days, restaurants and activities.</p>
                 </div>
@@ -2436,7 +2439,7 @@ function NewTripContent() {
                             return next;
                           });
                         }}
-                        className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg"
+                        className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1"
                       >
                         Remove country
                       </button>
@@ -2460,7 +2463,7 @@ function NewTripContent() {
                               setSelectedState(e.target.value);
                               if (selectedCity !== 'custom') setSelectedCity('');
                             }}
-                            className="w-full md:w-1/2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                            className="w-full md:w-1/2 px-3 py-2.5 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-gray-900 bg-white"
                           >
                             <option value="">Choose…</option>
                             {statesOf(country).map((st) => (
@@ -2480,7 +2483,7 @@ function NewTripContent() {
                               setSelectedArea(e.target.value);
                               if (selectedCity !== 'custom') setSelectedCity('');
                             }}
-                            className="w-full md:w-1/2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                            className="w-full md:w-1/2 px-3 py-2.5 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-gray-900 bg-white"
                           >
                             <option value="">Not in a particular area</option>
                             {areasHere.map((ar) => (
@@ -2497,7 +2500,7 @@ function NewTripContent() {
                             setSelectedCity(e.target.value);
                             if (e.target.value !== 'custom') setCustomCityName('');
                           }}
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                          className="w-full px-3 py-2.5 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-gray-900 bg-white"
                         >
                           <option value="">Choose a city…</option>
                           {isAdding && areaName && (
@@ -2518,7 +2521,7 @@ function NewTripContent() {
                             onChange={(e) => setCustomCityName(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                             placeholder="City name"
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            className="w-full px-3 py-2.5 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-gray-900"
                           />
                         ) : (
                           <select
@@ -2527,7 +2530,7 @@ function NewTripContent() {
                               focusCountry(country);
                               setSelectedNumberOfDays(e.target.value);
                             }}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                            className="w-full px-3 py-2.5 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-gray-900 bg-white"
                           >
                             <option value="">Number of days…</option>
                             {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
@@ -2539,7 +2542,7 @@ function NewTripContent() {
                           <select
                             value={selectedNumberOfDays}
                             onChange={(e) => setSelectedNumberOfDays(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                            className="w-full px-3 py-2.5 border border-[#E2DDD5] focus:ring-2 focus:ring-[#1F6F78] focus:border-transparent text-gray-900 bg-white"
                           >
                             <option value="">Number of days…</option>
                             {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
@@ -2556,7 +2559,7 @@ function NewTripContent() {
                             (selectedCity === 'custom' && customCityName.trim() === '') ||
                             !selectedNumberOfDays
                           }
-                          className={`px-4 py-2.5 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${isAdding && selectedCity === 'custom' ? 'md:col-span-3' : ''}`}
+                          className={`px-4 py-2.5 bg-[#4A6878] text-white hover:bg-[#3F5B6A] transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${isAdding && selectedCity === 'custom' ? 'md:col-span-3' : ''}`}
                         >
                           + Add city
                         </button>
@@ -2573,18 +2576,18 @@ function NewTripContent() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3"
               >
                 {error}
               </motion.div>
             )}
 
             {/* Submit Button */}
-            <div data-tour="save-buttons" className="flex justify-end space-x-4">
+            <div data-tour="save-buttons" className="flex flex-wrap justify-end gap-3">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="min-h-[48px] px-5 border border-[#E2DDD5] font-mono text-xs tracking-[0.1em] uppercase text-[#13212B] hover:bg-[#F6F3EE] transition-colors"
               >
                 Cancel
               </button>
@@ -2594,7 +2597,7 @@ function NewTripContent() {
                   value="draft"
                   formNoValidate
                   disabled={isLoading || loadingTrip}
-                  className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center min-h-[48px] px-5 border border-[#13212B] font-mono text-xs tracking-[0.1em] uppercase text-[#13212B] hover:bg-[#F6F3EE] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingId ? 'Save draft' : 'Save as draft'}
                 </button>
@@ -2603,13 +2606,13 @@ function NewTripContent() {
                 type="submit"
                 value="publish"
                 disabled={isLoading || loadingTrip}
-                className="flex items-center px-6 py-3 bg-[#1F6F78] text-white rounded-lg hover:bg-[#1F6F78]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center min-h-[48px] px-5 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em] uppercase hover:bg-[#24394A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {isLoading
                   ? 'Saving...'
                   : !editingId
-                  ? 'Save Trip'
+                  ? 'Share trip'
                   : editingStatus === 'draft'
                   ? 'Publish trip'
                   : 'Save changes'}

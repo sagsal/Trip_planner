@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense, FormEvent } from 'react';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { CardTrip, parseList, tripDays } from '@/components/TripCard';
+import { slugify } from '@/lib/slug';
 import { startSiteTour } from '@/components/SiteTour';
 import { monthYear } from '@/lib/dates';
 import { placeFields } from '@/lib/placeDetails';
@@ -17,8 +18,8 @@ const HATCH = { background: 'repeating-linear-gradient(135deg, #EFEBE3 0 1px, #F
 
 const STEPS = [
   { n: '01', title: 'Share your trip', text: 'Add your cities, hotels, restaurants and activities for each day. Or import your notes and let AI fill it in.' },
-  { n: '02', title: 'Find trips like yours', text: 'Ask in plain words, like “a family week in Mexico”, and see real itineraries that fit.' },
-  { n: '03', title: 'Plan in your Sandbox', text: 'Save the places you like into planned trips, and let AI arrange them day by day.' },
+  { n: '02', title: 'Find trips like yours', text: 'Ask in plain words, like “a week in Belize with teens”, and see real itineraries that fit.' },
+  { n: '03', title: 'Plan your next trip', text: 'Save the places you like into planned trips, and let AI arrange them day by day.' },
   { n: '04', title: 'Ask for advice', text: 'Planning a trip? Ask members who’ve been there. They tell you if it’s too many days, which hotel to swap, or what not to miss, and you accept the best ideas with one tap.' },
 ];
 
@@ -84,7 +85,7 @@ function AdviceBand({ asking }: { asking: { signedIn: boolean; list: AskCard[]; 
               </p>
               <p className="text-[15px] text-[#5B6A73]">
                 {asking.signedIn
-                  ? 'Open a planned trip in your Sandbox and tap Ask for advice. Members who’ve been there are told about it.'
+                  ? 'Open a planned trip in My plans and tap Ask for advice. Members who’ve been there are told about it.'
                   : 'Members ask questions like these about the trips they’re planning, and members who’ve been there answer. Requests are visible to signed-in members.'}
               </p>
             </div>
@@ -93,6 +94,17 @@ function AdviceBand({ asking }: { asking: { signedIn: boolean; list: AskCard[]; 
       </div>
     </section>
   );
+}
+
+/** "A week in Belize with teens": an example search built from a real shared trip */
+function exampleSearch(t: CardTrip): string {
+  const country = parseList(t.countries)[0] || '';
+  if (!country) return '';
+  const days = tripDays(t);
+  const span = days >= 13 ? 'Two weeks' : days >= 6 ? 'A week' : days >= 3 ? 'A long weekend' : days ? 'A couple of days' : 'A trip';
+  const who = (t.tripType || '').toLowerCase();
+  const withWho = who.includes('teen') ? ' with teens' : who.includes('kid') || who.includes('famil') ? ' with kids' : who.includes('couple') ? ' for two' : who.includes('multi') ? ' with the grandparents' : who.includes('solo') ? ' on my own' : '';
+  return `${span} in ${country}${withWho}`;
 }
 
 function tripMeta(t: CardTrip) {
@@ -155,7 +167,7 @@ function SamplePage({ t }: { t: CardTrip }) {
                   </span>
                 )}
               </div>
-              {img && <img src={img} alt="" loading="lazy" className="w-12 h-12 object-cover border border-[#E2DDD5] shrink-0" />}
+              {img && <img src={img} alt="" className="w-12 h-12 object-cover border border-[#E2DDD5] shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
             </li>
           );
         })}
@@ -174,6 +186,7 @@ function HomeContent() {
   const [q, setQ] = useState('');
   const [trips, setTrips] = useState<CardTrip[] | null>(null);
   const [covers, setCovers] = useState<CardTrip[]>([]);
+  const [shared, setShared] = useState<CardTrip[]>([]);
   const [slide, setSlide] = useState(0);
   const [asking, setAsking] = useState<{ signedIn: boolean; list: AskCard[]; openCount: number } | null>(null);
 
@@ -188,6 +201,7 @@ function HomeContent() {
       .then((d) => {
         const shared = (d.trips || []).filter((t: any) => t.isPublic && !t.isDraft && !t.title?.includes('TEMPLATE') && !t.title?.includes('DATABASE:'));
         setTrips(shared.slice(0, 3));
+        setShared(shared);
         // Every shared trip's cover photo, for the rotating picture at the top
         const seen = new Set<string>();
         setCovers(shared.filter((t: CardTrip) => t.coverImageUrl && !seen.has(t.coverImageUrl) && seen.add(t.coverImageUrl)));
@@ -226,6 +240,12 @@ function HomeContent() {
   };
 
   const cover = covers[slide] || null;
+  // Examples and shortcuts come from trips that exist, so a first search always finds something
+  const examples = Array.from(new Set(shared.map(exampleSearch).filter(Boolean)));
+  const placeholder = examples[0] ? `${examples[0]}…` : 'Where are you thinking of going?';
+  const countryCounts = new Map<string, number>();
+  for (const t of shared) for (const c of parseList(t.countries)) countryCounts.set(c, (countryCounts.get(c) || 0) + 1);
+  const topCountries = Array.from(countryCounts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 6);
 
   return (
     <div className="min-h-screen bg-[#F8F6F1] text-[#13212B] pt-16">
@@ -252,7 +272,7 @@ function HomeContent() {
                 id="home-ask"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="A family week in Mexico…"
+                placeholder={placeholder}
                 style={SERIF}
                 className="flex-[1_1_240px] min-w-0 border-0 outline-none px-5 py-4 text-xl bg-transparent text-[#13212B] placeholder:text-[#7A858B]"
               />
@@ -262,6 +282,17 @@ function HomeContent() {
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
               </button>
             </form>
+            {topCountries.length > 0 && (
+              <div className="-mt-2 flex flex-wrap items-center gap-x-1 gap-y-2">
+                <span style={MONO} className="text-[11px] tracking-[0.1em] text-[#5B6A73] mr-2">TRIPS SO FAR:</span>
+                {topCountries.map(([c, n]) => (
+                  <Link key={c} href={`/destinations/${slugify(c)}`} style={MONO}
+                    className="inline-flex items-center min-h-[36px] px-2.5 border border-[#E2DDD5] bg-white text-xs tracking-[0.06em] text-[#13212B] hover:border-[#13212B]">
+                    {c.toUpperCase()} <span className="ml-1.5 text-[#5B6A73]">{n}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
             <p style={MONO} className="text-xs text-[#5B6A73] tracking-[0.04em]">
               New here?{' '}
               <button type="button" onClick={startSiteTour} style={{ color: ACCENT }} className="underline underline-offset-[3px]">Take the 2-minute guided tour →</button>
@@ -300,7 +331,7 @@ function HomeContent() {
                     </span>
                   </>
                 ) : (
-                  <span>Share and Plan</span>
+                  <span>tripshare</span>
                 )}
               </figcaption>
             </div>
@@ -356,7 +387,7 @@ function HomeContent() {
 
       <footer>
         <div style={MONO} className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-7 pb-10 flex flex-wrap gap-x-7 gap-y-4 justify-between text-xs tracking-[0.06em] text-[#5B6A73]">
-          <span>SHARE AND PLAN · TRIPSHARE.ORG</span>
+          <span>TRIPSHARE.ORG</span>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-1">
             <Link href="/about" className="py-1.5 hover:text-[#13212B]">About</Link>
             <Link href="/how-to" className="py-1.5 hover:text-[#13212B]">How to use</Link>

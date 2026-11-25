@@ -12,7 +12,7 @@ import { sendEmail } from '@/lib/email';
 export const dynamic = 'force-dynamic';
 
 const owner = () => (process.env.ADMIN_EMAILS || '').split(/[,\s]+/).filter(Boolean)[0];
-const FROM = 'Share and Plan inbox <hello@tripshare.org>';
+const FROM = 'tripshare inbox <hello@tripshare.org>';
 
 function verify(raw: string, h: Headers): boolean {
   const secret = process.env.RESEND_WEBHOOK_SECRET;

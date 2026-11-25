@@ -10,14 +10,14 @@ export const revalidate = 600;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const d = await destination(slug).catch(() => null);
-  if (!d) return { title: 'Destination · Share and Plan' };
+  if (!d) return { title: 'Destination · tripshare' };
   const n = d.trips.length;
   const cities = d.cities.slice(0, 4).map((c) => c.city).join(', ');
   return {
-    title: `${d.country} itineraries: ${n} real ${n === 1 ? 'trip' : 'trips'} · Share and Plan`,
+    title: `${d.country} itineraries: ${n} real ${n === 1 ? 'trip' : 'trips'} · tripshare`,
     description: `Real ${d.country} itineraries from travellers${cities ? ` (${cities})` : ''}: where they stayed, ate and explored, and what they'd skip.`,
     alternates: { canonical: `https://tripshare.org/destinations/${d.slug}` },
-    openGraph: { title: `${d.country}: real itineraries`, url: `https://tripshare.org/destinations/${d.slug}`, siteName: 'Share and Plan', type: 'website', images: d.trips.find((t) => t.coverImageUrl)?.coverImageUrl ? [{ url: d.trips.find((t) => t.coverImageUrl)!.coverImageUrl! }] : undefined },
+    openGraph: { title: `${d.country}: real itineraries`, url: `https://tripshare.org/destinations/${d.slug}`, siteName: 'tripshare', type: 'website', images: d.trips.find((t) => t.coverImageUrl)?.coverImageUrl ? [{ url: d.trips.find((t) => t.coverImageUrl)!.coverImageUrl! }] : undefined },
   };
 }
 

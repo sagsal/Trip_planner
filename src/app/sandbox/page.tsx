@@ -62,12 +62,12 @@ function SandboxContent() {
     try {
       const res = await fetch(`/api/sandbox?userId=${encodeURIComponent(u.id)}`, { cache: 'no-store' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Couldn’t load your sandbox.');
+      if (!res.ok) throw new Error(data.error || 'Couldn’t load My plans.');
       setTrips(data.trips || []);
       setPlaces(data.places || []);
       setFeedback(data.feedback || {});
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Couldn’t load your sandbox.');
+      setError(e instanceof Error ? e.message : 'Couldn’t load My plans.');
     } finally {
       setLoading(false);
     }
@@ -211,7 +211,7 @@ function SandboxContent() {
       <div className="min-h-screen bg-[#F8F6F1] pt-16">
         <div className="max-w-xl mx-auto px-4 py-20 text-center">
           <Package className="w-12 h-12 text-[#1F6F78] mx-auto mb-4" />
-          <h1 className="text-3xl font-normal text-[#13212B] mb-3">My Travel Sandbox</h1>
+          <h1 className="text-3xl font-normal text-[#13212B] mb-3">My plans</h1>
           <p className="text-[#4A5963] mb-6">Collect hotels, restaurants and activities from other travelers’ trips while you plan your own. Sign in to start.</p>
           <div className="flex gap-3 justify-center">
             <Link href="/login?next=%2Fsandbox" className="px-5 py-3 bg-[#13212B] text-white rounded-xl font-semibold">Sign in</Link>
@@ -229,14 +229,14 @@ function SandboxContent() {
 
         {loading ? (
           <div className="flex items-center justify-center py-24 text-[#5B6A73]">
-            <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading your sandbox…
+            <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading My plans…
           </div>
         ) : selected === null ? (
           /* ================= Sandbox home ================= */
           <>
             <div data-tour="sandbox-head" className="flex flex-wrap items-end justify-between gap-3 mb-6">
               <div>
-                <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">My Travel Sandbox</h1>
+                <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">My plans</h1>
                 <p className="text-[#5B6A73] mt-1">The trips you’re planning. Tap ＋ on any shared trip to save ideas here.</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -271,10 +271,14 @@ function SandboxContent() {
                   <button key={t.id} type="button" onClick={() => openTrip(t.id)}
                     className="text-left bg-white border border-[#E2DDD5] rounded-[4px] overflow-hidden transition-shadow flex flex-col">
                     <div className="relative h-32" style={{ background: '#DCE8E6' }}>
-                      {photo ? (
-                        <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                      ) : (
-                        <span className="absolute inset-0 flex items-center justify-center text-[#1F6F78]/60"><MapPin className="w-8 h-8" /></span>
+                      {/* A map pin and the trip's place names show until (or unless) a photo loads */}
+                      <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-[#1F6F78]/70">
+                        <MapPin className="w-7 h-7" />
+                        {cities.length > 0 && <span className="font-mono text-[11px] tracking-[0.1em] uppercase px-3 text-center line-clamp-1">{cities.slice(0, 3).join(' · ')}</span>}
+                      </span>
+                      {photo && (
+                        <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       )}
                       <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                         {f?.open ? (

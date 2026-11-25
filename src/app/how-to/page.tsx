@@ -3,8 +3,8 @@ import TourButton from '@/components/TourButton';
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'How to use · Share and Plan',
-  description: 'A quick guide to adding your trips, importing your notes, browsing other travelers’ trips, planning in your Travel Sandbox and getting feedback.',
+  title: 'How to use · tripshare',
+  description: 'A quick guide to adding your trips, importing your notes, browsing other travelers’ trips, planning in My plans and getting feedback.',
 };
 
 type Step = { title: string; body: ReactNode };
@@ -18,7 +18,7 @@ const SECTIONS: Section[] = [
     intro: 'A free account lets you save trips, collect ideas and share with other travelers.',
     steps: [
       { title: 'Create an account', body: <>Tap <b>Menu → Create an account</b> and enter your name, email and a password.</> },
-      { title: 'Find your way around', body: <>The <b>Menu</b> at the top right has everything. The <b>📦 sandbox icon</b> next to it shows how many places you’ve saved.</> },
+      { title: 'Find your way around', body: <>The <b>Menu</b> at the top right has everything. The <b><b>Plans</b> button</b> next to it shows how many places you’ve saved.</> },
       { title: 'Your account page', body: <>After signing in you land on <b>My account & trips</b>: buttons to add or import a trip, and a list of all your trips (drafts, private and shared).</> },
     ],
   },
@@ -64,12 +64,12 @@ const SECTIONS: Section[] = [
   {
     id: 'sandbox',
     icon: '📦',
-    title: 'Plan with My Travel Sandbox',
+    title: 'Plan with My plans',
     intro: 'Your planning space. Collect ideas from any trip while you plan as many future trips as you like.',
     steps: [
       { title: 'Save what you like', body: <>On any trip, tap <b>＋</b> next to a hotel, restaurant or activity — or <b>Save this day</b> / <b>Save this city</b> to grab a whole itinerary.</> },
       { title: 'Choose which trip it’s for', body: <>Pick one of your planned trips, start a new one (e.g. “Greece 2027”), or keep it in <b>Saved ideas</b> to decide later.</> },
-      { title: 'Organise your plan', body: <>Open the 📦 sandbox and tap a trip. <b>Plan</b> shows where you’ll stay and each day; <b>Ideas</b> holds places not on a day yet — use <b>Add to day</b>. Tap <b>⋯</b> on a place to add a note, move it or remove it, and <b>✨ Fill with AI</b> to build days for you.</> },
+      { title: 'Organise your plan', body: <>Open My plans and tap a trip. <b>Plan</b> shows where you’ll stay and each day; <b>Ideas</b> holds places not on a day yet — use <b>Add to day</b>. Tap <b>⋯</b> on a place to add a note, move it or remove it, and <b>✨ Fill with AI</b> to build days for you.</> },
       { title: 'Turn it into a trip', body: <>When you’re ready, open the trip’s <b>⋯</b> menu and choose <b>Turn into a trip to share</b>. Everything is filled into a new draft trip — after you travel, add your own ratings and reviews and share it.</> },
     ],
     tip: <>Each saved place keeps the original traveler’s rating and review, and a link back to their trip.</>,
@@ -80,7 +80,7 @@ const SECTIONS: Section[] = [
     title: 'Ask for advice on your plans',
     intro: 'Ask fellow members what they think before you go — and help them with theirs.',
     steps: [
-      { title: 'Ask for advice', body: <>In your Sandbox, open a planned trip and go to the <b>Advice</b> tab. Add what you’d like advice on (e.g. “Is 4 days in Bogotá too many?”) and tap <b>Share for feedback</b>.</> },
+      { title: 'Ask for advice', body: <>In My plans, open a planned trip and go to the <b>Advice</b> tab. Add what you’d like advice on (e.g. “Is 4 days in Bogotá too many?”) and tap <b>Share for feedback</b>.</> },
       { title: 'Members weigh in', body: <>Your plan appears in <b>Menu → Advice</b>. Members can comment on the whole trip, a city or a single place — “too many days”, “I’d skip it”, or <b>Go here instead…</b> with the actual hotel or restaurant.</> },
       { title: 'Use the best ideas', body: <>New suggestions show as <b>💬 new</b> on your trip. In the Advice tab, tap <b>Accept & swap</b> or <b>Accept & add</b> and your plan updates itself, or <b>Set aside</b> the rest. Close feedback whenever you like.</> },
       { title: 'Help others plan', body: <>Open <b>Advice</b>, pick a trip and tap <b>React</b> on any place, or <b>Agree</b> with advice you like.</> },
@@ -95,7 +95,7 @@ const SECTIONS: Section[] = [
     steps: [
       { title: 'Draft', body: <>Still working on it. Only you can see it. Open it from <b>My trips</b> to keep adding.</> },
       { title: 'Private', body: <>Finished, but just for you.</> },
-      { title: 'Shared', body: <>Visible to everyone on Browse trips, so others can learn from it and save ideas into their own sandbox.</> },
+      { title: 'Shared', body: <>Visible to everyone on Browse trips, so others can learn from it and save ideas into their own plans.</> },
     ],
   },
 ];
@@ -106,7 +106,7 @@ export default function HowToPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">How to use</p>
         <h1 className="text-3xl sm:text-5xl font-normal text-[#2F4A5C] leading-tight mb-4">Share your trips. Plan your next one.</h1>
-        <p className="text-lg text-[#4A5A63] mb-5">A quick guide to everything on Share and Plan.</p>
+        <p className="text-lg text-[#4A5A63] mb-5">A quick guide to everything on tripshare.</p>
         <TourButton className="mb-8" />
         <p className="text-sm text-[#5B6B75] mb-3">Or jump to what you need:</p>
 
@@ -154,7 +154,7 @@ export default function HowToPage() {
         <div className="mt-12 text-center">
           <p className="text-xl font-medium text-[#2F4A5C] mb-4">Ready?</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/trips/new" className="px-6 py-3 bg-[#4A6878] text-white rounded-lg hover:bg-[#3F5B6A] font-medium">Add your trip</Link>
+            <Link href="/trips/import" className="px-6 py-3 bg-[#13212B] text-white hover:bg-[#24394A] font-mono text-xs tracking-[0.1em] uppercase">Share a trip</Link>
             <Link href="/trips" className="px-6 py-3 bg-white border border-[#D9D2C7] text-[#2F4A5C] rounded-lg hover:bg-[#FBF9F5] font-medium">Browse trips</Link>
           </div>
         </div>

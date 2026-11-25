@@ -2,10 +2,10 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'For travel bloggers: share your itineraries · Share and Plan',
+  title: 'For travel bloggers: share your itineraries · tripshare',
   description: 'Share an itinerary you’ve already written in about 5 minutes, with your name and a link back to your blog. Free, no ads.',
   alternates: { canonical: 'https://tripshare.org/creators' },
-  openGraph: { title: 'For travel bloggers · Share and Plan', images: [{ url: 'https://tripshare.org/outreach/trip-review.jpg' }] },
+  openGraph: { title: 'For travel bloggers · tripshare', images: [{ url: 'https://tripshare.org/outreach/trip-review.jpg' }] },
 };
 
 const GETS = [
@@ -39,14 +39,14 @@ export default function CreatorsPage() {
           <p className={`${MONO} text-[#1F6F78] mb-4`}>FOR TRAVEL BLOGGERS</p>
           <h1 className="font-normal text-[42px] sm:text-[64px] leading-[1.02] tracking-[-0.02em] max-w-4xl">Your best itineraries, helping people plan, with your name on them</h1>
           <p className="font-serif text-xl sm:text-[22px] text-[#3A4A54] max-w-2xl mt-5">
-            Share and Plan is a free, ad-free site where travellers share real day-by-day trips, including what they’d skip. Share a trip you’ve already written about in about five minutes, with a link back to your blog.
+            tripshare is a free, ad-free site where travellers share real day-by-day trips, including what they’d skip. Share a trip you’ve already written about in about five minutes, with a link back to your blog.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             <Link href="/register?next=/trips/import" className="inline-flex items-center min-h-[52px] px-6 bg-[#13212B] text-[#F8F6F1] font-mono text-xs tracking-[0.1em] hover:bg-[#24394A]">SHARE YOUR FIRST TRIP</Link>
             <Link href="/destinations" className="inline-flex items-center min-h-[52px] px-6 border border-[#13212B] font-mono text-xs tracking-[0.1em] hover:bg-[#13212B] hover:text-[#F8F6F1]">SEE THE TRIPS</Link>
           </div>
           <figure className="mt-10 border border-[#E2DDD5] bg-white p-2.5 sm:p-3.5">
-            <img src="/outreach/trip-review.jpg" alt="A shared trip on Share and Plan: where the family stayed, their honest review and photo" className="w-full h-auto border border-[#E2DDD5]" />
+            <img src="/outreach/trip-review.jpg" alt="A shared trip on tripshare: where the family stayed, their honest review and photo" className="w-full h-auto border border-[#E2DDD5]" />
             <figcaption className="font-mono text-[11px] tracking-[0.08em] text-[#5B6A73] uppercase pt-3 pb-0.5">A real trip on the site: stays, days and the traveller’s own verdicts</figcaption>
           </figure>
         </div>
@@ -104,7 +104,7 @@ export default function CreatorsPage() {
           <h2 className="font-normal text-[36px] sm:text-[44px] leading-[1.05] mb-3">Where your trip shows up</h2>
           <p className="font-serif text-xl text-[#3A4A54] max-w-2xl mb-8">On its own page, and on the country page that gathers every member’s stays, restaurants and things to do.</p>
           <figure className="border border-[#E2DDD5] bg-white p-2.5 sm:p-3.5">
-            <img src="/outreach/destination.jpg" alt="A country page on Share and Plan" className="w-full h-auto border border-[#E2DDD5]" />
+            <img src="/outreach/destination.jpg" alt="A country page on tripshare" className="w-full h-auto border border-[#E2DDD5]" />
           </figure>
         </div>
       </section>

@@ -1,4 +1,4 @@
-/** My Travel Sandbox: shared types and input cleaning (used by the API and the pages). */
+/** My plans: shared types and input cleaning (used by the API and the pages). */
 
 export type PlaceKind = 'hotel' | 'restaurant' | 'activity';
 
@@ -98,6 +98,6 @@ export function cleanTripFields(b: any) {
   return out;
 }
 
-/** Fired in the browser whenever the sandbox changes, so the top-bar counter updates. */
+/** Fired in the browser whenever My plans changes, so the top-bar counter updates. */
 export const SANDBOX_EVENT = 'sandbox:changed';
 export const LAST_SANDBOX_TRIP_KEY = 'tripshare:lastSandboxTrip';

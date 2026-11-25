@@ -174,8 +174,16 @@ export default function ImportTripPage() {
               <button type="button" onClick={handlePasted} disabled={reading || !pasted.trim()} className={`${BTN} bg-[#13212B] text-[#F8F6F1] hover:bg-[#24394A]`}>
                 <Sparkles className="w-4 h-4" /> {reading ? 'Reading your trip…' : 'Turn this into a trip'}
               </button>
-              <span className="text-sm text-[#5B6A73]">Short notes are fine. Three honest places beat none.</span>
+              <label
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}
+                className={`${BTN} border border-[#13212B] cursor-pointer hover:bg-[#13212B] hover:text-[#F8F6F1]`}
+              >
+                <Upload className="w-4 h-4" /> Or upload a file
+                {fileInput}
+              </label>
             </div>
+            <p className="mt-2 text-sm text-[#5B6A73]">Short notes are fine: three honest places beat none. Files: a spreadsheet or Word document, in any layout.</p>
           </div>
         ) : (
           <label className="flex flex-col items-start gap-2 border border-[#13212B] bg-white p-5 mb-6 cursor-pointer">
@@ -227,22 +235,6 @@ export default function ImportTripPage() {
         {/* Other ways */}
         <h2 className="font-mono text-[11px] tracking-[0.14em] text-[#5B6A73] font-normal pb-3 border-b border-[#13212B]">OTHER WAYS TO SHARE</h2>
         <ul>
-          {aiAvailable && (
-            <li className="py-4 border-b border-[#E2DDD5] flex flex-wrap gap-x-6 gap-y-2 items-center justify-between">
-              <div className="min-w-0 flex-[1_1_260px]">
-                <p className="font-serif text-xl">Upload a file</p>
-                <p className="text-sm text-[#5B6A73]">A spreadsheet or Word document, in any layout.</p>
-              </div>
-              <label
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}
-                className={`${BTN} border border-[#13212B] cursor-pointer hover:bg-[#13212B] hover:text-[#F8F6F1]`}
-              >
-                <Upload className="w-4 h-4" /> Choose a file
-                {fileInput}
-              </label>
-            </li>
-          )}
           <li className="py-4 border-b border-[#E2DDD5] flex flex-wrap gap-x-6 gap-y-2 items-center justify-between">
             <div className="min-w-0 flex-[1_1_260px]">
               <p className="font-serif text-xl">Email it to us</p>

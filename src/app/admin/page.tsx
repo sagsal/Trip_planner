@@ -293,10 +293,10 @@ function Messages() {
             </div>
             <p className="text-sm mt-2"><b className="tabular-nums">{count ?? '…'}</b> {count === 1 ? 'member' : 'members'} will get this <span className="text-[#5B6A73]">(never blocked members or people who unsubscribed)</span></p>
           </div>
-          <label className="text-sm font-medium">Subject<input value={msg.subject} onChange={(e) => setMsg({ ...msg, subject: e.target.value })} placeholder="Share and Plan has been revamped" className={`${field} mt-1`} /></label>
+          <label className="text-sm font-medium">Subject<input value={msg.subject} onChange={(e) => setMsg({ ...msg, subject: e.target.value })} placeholder="tripshare has been revamped" className={`${field} mt-1`} /></label>
           <label className="text-sm font-medium">Message
             <textarea value={msg.body} onChange={(e) => setMsg({ ...msg, body: e.target.value })} rows={7} className={`${field} mt-1`}
-              placeholder={'Hi {name},\n\nThanks for joining Share and Plan back in August. We’ve rebuilt the site…'} />
+              placeholder={'Hi {name},\n\nThanks for joining tripshare back in August. We’ve rebuilt the site…'} />
             <span className="block text-xs text-[#5B6A73] font-normal mt-1">{'{name}'} becomes each person’s first name. Leave a blank line between paragraphs.</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

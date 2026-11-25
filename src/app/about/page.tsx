@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Compass, PlusCircle } from 'lucide-react';
 
 export const metadata = {
-  title: 'About · Share and Plan',
+  title: 'About · tripshare',
   description: 'Share the details of your trips with fellow travelers, and build new trips from their itineraries.',
 };
 
@@ -19,12 +19,12 @@ export default function AboutPage() {
           <p className="text-lg font-semibold text-[#2F4A5C] mt-3">With this site you can do both!</p>
         </div>
 
-        <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">About Share and Plan</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-[#6B7A83] mb-3">About tripshare</p>
         <h1 className="text-3xl sm:text-5xl font-normal text-[#2F4A5C] leading-tight mb-6">
           Travel is better when it’s shared.
         </h1>
         <p className="text-lg text-[#4A5A63] leading-relaxed mb-12">
-          Share and Plan is a place to record your trips day by day — where you stayed, where you ate, what you did and
+          tripshare is a place to record your trips day by day — where you stayed, where you ate, what you did and
           how you got around — and share them with fellow travelers.
         </p>
 
@@ -48,7 +48,7 @@ export default function AboutPage() {
         </div>
 
         <p className="text-[#4A5A63] mb-10">
-          New here? See <Link href="/how-to" className="underline text-[#2F4A5C] hover:text-[#3F5B6A]">how to use Share and Plan</Link>.
+          New here? See <Link href="/how-to" className="underline text-[#2F4A5C] hover:text-[#3F5B6A]">how to use tripshare</Link>.
         </p>
 
         <p className="text-xl font-medium text-[#2F4A5C] mb-6">Real trips, from real travelers.</p>
@@ -60,10 +60,10 @@ export default function AboutPage() {
             <Compass className="w-5 h-5 mr-2" /> Browse trips
           </Link>
           <Link
-            href="/trips/new"
+            href="/trips/import"
             className="inline-flex items-center justify-center px-6 py-3 bg-white text-[#2F4A5C] border border-[#D9D2C7] rounded-lg hover:bg-[#FBF9F5] transition-colors font-medium"
           >
-            <PlusCircle className="w-5 h-5 mr-2" /> Add your trip
+            <PlusCircle className="w-5 h-5 mr-2" /> Share your trip
           </Link>
         </div>
       </div>

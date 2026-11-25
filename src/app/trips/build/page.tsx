@@ -2374,7 +2374,7 @@ function BuildTripContent() {
             <div className="mb-6">
               <h2 className="text-2xl font-normal text-gray-900 mb-2">Browse Shared Trips</h2>
               <p className="text-gray-600 text-sm">
-                  💡 <strong>How it works:</strong> Select "Current Draft" (if you're creating/editing a draft) or an existing saved draft, then select a city (and day for restaurants/activities) from the dropdowns below. Click on any item from shared trips to add it to your draft. This is your sandbox to collect ideas before finalizing your trip!
+                  💡 <strong>How it works:</strong> Select "Current Draft" (if you're creating/editing a draft) or an existing saved draft, then select a city (and day for restaurants/activities) from the dropdowns below. Click on any item from shared trips to add it to your draft. This is My plans to collect ideas before finalizing your trip!
               </p>
             </div>
             {sharedTrips.length === 0 ? (

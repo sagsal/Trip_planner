@@ -16,6 +16,12 @@ const daysBetween = (a, b) => (a && b ? Math.round((new Date(b) - new Date(a)) /
   });
   let renamed = 0;
   for (const t of trips) {
+    for (const c of t.cities_data) {
+      if (c.name.includes('Lake Lousie')) {
+        await prisma.city.update({ where: { id: c.id }, data: { name: c.name.replace('Lake Lousie', 'Lake Louise') } });
+        console.log(`renamed city: ${c.name} -> Lake Louise`); renamed++;
+      }
+    }
     if (t.title.includes('Belompan')) {
       await prisma.trip.update({ where: { id: t.id }, data: { title: t.title.replace(/Belompan/g, 'Belmopan') } });
       console.log(`renamed trip: "${t.title}" -> "${t.title.replace(/Belompan/g, 'Belmopan')}"`); renamed++;
@@ -37,7 +43,7 @@ const daysBetween = (a, b) => (a && b ? Math.round((new Date(b) - new Date(a)) /
       const used = Math.max(0, ...[...c.restaurants, ...c.activities].map((p) => p.dayNumber || 0));
       return `${c.name} ${c.numberOfDays}d (places up to day ${used})`;
     }).join(', ');
-    console.log(`days don't add up: "${t.title}": dates ${want} days, cities ${sum} days: ${detail}`);
+    if (process.env.REPORT) console.log(`days don't add up: "${t.title}": dates ${want} days, cities ${sum} days: ${detail}`);
     if (/Belize/.test(t.title) && sum > want) {
       let extra = sum - want;
       const order = [...t.cities_data].reverse(); // trim from the last city first
